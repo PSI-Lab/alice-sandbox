@@ -3,7 +3,7 @@
 mkdir -p data
 mkdir -p report
 
-python corss_validate.py bHLH
-python corss_validate.py ETS
-python corss_validate.py E2F
-python corss_validate.py RUNX
+python cross_validate.py bHLH
+python cross_validate.py ETS
+python cross_validate.py E2F
+python cross_validate.py RUNX
