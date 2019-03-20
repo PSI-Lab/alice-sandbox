@@ -98,7 +98,7 @@ for name in tf_names:
     fig = df_plot.iplot(kind='scatter', x='%s_pred' % name, y=name,
                         xTitle='%s_pred' % name, yTitle=name, title='%s held-out %.4f (%.4e)' % (name, corr, pval),
                         mode='markers', size=1, asFigure=True)
-    plotly.offline.plot(fig, filename="report/%s_%s_fc.html")
+    plotly.offline.plot(fig, filename="report/%s_%s_fc.html" % (tf_family, name))
     print(corr, pval)
     print(spearmanr(df_plot[name], df_plot['%s_pred' % name]))
 
@@ -143,7 +143,7 @@ for name in tf_names:
     fig = df_plot.iplot(kind='scatter', x='%s_pred' % name, y=name,
                         xTitle='%s_pred' % name, yTitle=name, title='%s held-out %.4f (%.4e)' % (name, corr, pval),
                         mode='markers', size=1, asFigure=True)
-    plotly.offline.plot(fig, filename="report/%s_%s_conv.html")
+    plotly.offline.plot(fig, filename="report/%s_%s_conv.html" % (tf_family, name))
     print(corr, pval)
     print(spearmanr(df_plot[name], df_plot['%s_pred' % name]))
 
