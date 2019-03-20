@@ -38,4 +38,26 @@ config = {
         },
     },
 
+    'training_one_model': {
+        'gpu_id': 0,
+
+        'fully_connected': {
+            'n_folds': 5,
+            'epochs': 100,
+            'batch_size': 500,
+            'n_hid': 20,
+        },
+
+        'conv': {
+            'n_folds': 5,
+            'epochs': 300,  # increase epoch
+            'batch_size': 500,
+            'filters': [  # TODO can try increasing model complexity since we're sharing weights now
+                # n_filter, filter_width, dilation
+                (100, 8, 1),
+                (50, 8, 2),
+            ],
+        },
+    },
+
 }
