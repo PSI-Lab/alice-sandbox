@@ -17,7 +17,7 @@ config = {
 
     # training config
     'training': {
-        'gpu_id': 1,
+        'gpu_id': 0,
 
         'fully_connected': {
             'n_folds': 5,

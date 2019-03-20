@@ -34,7 +34,8 @@ from keras.losses import mean_squared_error
 tf_families = config['tf_names'].keys()
 
 df = pd.concat([pd.read_excel(config['publication_data'][tf_family]) for tf_family in tf_families])
-tf_names = [config['tf_names'][tf_family] for tf_family in tf_families][:]
+tf_names = [config['tf_names'][tf_family] for tf_family in tf_families]
+tf_names = [item for sublist in tf_names for item in sublist]
 
 print('TF names: %s' % tf_names)
 
