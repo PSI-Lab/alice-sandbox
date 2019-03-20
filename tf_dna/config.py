@@ -50,7 +50,7 @@ config = {
 
         'conv': {
             'n_folds': 5,
-            'epochs': 300,  # increase epoch
+            'epochs': 200,  # increase epoch
             'batch_size': 500,
             'filters': [  # TODO can try increasing model complexity since we're sharing weights now
                 # n_filter, filter_width, dilation
