@@ -96,7 +96,7 @@ def baseline_model(n_in=X.shape[1]*X.shape[2], n_out=Y.shape[1]):
 
 
 estimator = KerasRegressor(build_fn=baseline_model, epochs=config['training_one_model']['fully_connected']['epochs'],
-                           batch_size=config['training_one_model']['fully_connected']['batch_size'], verbose=2)
+                           batch_size=config['training_one_model']['fully_connected']['batch_size'], verbose=0)
 kfold = KFold(n_splits=config['training_one_model']['fully_connected']['n_folds'], random_state=1234, shuffle=True)
 result = cross_validate(estimator, X.reshape([X.shape[0], -1]), Y, cv=kfold,
                         return_estimator=True, return_train_score=True,
@@ -141,7 +141,7 @@ def conv_model(n_out=Y.shape[1]):
 
 
 estimator = KerasRegressor(build_fn=conv_model, epochs=config['training_one_model']['conv']['epochs'],
-                           batch_size=config['training_one_model']['conv']['batch_size'], verbose=2)
+                           batch_size=config['training_one_model']['conv']['batch_size'], verbose=0)
 kfold = KFold(n_splits=config['training_one_model']['conv']['n_folds'], random_state=1234, shuffle=True)
 result = cross_validate(estimator, X, Y, cv=kfold,
                         return_estimator=True, return_train_score=True,
