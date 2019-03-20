@@ -100,10 +100,10 @@ estimator = KerasRegressor(build_fn=baseline_model, epochs=config['training_one_
 kfold = KFold(n_splits=config['training_one_model']['fully_connected']['n_folds'], random_state=1234, shuffle=True)
 result = cross_validate(estimator, X.reshape([X.shape[0], -1]), Y, cv=kfold,
                         return_estimator=True, return_train_score=True,
-                        scoring=(custom_loss))
+                        scoring=('r2', 'neg_mean_squared_error'))
 print('Fully connected')
-print('Training r2: ', result['train_r2'])
-print('Validation r2: ', result['test_r2'])
+#print('Training r2: ', result['train_r2'])
+#print('Validation r2: ', result['test_r2'])
 # make prediction
 y_pred = np.empty(Y.shape)
 for i, (train_index, test_index) in enumerate(kfold.split(X.reshape([X.shape[0], -1]))):
@@ -146,10 +146,11 @@ estimator = KerasRegressor(build_fn=conv_model, epochs=config['training_one_mode
 kfold = KFold(n_splits=config['training_one_model']['conv']['n_folds'], random_state=1234, shuffle=True)
 result = cross_validate(estimator, X, Y, cv=kfold,
                         return_estimator=True, return_train_score=True,
-                        scoring=(custom_loss))
+                        scoring=('r2', 'neg_mean_squared_error'))
 print('Conv')
-print('Training r2: ', result['train_r2'])
-print('Validation r2: ', result['test_r2'])
+# TODO remove these loss
+#print('Training r2: ', result['train_r2'])
+#print('Validation r2: ', result['test_r2'])
 # make prediction
 y_pred = np.empty(Y.shape)
 for i, (train_index, test_index) in enumerate(kfold.split(X)):
