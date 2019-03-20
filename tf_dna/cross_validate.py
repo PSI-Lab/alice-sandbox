@@ -82,7 +82,7 @@ print('Fully connected')
 print('Training r2: ', result['train_r2'])
 print('Validation r2: ', result['test_r2'])
 # make prediction
-y_pred = np.empty(Y[:, :3].shape)
+y_pred = np.empty(Y.shape)
 for i, (train_index, test_index) in enumerate(kfold.split(X.reshape([X.shape[0], -1]))):
     xt = X.reshape([X.shape[0], -1])[test_index, :]
     y_pred[test_index, :] = result['estimator'][i].predict(xt)
@@ -127,7 +127,7 @@ print('Conv')
 print('Training r2: ', result['train_r2'])
 print('Validation r2: ', result['test_r2'])
 # make prediction
-y_pred = np.empty(Y[:, :3].shape)
+y_pred = np.empty(Y.shape)
 for i, (train_index, test_index) in enumerate(kfold.split(X)):
     xt = X[test_index, :, :]
     y_pred[test_index, :] = result['estimator'][i].predict(xt)
