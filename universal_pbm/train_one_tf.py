@@ -73,6 +73,10 @@ if len(df.iloc[0]['sequence']) == 60:
 
 # log intensity
 df = add_column(df, 'log_intensity', ['intensity'], lambda x: np.log(x))
+# drop nan's
+print("Drop NaN's in log intensity, before: %d" % len(df))
+df = df.dropna(subset=['log_intensity'])
+print("after %d" % len(df))
 
 # some sequence might be of different length, drop them
 print("lengths: %s" % df.sequence.str.len().unique())
