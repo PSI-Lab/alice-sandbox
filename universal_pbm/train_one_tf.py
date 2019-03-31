@@ -140,17 +140,16 @@ def conv_model(n_out=Y_train.shape[1]):
     for i, (n_filter, filter_width, dilation_rate) in enumerate(filter_param):
         model.add(Conv1D(filters=n_filter, kernel_size=filter_width, strides=1, padding='valid',
                          dilation_rate=dilation_rate, activation='relu', use_bias=True,
-                        name='conv_%d' % i))
+                         name='conv_%d' % i))
     model.add(GlobalMaxPooling1D())
     model.add(Dense(n_out, kernel_initializer='normal'))
-    model.compile(loss=mean_squared_error, optimizer='adam')
-#     opt = keras.optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0,
-#                                     amsgrad=False)
-#     model.compile(loss=mean_absolute_error, optimizer=opt)
+    opt = keras.optimizers.Adam(lr=0.0002, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0,
+                                amsgrad=False)
+    model.compile(loss=mean_squared_error, optimizer=opt)
     return model
 
 
-estimator = KerasRegressor(build_fn=conv_model, epochs=100,       ## TODO decrease LR, increase epoch
+estimator = KerasRegressor(build_fn=conv_model, epochs=800,
                            batch_size=500, verbose=2)
 kfold = KFold(n_splits=5, random_state=1234, shuffle=True)
 result = cross_validate(estimator, X_train, Y_train, cv=kfold,
