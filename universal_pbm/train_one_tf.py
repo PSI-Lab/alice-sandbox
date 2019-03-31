@@ -132,7 +132,7 @@ Y_test = np.swapaxes(np.stack(_data_output, axis=1), 0, 1)
 print('Test data: ', X_test.shape, Y_test.shape)
 
 
-filter_param = [(100, 8, 1), (50, 8, 2)]
+filter_param = [(100, 8, 1), (100, 8, 2), (100, 4, 4)]
 
 
 def conv_model(n_out=Y_train.shape[1]):
@@ -143,21 +143,30 @@ def conv_model(n_out=Y_train.shape[1]):
                          name='conv_%d' % i))
     model.add(GlobalMaxPooling1D())
     model.add(Dense(n_out, kernel_initializer='normal'))
-    opt = keras.optimizers.Adam(lr=0.0002, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0,
+    opt = keras.optimizers.Adam(lr=0.01, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.001,
                                 amsgrad=False)
     model.compile(loss=mean_squared_error, optimizer=opt)
     return model
 
+df_metric = []
 
-estimator = KerasRegressor(build_fn=conv_model, epochs=800,
+estimator = KerasRegressor(build_fn=conv_model, epochs=1000,
                            batch_size=500, verbose=2)
 kfold = KFold(n_splits=5, random_state=1234, shuffle=True)
 result = cross_validate(estimator, X_train, Y_train, cv=kfold,
                         return_estimator=True, return_train_score=True,
                         scoring=('r2', 'neg_mean_squared_error'))
+for i in range(5):
+    df_metric.append({'task': 'training_fold_%d_neg_mean_squared_error',
+                      'val': result['train_neg_mean_squared_error'][i]})
+    df_metric.append({'task': 'validation_fold_%d_neg_mean_squared_error',
+                      'val': result['test_neg_mean_squared_error'][i]})
+    df_metric.append({'task': 'training_fold_%d_r2',
+                      'val': result['train_r2'][i]})
+    df_metric.append({'task': 'validation_fold_%d_r2',
+                      'val': result['test_r2'][i]})
 
 
-df_metric = []
 fig = plotly.tools.make_subplots(rows=2, cols=1, shared_xaxes=True, shared_yaxes=True)
 
 # cross validation
@@ -169,9 +178,10 @@ df_plot = pd.DataFrame({'target': Y_train[:, 0], 'pred': y_pred[:, 0]})
 
 corr, pval = pearsonr(df_plot['target'], df_plot['pred'])
 print('CV', corr, pval)
-df_metric.append({'task': 'cross_validation',
-                  'pearson_corr': corr,
-                  'pearson_pval': pval})
+df_metric.append({'task': 'cross_validation_pearson_corr',
+                  'val': corr})
+
+
 
 fig.append_trace(plotly.graph_objs.Scatter(
     x=df_plot['pred'],
@@ -188,9 +198,8 @@ df_plot = pd.DataFrame({'target': Y_test[:, 0], 'pred': y_pred})
 
 corr, pval = pearsonr(df_plot['target'], df_plot['pred'])
 print('test set', corr, pval)
-df_metric.append({'task': 'cross_validation',
-                  'pearson_corr': corr,
-                  'pearson_pval': pval})
+df_metric.append({'task': 'test_set_pearson_corr',
+                  'val': corr})
 
 fig.append_trace(plotly.graph_objs.Scatter(
     x=df_plot['pred'],
