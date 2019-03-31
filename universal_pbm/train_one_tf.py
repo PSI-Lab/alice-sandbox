@@ -41,14 +41,18 @@ from keras.losses import mean_squared_error, mean_absolute_error
 
 assert file_name.endswith('.txt')
 
-df = pd.read_csv(os.path.join(in_dir, tf_name, file_name),
+_file_name = os.path.join(in_dir, tf_name, file_name)
+print("Loading input data file: %s" % _file_name)
+df = pd.read_csv(_file_name,
                  names=['intensity', 'sequence'], delim_whitespace=True)
 
 out_path = os.path.join(out_dir, tf_name)
 if not os.path.isdir(out_path):
-    os.mkdir(out_path)
+    os.makedirs(out_path)
+    print("make dir: %s" % out_path)
 out_file_metric = os.path.join(out_path, file_name.replace('.txt', '.csv'))
 out_file_plot = os.path.join(out_path, file_name.replace('.txt', '.html'))
+print("Output files:\n%s\n%s\n" % (out_file_metric, out_file_plot))
 
 
 def _process_seq(s):
