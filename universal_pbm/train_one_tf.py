@@ -24,7 +24,7 @@ cf.set_config_file(theme='ggplot')
 import plotly
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = '1'
+os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
 from dgutils.pandas import add_column, add_columns
 import keras
 import numpy as np
