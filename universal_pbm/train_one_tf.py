@@ -29,7 +29,7 @@ from dgutils.pandas import add_column, add_columns
 import keras
 import numpy as np
 from keras.models import Sequential
-from keras.layers import Dense, Conv1D, MaxPooling1D, GlobalMaxPooling1D
+from keras.layers import Dense, Conv1D, MaxPooling1D, GlobalMaxPooling1D, Dropout, Flatten
 from keras.wrappers.scikit_learn import KerasRegressor
 from sklearn.model_selection import cross_val_score, cross_val_predict, cross_validate
 from sklearn.model_selection import KFold
@@ -149,9 +149,30 @@ def conv_model(n_out=Y_train.shape[1]):
     model.compile(loss=mean_squared_error, optimizer=opt)
     return model
 
+
+# filter_param = [(100, 8, 1), (100, 8, 2)]
+# 
+# 
+# def conv_model(n_out=Y_train.shape[1]):
+#     model = Sequential()
+#     for i, (n_filter, filter_width, dilation_rate) in enumerate(filter_param):
+#         model.add(Conv1D(filters=n_filter, kernel_size=filter_width, strides=1, padding='valid',
+#                          dilation_rate=dilation_rate, activation='relu', use_bias=True,
+#                          name='conv_%d' % i))
+#     model.add(MaxPooling1D(pool_size=2))
+#     model.add(Flatten())
+#     model.add(Dense(10, activation='relu'))
+#     model.add(Dropout(0.5))
+#     model.add(Dense(n_out, kernel_initializer='normal'))
+#     opt = keras.optimizers.Adam(lr=0.01, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.001,
+#                                 amsgrad=False)
+#     model.compile(loss=mean_squared_error, optimizer=opt)
+#     return model
+
+
 df_metric = []
 
-estimator = KerasRegressor(build_fn=conv_model, epochs=100,
+estimator = KerasRegressor(build_fn=conv_model, epochs=200,
                            batch_size=500, verbose=2)
 kfold = KFold(n_splits=5, random_state=1234, shuffle=True)
 result = cross_validate(estimator, X_train, Y_train, cv=kfold,
