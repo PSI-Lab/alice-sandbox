@@ -171,7 +171,7 @@ for n_filter, n_layer, n_epoch in product(n_filters, n_layers, n_epochs):
 
     avg_r2 = np.mean(np.asarray([_result['test_r2'][i] for i in range(5)]))
 
-    if avg_r2 < best_avg_r2:
+    if avg_r2 > best_avg_r2:
         print("New best: %f" % avg_r2)
         best_avg_r2 = avg_r2 + 0  # copy?
         result = copy(_result)
