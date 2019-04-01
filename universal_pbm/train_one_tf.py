@@ -151,20 +151,20 @@ def conv_model(n_out=Y_train.shape[1]):
 
 df_metric = []
 
-estimator = KerasRegressor(build_fn=conv_model, epochs=1000,
+estimator = KerasRegressor(build_fn=conv_model, epochs=100,
                            batch_size=500, verbose=2)
 kfold = KFold(n_splits=5, random_state=1234, shuffle=True)
 result = cross_validate(estimator, X_train, Y_train, cv=kfold,
                         return_estimator=True, return_train_score=True,
                         scoring=('r2', 'neg_mean_squared_error'))
 for i in range(5):
-    df_metric.append({'task': 'training_fold_%d_neg_mean_squared_error',
+    df_metric.append({'task': 'training_fold_%d_neg_mean_squared_error' % i,
                       'val': result['train_neg_mean_squared_error'][i]})
-    df_metric.append({'task': 'validation_fold_%d_neg_mean_squared_error',
+    df_metric.append({'task': 'validation_fold_%d_neg_mean_squared_error' % i,
                       'val': result['test_neg_mean_squared_error'][i]})
-    df_metric.append({'task': 'training_fold_%d_r2',
+    df_metric.append({'task': 'training_fold_%d_r2' % i,
                       'val': result['train_r2'][i]})
-    df_metric.append({'task': 'validation_fold_%d_r2',
+    df_metric.append({'task': 'validation_fold_%d_r2' % i,
                       'val': result['test_r2'][i]})
 
 
