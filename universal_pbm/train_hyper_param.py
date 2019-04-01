@@ -25,6 +25,8 @@ import plotly
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
+from itertools import product
+from copy import copy
 from dgutils.pandas import add_column, add_columns
 import keras
 import numpy as np
@@ -132,60 +134,57 @@ Y_test = np.swapaxes(np.stack(_data_output, axis=1), 0, 1)
 
 print('Test data: ', X_test.shape, Y_test.shape)
 
-filter_param = [(100, 8, 1), (100, 8, 2), (100, 4, 4)]
+
+n_filters = [20, 50, 100]
+n_layers = [2, 3]
+n_epochs = [100, 200, 300, 400, 500]
+
+# best validation r2
+best_avg_r2 = 0
+
+for n_filter, n_layer, n_epoch in product(n_filters, n_layers, n_epochs):
+    print("n_filter %d n_layer %d n_epoch %d" % (n_filter, n_layer, n_epoch))
+
+    filter_param = [(n_filter, 8, 1), (n_filter, 8, 2), (n_filter, 4, 4)]
+    filter_param = filter_param[:n_layer]
+
+    def conv_model(n_out=Y_train.shape[1]):
+        model = Sequential()
+        for i, (n_filter, filter_width, dilation_rate) in enumerate(filter_param):
+            model.add(Conv1D(filters=n_filter, kernel_size=filter_width, strides=1, padding='valid',
+                             dilation_rate=dilation_rate, activation='relu', use_bias=True,
+                             name='conv_%d' % i))
+        model.add(GlobalMaxPooling1D())
+        model.add(Dense(n_out, kernel_initializer='normal'))
+        opt = keras.optimizers.Adam(lr=0.01, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.001,
+                                    amsgrad=False)
+        model.compile(loss=mean_squared_error, optimizer=opt)
+        return model
 
 
-def conv_model(n_out=Y_train.shape[1]):
-    model = Sequential()
-    for i, (n_filter, filter_width, dilation_rate) in enumerate(filter_param):
-        model.add(Conv1D(filters=n_filter, kernel_size=filter_width, strides=1, padding='valid',
-                         dilation_rate=dilation_rate, activation='relu', use_bias=True,
-                         name='conv_%d' % i))
-    model.add(GlobalMaxPooling1D())
-    model.add(Dense(n_out, kernel_initializer='normal'))
-    opt = keras.optimizers.Adam(lr=0.01, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.001,
-                                amsgrad=False)
-    model.compile(loss=mean_squared_error, optimizer=opt)
-    return model
+    estimator = KerasRegressor(build_fn=conv_model, epochs=n_epoch,
+                               batch_size=500, verbose=0)
+    kfold = KFold(n_splits=5, random_state=1234, shuffle=True)
+    _result = cross_validate(estimator, X_train, Y_train, cv=kfold,
+                             return_estimator=True, return_train_score=True,
+                             scoring=('r2', 'neg_mean_squared_error'))
 
+    avg_r2 = np.mean(np.asarray([_result['test_r2'][i] for i in range(5)]))
 
-# filter_param = [(100, 8, 1), (100, 8, 2)]
-# 
-# 
-# def conv_model(n_out=Y_train.shape[1]):
-#     model = Sequential()
-#     for i, (n_filter, filter_width, dilation_rate) in enumerate(filter_param):
-#         model.add(Conv1D(filters=n_filter, kernel_size=filter_width, strides=1, padding='valid',
-#                          dilation_rate=dilation_rate, activation='relu', use_bias=True,
-#                          name='conv_%d' % i))
-#     model.add(MaxPooling1D(pool_size=2))
-#     model.add(Flatten())
-#     model.add(Dense(10, activation='relu'))
-#     model.add(Dropout(0.5))
-#     model.add(Dense(n_out, kernel_initializer='normal'))
-#     opt = keras.optimizers.Adam(lr=0.01, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.001,
-#                                 amsgrad=False)
-#     model.compile(loss=mean_squared_error, optimizer=opt)
-#     return model
-
-
-df_metric = []
-
-estimator = KerasRegressor(build_fn=conv_model, epochs=200,
-                           batch_size=500, verbose=2)
-kfold = KFold(n_splits=5, random_state=1234, shuffle=True)
-result = cross_validate(estimator, X_train, Y_train, cv=kfold,
-                        return_estimator=True, return_train_score=True,
-                        scoring=('r2', 'neg_mean_squared_error'))
-for i in range(5):
-    df_metric.append({'task': 'training_fold_%d_neg_mean_squared_error' % i,
-                      'val': result['train_neg_mean_squared_error'][i]})
-    df_metric.append({'task': 'validation_fold_%d_neg_mean_squared_error' % i,
-                      'val': result['test_neg_mean_squared_error'][i]})
-    df_metric.append({'task': 'training_fold_%d_r2' % i,
-                      'val': result['train_r2'][i]})
-    df_metric.append({'task': 'validation_fold_%d_r2' % i,
-                      'val': result['test_r2'][i]})
+    if avg_r2 < best_avg_r2:
+        print("New best: %f" % avg_r2)
+        best_avg_r2 = avg_r2 + 0  # copy?
+        result = copy(_result)
+        df_metric = []
+        for i in range(5):
+            df_metric.append({'task': 'training_fold_%d_neg_mean_squared_error' % i,
+                              'val': result['train_neg_mean_squared_error'][i]})
+            df_metric.append({'task': 'validation_fold_%d_neg_mean_squared_error' % i,
+                              'val': result['test_neg_mean_squared_error'][i]})
+            df_metric.append({'task': 'training_fold_%d_r2' % i,
+                              'val': result['train_r2'][i]})
+            df_metric.append({'task': 'validation_fold_%d_r2' % i,
+                              'val': result['test_r2'][i]})
 
 
 fig = plotly.tools.make_subplots(rows=2, cols=1, shared_xaxes=True, shared_yaxes=True)
