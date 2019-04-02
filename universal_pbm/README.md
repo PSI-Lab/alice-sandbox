@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Data was kindly provided by Jingkang Zhao, downloaded from https://www.dropbox.com/sh/m99rzpb5wnwuw4b/AABGhIdPLxds1nZrIw7prYXEa?dl=0
+Data was kindly provided by Jingkang Zhao.
 
 The objective of this analysis is to get a sense of the baseline performance of conv nets on this type of dataset.
 
@@ -38,6 +38,20 @@ where the training prediction is computed using cross-validation models (e.g. th
 and the test prediction is computed using an ensemble of the 5 models.
 There is also one `.html` file with an interactive plot that shows the correlation between prediction and target value. (note that GitHub won't render html files, so you need to save them and reopen using your browser)
 
+To reproduce result one one dataset, for fixed hyperparameter, run:
+
+```bash
+python train_one_tf.py {TF_NAME} {DATA_FILE} {INPUT_DIR} {OUTPUT_DIR} {GPU_ID}
+# e.g. python train_one_tf.py BHLHE40 "Mus_musculus|M00251_1.94d|Badis09|Bhlhb2_1274.3=v2.txt" data result 0
+```
+
+for hyperparameter optimization, run:
+
+```bash
+python train_hyper_param.py {TF_NAME} {DATA_FILE} {INPUT_DIR} {OUTPUT_DIR} {GPU_ID}
+# e.g. python train_hyper_param.py BHLHE40 "Mus_musculus|M00251_1.94d|Badis09|Bhlhb2_1274.3=v2.txt" data result_hyper_param 2
+```
+
 Here we summarize the performance on different dataset:
 
 ### Optimized hyperparmeter
@@ -49,6 +63,7 @@ Here we summarize the performance on different dataset:
 | BHLHE40/Mus_musculus\|M00253_1.94d\|Zoo_01\|1308              | 0.7536858646162291            | 0.7892722942206171    |
 
 Raw data can be found in [performance_summary_hpt.csv](performance_summary_hpt.csv).
+
 
 ### Fixed hyperparameter
 
