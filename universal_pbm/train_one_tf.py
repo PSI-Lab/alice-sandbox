@@ -52,7 +52,8 @@ if not os.path.isdir(out_path):
     print("make dir: %s" % out_path)
 out_file_metric = os.path.join(out_path, file_name.replace('.txt', '.csv'))
 out_file_plot = os.path.join(out_path, file_name.replace('.txt', '.html'))
-print("Output files:\n%s\n%s\n" % (out_file_metric, out_file_plot))
+out_file_models = [os.path.join(out_path, file_name.replace('.txt', '.fold_%d.h5' % i)) for i in range(5)]
+print("Output files:\n%s\n%s\n%s\n" % (out_file_metric, out_file_plot, out_file_models))
 
 
 def _process_seq(s):
@@ -132,15 +133,23 @@ Y_test = np.swapaxes(np.stack(_data_output, axis=1), 0, 1)
 
 print('Test data: ', X_test.shape, Y_test.shape)
 
-filter_param = [(100, 8, 1), (100, 8, 2), (100, 4, 4)]
+#filter_param = [(100, 8, 1), (100, 8, 2), (100, 4, 4)]
+filter_param = [(50, 8, 1), (50, 8, 2), (50, 4, 4)]
 
 
 def conv_model(n_out=Y_train.shape[1]):
     model = Sequential()
     for i, (n_filter, filter_width, dilation_rate) in enumerate(filter_param):
-        model.add(Conv1D(filters=n_filter, kernel_size=filter_width, strides=1, padding='valid',
-                         dilation_rate=dilation_rate, activation='relu', use_bias=True,
-                         name='conv_%d' % i))
+        # variable length input
+        if i == 0:
+            model.add(Conv1D(filters=n_filter, kernel_size=filter_width, strides=1, padding='valid',
+                             dilation_rate=dilation_rate, activation='relu', use_bias=True, input_shape=(None, 4),
+                             name='conv_%d' % i))
+        else:
+            model.add(Conv1D(filters=n_filter, kernel_size=filter_width, strides=1, padding='valid',
+                             dilation_rate=dilation_rate, activation='relu', use_bias=True,
+                             name='conv_%d' % i))
+    
     model.add(GlobalMaxPooling1D())
     model.add(Dense(n_out, kernel_initializer='normal'))
     opt = keras.optimizers.Adam(lr=0.01, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.001,
@@ -186,7 +195,8 @@ for i in range(5):
                       'val': result['train_r2'][i]})
     df_metric.append({'task': 'validation_fold_%d_r2' % i,
                       'val': result['test_r2'][i]})
-
+    # save model files
+    result['estimator'][i].model.save(out_file_models[i])
 
 fig = plotly.tools.make_subplots(rows=2, cols=1, shared_xaxes=True, shared_yaxes=True)
 
