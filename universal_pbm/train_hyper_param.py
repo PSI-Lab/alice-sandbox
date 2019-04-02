@@ -135,7 +135,8 @@ Y_test = np.swapaxes(np.stack(_data_output, axis=1), 0, 1)
 print('Test data: ', X_test.shape, Y_test.shape)
 
 
-n_filters = [20, 50, 100]
+#n_filters = [20, 50, 100]
+n_filters = [20, 50]
 n_layers = [2, 3]
 n_epochs = [100, 200, 300, 400, 500]
 
@@ -185,6 +186,12 @@ for n_filter, n_layer, n_epoch in product(n_filters, n_layers, n_epochs):
                               'val': result['train_r2'][i]})
             df_metric.append({'task': 'validation_fold_%d_r2' % i,
                               'val': result['test_r2'][i]})
+            df_metric.append({'task': 'n_filter',
+                'val': n_filter})
+            df_metric.append({'task': 'n_layer', 
+               'val': n_layer})
+            df_metric.append({'task': 'n_epoch', 
+               'val': n_epoch})
 
 
 fig = plotly.tools.make_subplots(rows=2, cols=1, shared_xaxes=True, shared_yaxes=True)
