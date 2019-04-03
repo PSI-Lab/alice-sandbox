@@ -11,7 +11,6 @@ class UPbmEnsemble(object):
         training_log_file = os.path.join(root_dir, tf_name, '%s.csv' % dataset_name)
         df = pd.read_csv(training_log_file)
         seq_len = int(df[df['task'] == 'training_sequence_length'].iloc[0]['val'])
-        print seq_len
         # find model files (hard-coded fold idx for now)
         models = []
         for i in range(5):

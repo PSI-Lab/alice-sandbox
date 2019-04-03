@@ -6,6 +6,58 @@ Data was kindly provided by Jingkang Zhao.
 
 The objective of this analysis is to get a sense of the baseline performance of conv nets on this type of dataset.
 
+## Use the trained models
+
+Pre-trained models are provided in this repo, and can be used to make predictions on any sequences.
+Only models trained from fixed hyperparamter are included for now. Loading the models requires `keras >=2.2.4`.
+
+A single model can be loaded by providing the path to the `.h5` file, and the sequence length of the training dataset.
+The latter is being used to make sliding window predictions if the input sequence is longer than the training sequence length.
+(The model itself takes as input a variable length sequence, so it can in theory make prediction on arbitrary length sequence, but we haven't evaluated the generalization performance, so for now we recommend the sliding window approach for longer length sequences)
+
+An ensemble of models for the same TF dataset can be loaded by specifying the name of the TF + dataset, and the aggregation method.
+
+It is recommended to use an ensemble model for most tasks.
+
+Example usage:
+
+```python
+import numpy as np
+from model_utils import UPbmModel, UPbmEnsemble
+
+# make sure you have keras >=2.2.4
+
+# load a single model
+model = UPbmModel('result/BHLHE40/Mus_musculus|M00251_1.94d|Badis09|Bhlhb2_1274.3=v2.fold_0.h5', 36)
+
+# predict on sequence of the same length as training data, this returns a single number
+print model.predict_sequence('ACTATTCTGGCTTACTGTATCGGCGACCGCATGTTG')
+# this prints 7.840762
+
+# predict on sequence of longer length, this returns an array, equivalent to use a sliding window over the sequence
+print model.predict_sequence('TAGTCACGCGACATATCTCAATGAATGTAACGGGAAACGT')
+# this prints [12.018709 12.074186 11.008609 11.008609  8.062901]
+
+# predict on sequence shorter than training length, model still works since it accepts variable length sequence, but how well it generalizes to this case is unknown
+# note that the sequence needs to be at least long enough so that the last conv layer has input length longer than the filter width
+print model.predict_sequence('ACTATTCTGGCTTACTATCGGCGACCGCATGTTG')
+# this prints 6.3353167
+
+# load an ensemble of models (recommended)
+# different aggregation methods can be specified, e.g. np.median, np.mean, np.max, etc.
+# here we use np.median as an example
+ens_model = UPbmEnsemble('BHLHE40', 'Mus_musculus|M00251_1.94d|Badis09|Bhlhb2_1274.3=v2', np.median)
+
+# predict on the same sequences as above
+print ens_model.predict_sequence('ACTATTCTGGCTTACTGTATCGGCGACCGCATGTTG')
+# this prints 7.75454
+print ens_model.predict_sequence('TAGTCACGCGACATATCTCAATGAATGTAACGGGAAACGT')
+# this prints [12.018709 11.503371 11.472601  9.651035  8.956528]
+print ens_model.predict_sequence('ACTATTCTGGCTTACTATCGGCGACCGCATGTTG')
+# this prints 6.233725
+
+```
+
 ## Data Processing
 
 - primer `GTCTGTGTTCCGTTGTCCGTGCTG` is being stripped off if present
