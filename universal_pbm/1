@@ -1,0 +1,60 @@
+Using TensorFlow backend.
+2019-04-01 08:06:08.931901: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+2019-04-01 08:06:09.020149: I tensorflow/stream_executor/cuda/cuda_gpu_executor.cc:964] successful NUMA node read from SysFS had negative value (-1), but there must be at least one NUMA node, so returning NUMA node zero
+2019-04-01 08:06:09.020847: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1432] Found device 0 with properties: 
+name: GeForce GTX 1080 major: 6 minor: 1 memoryClockRate(GHz): 1.7335
+pciBusID: 0000:43:00.0
+totalMemory: 7.93GiB freeMemory: 7.22GiB
+2019-04-01 08:06:09.020859: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-01 08:06:09.240732: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-01 08:06:09.240772: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-01 08:06:09.240777: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-01 08:06:09.240959: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 6963 MB memory) -> physical GPU (device: 0, name: GeForce GTX 1080, pci bus id: 0000:43:00.0, compute capability: 6.1)
+Loading input data file: data/BHLHE40/Mus_musculus|M00252_1.94d|Zoo_01|2878.txt
+Output files:
+result_hyper_param/BHLHE40/Mus_musculus|M00252_1.94d|Zoo_01|2878.csv
+result_hyper_param/BHLHE40/Mus_musculus|M00252_1.94d|Zoo_01|2878.html
+
+Drop NaN's in log intensity, before: 40526
+after 40526
+lengths: [35 13]
+median length: 35
+Drop non-median length rows, before: 40526
+After: 40524
+('Training data: ', (32284, 35, 4), (32284, 1))
+('Test data: ', (8240, 35, 4), (8240, 1))
+n_filter 20 n_layer 2 n_epoch 100
+New best: 0.572796
+n_filter 20 n_layer 2 n_epoch 200
+Traceback (most recent call last):
+  File "train_hyper_param.py", line 170, in <module>
+    scoring=('r2', 'neg_mean_squared_error'))
+  File "/home/alice/anaconda2/envs/tf_gpu/lib/python2.7/site-packages/sklearn/model_selection/_validation.py", line 240, in cross_validate
+    for train, test in cv.split(X, y, groups))
+  File "/home/alice/anaconda2/envs/tf_gpu/lib/python2.7/site-packages/sklearn/externals/joblib/parallel.py", line 920, in __call__
+    while self.dispatch_one_batch(iterator):
+  File "/home/alice/anaconda2/envs/tf_gpu/lib/python2.7/site-packages/sklearn/externals/joblib/parallel.py", line 759, in dispatch_one_batch
+    self._dispatch(tasks)
+  File "/home/alice/anaconda2/envs/tf_gpu/lib/python2.7/site-packages/sklearn/externals/joblib/parallel.py", line 716, in _dispatch
+    job = self._backend.apply_async(batch, callback=cb)
+  File "/home/alice/anaconda2/envs/tf_gpu/lib/python2.7/site-packages/sklearn/externals/joblib/_parallel_backends.py", line 182, in apply_async
+    result = ImmediateResult(func)
+  File "/home/alice/anaconda2/envs/tf_gpu/lib/python2.7/site-packages/sklearn/externals/joblib/_parallel_backends.py", line 549, in __init__
+    self.results = batch()
+  File "/home/alice/anaconda2/envs/tf_gpu/lib/python2.7/site-packages/sklearn/externals/joblib/parallel.py", line 225, in __call__
+    for func, args, kwargs in self.items]
+  File "/home/alice/anaconda2/envs/tf_gpu/lib/python2.7/site-packages/sklearn/model_selection/_validation.py", line 528, in _fit_and_score
+    estimator.fit(X_train, y_train, **fit_params)
+  File "/home/alice/anaconda2/envs/tf_gpu/lib/python2.7/site-packages/keras/wrappers/scikit_learn.py", line 152, in fit
+    history = self.model.fit(x, y, **fit_args)
+  File "/home/alice/anaconda2/envs/tf_gpu/lib/python2.7/site-packages/keras/engine/training.py", line 1039, in fit
+    validation_steps=validation_steps)
+  File "/home/alice/anaconda2/envs/tf_gpu/lib/python2.7/site-packages/keras/engine/training_arrays.py", line 199, in fit_loop
+    outs = f(ins_batch)
+  File "/home/alice/anaconda2/envs/tf_gpu/lib/python2.7/site-packages/keras/backend/tensorflow_backend.py", line 2715, in __call__
+    return self._call(inputs)
+  File "/home/alice/anaconda2/envs/tf_gpu/lib/python2.7/site-packages/keras/backend/tensorflow_backend.py", line 2675, in _call
+    fetched = self._callable_fn(*array_vals)
+  File "/home/alice/anaconda2/envs/tf_gpu/lib/python2.7/site-packages/tensorflow/python/client/session.py", line 1439, in __call__
+    run_metadata_ptr)
+KeyboardInterrupt
