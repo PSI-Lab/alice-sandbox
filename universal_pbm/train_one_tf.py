@@ -181,7 +181,7 @@ def conv_model(n_out=Y_train.shape[1]):
 df_metric = []
 
 estimator = KerasRegressor(build_fn=conv_model, epochs=200,
-                           batch_size=500, verbose=2)
+                           batch_size=500, verbose=0)
 kfold = KFold(n_splits=5, random_state=1234, shuffle=True)
 result = cross_validate(estimator, X_train, Y_train, cv=kfold,
                         return_estimator=True, return_train_score=True,
@@ -197,6 +197,8 @@ for i in range(5):
                       'val': result['test_r2'][i]})
     # save model files
     result['estimator'][i].model.save(out_file_models[i])
+# also save training sequence length, in case we need it later
+df_metric.append({'task': 'training_sequence_length', 'val': X_train.shape[1]})
 
 fig = plotly.tools.make_subplots(rows=2, cols=1, shared_xaxes=True, shared_yaxes=True)
 
