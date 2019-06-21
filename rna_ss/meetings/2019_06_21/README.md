@@ -146,6 +146,7 @@ Example of high, median and low correlations:
 (interactive version at: [plot/k562_vivo1_vitro_transcript_scatter_min.html](plot/k562_vivo1_vitro_transcript_scatter_min.html))
 
 
+Produced by running `python analyze_k562_data.py`.
 
 ## Paper Summary
 
@@ -155,7 +156,9 @@ Example of high, median and low correlations:
 
 Proposed items:
 
-- Reprocess family trio child dataset
+- Compare HepG2 reps
+
+- Reprocess family trio child dataset, check quality, decide if it's good enough as test data
 
 - Process HEK293T dataset
 
