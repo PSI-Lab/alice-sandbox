@@ -46,5 +46,19 @@ Original doc is at: https://docs.google.com/spreadsheets/d/1IXpudUpZBc3TEr0IehDg
 
 
 
-## Investigation of training dataset
+## Current Progress
+
+- Trained model on one probing data (DMS-seq, K562, in vivo): [../../model/shape_seq](../../model/shape_seq)
+
+
+- Re-implemented DMfold with proper CV: [../../model/dmfold](../../model/dmfold)
+
+
+## Investigation of Training Dataset
+
+### Family Trio
+
+
+
+### K562 in vivo
 
