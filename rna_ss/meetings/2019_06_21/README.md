@@ -75,25 +75,48 @@ Produced by running `python analyze_family_trio_data.py`.
 A good baseline will be to compare between reps (need to re-process the child data).
 
 ![plot/family_pair_correlation_histogram.png](plot/family_pair_correlation_histogram.png)
+
 (interactive version at: [../plot/family_pair_correlation_histogram.html](plot/family_pair_correlation_histogram.html))
 
 Example of high, median and low correlations:
 
 ![plot/family_pair_transcript_scatter_max.png](plot/family_pair_transcript_scatter_max.png)
+
 (interactive version at: plot/family_pair_transcript_scatter_max.html)
 
 
 ![plot/family_pair_transcript_scatter_median.png](plot/family_pair_transcript_scatter_median.png)
+
 (interactive version at: plot/family_pair_transcript_scatter_median.html)
 
 ![plot/family_pair_transcript_scatter_min.png](plot/family_pair_transcript_scatter_min.png)
+
 (interactive version at: plot/family_pair_transcript_scatter_min.html)
 
 Produced by running `python analyze_family_pair_data.py`.
 
 
-### K562 in vivo
+### K562
 
+- correlation between two in vivo dataset looks good. (TODO difference between the two, not rep!)
+
+![plot/k562_vivo1_vivo2_correlation_histogram.png](plot/k562_vivo1_vivo2_correlation_histogram.png)
+
+(interactive version at: [plot/k562_vivo1_vivo2_correlation_histogram.html](plot/k562_vivo1_vivo2_correlation_histogram.html))
+
+Example of high, median and low correlations:
+
+TODO
+
+- correlation between vivo and vitro also looks reasonable.
+
+![plot/k562_vivo1_vitro_correlation_histogram.png](plot/k562_vivo1_vitro_correlation_histogram.png)
+
+(interactive version at: [plot/k562_vivo1_vitro_correlation_histogram.html](plot/k562_vivo1_vitro_correlation_histogram.html))
+
+Example of high, median and low correlations:
+
+TODO
 
 ## Paper Summary
 
@@ -103,5 +126,13 @@ TODO
 
 
 ## Meeting Notes and Action Items
+
+Proposed items:
+
+- Reprocess family trio child dataset
+
+- Process HEK293T dataset
+
+
 
 To be completed during and after meeting.
