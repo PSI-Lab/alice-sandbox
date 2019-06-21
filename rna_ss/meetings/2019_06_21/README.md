@@ -106,9 +106,22 @@ Produced by running `python analyze_family_pair_data.py`.
 
 Example of high, median and low correlations:
 
-TODO
+![plot/k562_vivo1_vivo2_transcript_scatter_max.png](plot/k562_vivo1_vivo2_transcript_scatter_max.png)
 
-- correlation between vivo and vitro also looks reasonable.
+(interactive version at: [plot/k562_vivo1_vivo2_transcript_scatter_max.html](plot/k562_vivo1_vivo2_transcript_scatter_max.html))
+
+![plot/k562_vivo1_vivo2_transcript_scatter_median.png](plot/k562_vivo1_vivo2_transcript_scatter_median.png)
+
+(interactive version at: [plot/k562_vivo1_vivo2_transcript_scatter_median.html](plot/k562_vivo1_vivo2_transcript_scatter_median.html))
+
+
+![plot/k562_vivo1_vivo2_transcript_scatter_min.png](plot/k562_vivo1_vivo2_transcript_scatter_min.png)
+
+(interactive version at: [plot/k562_vivo1_vivo2_transcript_scatter_min.html](plot/k562_vivo1_vivo2_transcript_scatter_min.html))
+
+
+
+- correlation between vivo and vitro also looks good.
 
 ![plot/k562_vivo1_vitro_correlation_histogram.png](plot/k562_vivo1_vitro_correlation_histogram.png)
 
@@ -116,7 +129,21 @@ TODO
 
 Example of high, median and low correlations:
 
-TODO
+![plot/k562_vivo1_vitro_transcript_scatter_max.png](plot/k562_vivo1_vitro_transcript_scatter_max.png)
+
+(interactive version at: [plot/k562_vivo1_vitro_transcript_scatter_max.html](plot/k562_vivo1_vitro_transcript_scatter_max.html))
+
+
+![plot/k562_vivo1_vitro_transcript_scatter_median.png](plot/k562_vivo1_vitro_transcript_scatter_median.png)
+
+(interactive version at: [plot/k562_vivo1_vitro_transcript_scatter_median.html](plot/k562_vivo1_vitro_transcript_scatter_median.html))
+
+
+![plot/k562_vivo1_vitro_transcript_scatter_min.png](plot/k562_vivo1_vitro_transcript_scatter_min.png)
+
+(interactive version at: [plot/k562_vivo1_vitro_transcript_scatter_min.html](plot/k562_vivo1_vitro_transcript_scatter_min.html))
+
+
 
 ## Paper Summary
 
