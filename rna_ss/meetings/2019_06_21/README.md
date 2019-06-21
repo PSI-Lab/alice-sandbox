@@ -59,6 +59,49 @@ Original doc is at: https://docs.google.com/spreadsheets/d/1IXpudUpZBc3TEr0IehDg
 ### Family Trio
 
 
+- RNAseq of the child needs re-processing, since the coverage is suspiciously low:
+
+```
+father: loaded 2000000 rows, with 1117008 rows (0.558504) missing reactivity
+mother: loaded 2000000 rows, with 1112389 rows (0.5561945) missing reactivity
+child_rep1: loaded 2000000 rows, with 1914630 rows (0.957315) missing reactivity
+child_rep2: loaded 2000000 rows, with 1863138 rows (0.931569) missing reactivity
+```
+
+Produced by running `python analyze_family_trio_data.py`.
+
+
+- Correlation (per each transcript) between father and mother is quite low, but increases with more stringent coverage cutoff.
+A good baseline will be to compare between reps (need to re-process the child data).
+
+![plot/family_pair_correlation_histogram.png](plot/family_pair_correlation_histogram.png)
+(interactive version at: [../plot/family_pair_correlation_histogram.html](plot/family_pair_correlation_histogram.html))
+
+Example of high, median and low correlations:
+
+![plot/family_pair_transcript_scatter_max.png](plot/family_pair_transcript_scatter_max.png)
+(interactive version at: plot/family_pair_transcript_scatter_max.html)
+
+
+![plot/family_pair_transcript_scatter_median.png](plot/family_pair_transcript_scatter_median.png)
+(interactive version at: plot/family_pair_transcript_scatter_median.html)
+
+![plot/family_pair_transcript_scatter_min.png](plot/family_pair_transcript_scatter_min.png)
+(interactive version at: plot/family_pair_transcript_scatter_min.html)
+
+Produced by running `python analyze_family_pair_data.py`.
+
 
 ### K562 in vivo
 
+
+## Paper Summary
+
+These are the paper I've read in-depth.
+
+TODO
+
+
+## Meeting Notes and Action Items
+
+To be completed during and after meeting.
