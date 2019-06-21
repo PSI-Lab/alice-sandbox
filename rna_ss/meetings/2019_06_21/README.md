@@ -148,7 +148,28 @@ Example of high, median and low correlations:
 
 Produced by running `python analyze_k562_data.py`.
 
-## Paper Summary
+## Review Papers
+
+- "﻿Understanding the transcriptome through RNA structure"
+
+https://www.nature.com/articles/nrg3049
+
+
+- "Insights into RNA structure and function from genome-wide studies"
+
+https://www.nature.com/articles/nrg3681
+
+- "﻿Deciphering the Universe of RNA Structures and trans RNA–RNA Interactions of Transcriptomes In Vivo: From Experimental Protocols to Computational Analyses"
+
+https://link.springer.com/chapter/10.1007/978-3-319-92967-5_9
+
+- "﻿Genome-Wide Analysis of RNA Secondary Structure"
+
+https://www.annualreviews.org/doi/full/10.1146/annurev-genet-120215-035034
+
+- "﻿Predicting RNA secondary structures from sequence and probing data"
+
+https://www.sciencedirect.com/science/article/pii/S1046202316300743
 
 
 
@@ -165,3 +186,12 @@ Proposed items:
 - Train model on high confidence dataset
 
 To be completed during and after meeting.
+
+- find benchmark paper with most citation
+
+- select highly expressed transcript (using other data since it's well established cell line)
+
+- add link to review paper and send to Leo
+
+- add in mouse dataset
+
