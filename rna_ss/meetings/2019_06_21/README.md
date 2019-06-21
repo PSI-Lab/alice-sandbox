@@ -72,6 +72,7 @@ Produced by running `python analyze_family_trio_data.py`.
 
 
 - Correlation (per each transcript) between father and mother is quite low, but increases with more stringent coverage cutoff.
+Is this due to actual differences between the two individuals? Or is it just experimental noise?
 A good baseline will be to compare between reps (need to re-process the child data).
 
 ![plot/family_pair_correlation_histogram.png](plot/family_pair_correlation_histogram.png)
@@ -98,7 +99,8 @@ Produced by running `python analyze_family_pair_data.py`.
 
 ### K562
 
-- correlation between two in vivo dataset looks good. (TODO difference between the two, not rep!)
+- correlation between two in vivo dataset looks good.
+Note the difference between these two reps as described in paper: "﻿For K562 cells, 15 ml of cells were treated with 300ml(in vivo replicate 1) or 400ml(in vivo replicate 2) DMS and modified for 4 min".
 
 ![plot/k562_vivo1_vivo2_correlation_histogram.png](plot/k562_vivo1_vivo2_correlation_histogram.png)
 
@@ -147,9 +149,6 @@ Example of high, median and low correlations:
 
 ## Paper Summary
 
-These are the paper I've read in-depth.
-
-TODO
 
 
 ## Meeting Notes and Action Items
@@ -160,6 +159,6 @@ Proposed items:
 
 - Process HEK293T dataset
 
-
+- Train model on high confidence dataset
 
 To be completed during and after meeting.
