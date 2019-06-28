@@ -54,7 +54,9 @@ track_ss.set_default_value(default_val)
 
 # set of gene symbols passing min TPM
 df_exp = parse_expression_data(dc.Client().get_path(config['cell_line_gene_expression']), 'Hep G2')
-expressed_genes = set(df_exp[df_exp['tpm'] > config['min_tpm']]['gene_name'].tolist())
+expressed_genes = set(df_exp[df_exp['tpm'] >= config['min_tpm']]['gene_name'].tolist())
+print("Using {} (out of {}, TPM >= {}) highly expressed genes in HepG2".format(len(expressed_genes), len(df_exp),
+                                                                               config['min_tpm']))
 
 skipped_transcripts = set()
 
@@ -81,6 +83,7 @@ for row in reader:
         # check whether this gene is expressed in the cell line
         if transcript.gene.name not in expressed_genes:
             print("{} {} not well expressed in HepG2, skipping".format(transcript.gene.name, transcript.id))
+            continue
 
         diseqs[tx_id] = DisjointIntervalsSequence(map(lambda x: x.interval, transcript.exons), genome)
 
