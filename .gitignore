@@ -107,3 +107,9 @@ ENV/
 
 
 .pytest_cache*
+
+*.tab.gz
+*.csv
+*.tsv
+*.bam
+*.bam.bai
