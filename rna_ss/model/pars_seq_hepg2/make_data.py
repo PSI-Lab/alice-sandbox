@@ -82,7 +82,9 @@ for row in reader:
 
         # check whether this gene is expressed in the cell line
         if transcript.gene.name not in expressed_genes:
-            print("{} {} not well expressed in HepG2, skipping".format(transcript.gene.name, transcript.id))
+            if tx_id not in skipped_transcripts:
+                print("{} {} not well expressed in HepG2, skipping".format(transcript.gene.name, transcript.id))
+                skipped_transcripts.add(tx_id)
             continue
 
         diseqs[tx_id] = DisjointIntervalsSequence(map(lambda x: x.interval, transcript.exons), genome)
