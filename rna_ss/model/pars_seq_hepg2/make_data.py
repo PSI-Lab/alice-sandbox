@@ -124,7 +124,12 @@ for row in reader:
 
     # set gtrack value, make sure use default_val for missing value
     if row['reactivity'] != 'NA':
+        # TODO clip and normalize reactivity value, make this more flexible?
         val = float(row['reactivity'])
+        if val >= 2:
+            val = 1.0
+        else:
+            val = val/2.0
     else:
         val = default_val
 
