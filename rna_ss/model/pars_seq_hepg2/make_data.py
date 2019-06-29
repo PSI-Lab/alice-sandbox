@@ -130,6 +130,7 @@ for row in reader:
             val = 1.0
         else:
             val = val/2.0
+        assert 0 <= val <= 1
     else:
         val = default_val
 
