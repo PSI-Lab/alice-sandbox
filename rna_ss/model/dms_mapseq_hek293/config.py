@@ -3,21 +3,20 @@ config = {
     'genome_annotation': 'ucsc_refseq.2017-06-25',
 
     # this is one of the reactivity data processed by Omar
-    # # /dg-shared/for_omar/data/SS_RNA_mapping/studies/solomon2017/out/rf_clean_1/HepG2_rep1.tab.gz
-    # 'raw_data_rep1': 'DzVcFc',
-    # # /dg-shared/for_omar/data/SS_RNA_mapping/studies/solomon2017/out/rf_clean_1/HepG2_rep2.tab.gz
-    # 'raw_data_rep2': 'lCBODf',
-    # FIXME for now use one rep
-    'raw_data': 'DzVcFc',
+    # /home/alice/work/psi-lab-sandbox/rna_ss/data_processing/zubradt2016/out/rf_clean_1/hek293_2.tab.gz
+    'raw_data': 'tbgXWx',
 
     # cell line gene expression
     # can be used to subset to highly expressed genes
     'cell_line_gene_expression': 'Pnb4DN',
+    'cell_line': 'HEK 293',
     'min_tpm': 20,
 
+    'reactivity_min': 0.0,
+    'reactivity_max': 1.0,
+    'reactivity_clip': False,
+
     # dataset
-    # 'gtrack_rep1': 'data/data_rep1.gtrack',
-    # 'gtrack_rep2': 'data/data_rep2.gtrack',
     'gtrack': 'data/data.gtrack',
 
     # all chromosomes used for training and validation
@@ -62,10 +61,10 @@ config = {
         {'num_filter': 32, 'filter_width': 11, 'dilation': 1},
         {'num_filter': 32, 'filter_width': 11, 'dilation': 1},
         {'num_filter': 32, 'filter_width': 11, 'dilation': 1},
-        #{'num_filter': 32, 'filter_width': 11, 'dilation': 4},
-        #{'num_filter': 32, 'filter_width': 11, 'dilation': 4},
-        #{'num_filter': 32, 'filter_width': 11, 'dilation': 4},
-        #{'num_filter': 32, 'filter_width': 11, 'dilation': 4},
+        {'num_filter': 32, 'filter_width': 11, 'dilation': 4},
+        {'num_filter': 32, 'filter_width': 11, 'dilation': 4},
+        {'num_filter': 32, 'filter_width': 11, 'dilation': 4},
+        {'num_filter': 32, 'filter_width': 11, 'dilation': 4},
         # {'num_filter': 32, 'filter_width': 21, 'dilation': 10},
         # {'num_filter': 32, 'filter_width': 21, 'dilation': 10},
         # {'num_filter': 32, 'filter_width': 21, 'dilation': 10},
@@ -84,7 +83,7 @@ config = {
     'batch_size': 10,
     'learning_rate': 0.00001,
     'residual': True,
-    'skipconn': False,
+    'skipconn': True,
     'gated': False,
 
     'num_epoch': 200,

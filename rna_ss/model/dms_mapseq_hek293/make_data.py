@@ -53,7 +53,7 @@ track_ss = GenomeTrackBuilder(config['gtrack'], 'f16')  # single value
 track_ss.set_default_value(default_val)
 
 # set of gene symbols passing min TPM
-df_exp = parse_expression_data(dc.Client().get_path(config['cell_line_gene_expression']), 'Hep G2')
+df_exp = parse_expression_data(dc.Client().get_path(config['cell_line_gene_expression']), config['cell_line'])
 expressed_genes = set(df_exp[df_exp['tpm'] >= config['min_tpm']]['gene_name'].tolist())
 print("Using {} (out of {}, TPM >= {}) highly expressed genes in HepG2".format(len(expressed_genes), len(df_exp),
                                                                                config['min_tpm']))
@@ -124,12 +124,15 @@ for row in reader:
 
     # set gtrack value, make sure use default_val for missing value
     if row['reactivity'] != 'NA':
-        # TODO clip and normalize reactivity value, make this more flexible?
+        # clip and normalize reactivity value
         val = float(row['reactivity'])
-        if val >= 2:
-            val = 1.0
-        else:
-            val = val/2.0
+        if config['reactivity_clip']:
+            if val <= config['reactivity_min']:
+                val = 0
+            elif val >= config['reactivity_max']:
+                val = 1.0
+            else:
+                val = (val - config['reactivity_min'])/float(config['reactivity_max'] - config['reactivity_min'])
         assert 0 <= val <= 1
     else:
         val = default_val
