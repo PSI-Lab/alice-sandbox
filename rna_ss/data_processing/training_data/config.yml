@@ -1,0 +1,34 @@
+# SRA download
+ascp_script: 'ascp'
+ascp_key: '/home/alice/.aspera/cli/etc/asperaweb_id_dsa.openssh'
+
+# SRA data source
+studies:
+  wan_2014:
+    sra_run_table: 'raw_data/sra_run_table_wan_2014.txt'
+    runs:  # TODO not complete, for debug
+      - 'SRR972706'
+      - 'SRR972707'
+    # TODO rf parameters
+
+  solomon_2017:
+    sra_run_table: 'raw_data/sra_run_table_solomon_2017.txt'
+    runs:  # TODO not complete, for debug
+      - 'SRR5719996'
+      - 'SRR5719997'
+
+  zubradt_2016:
+    sra_run_table: 'raw_data/sra_run_table_zubradt_2016.txt'
+    runs:  # TODO not complete, for debug
+      - 'SRR3929619'
+      - 'SRR3929620'
+
+  rouskin_2014:
+    sra_run_table: 'raw_data/sra_run_table_rouskin_2014.txt'
+    runs:  # TODO not complete, for debug
+      - 'SRR1057939'
+      - 'SRR1057940'
+
+# download command, to be constructed from above data
+download_cmd: 'data/download_cmd.sh'
+
