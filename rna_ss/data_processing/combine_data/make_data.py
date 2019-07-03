@@ -151,7 +151,7 @@ def main(input_data, output_data_reactivity, output_data_coverage, output_interv
         else:
             raise ValueError
         try:
-            track_coverage.set_data(genom_itv, np.asarray([val], dtype=np.float))
+            track_coverage.set_data(genom_itv, np.asarray([val], dtype=np.float16))
         except ValueError as e:
             print(str(e))
             continue
