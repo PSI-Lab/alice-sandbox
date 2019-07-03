@@ -160,7 +160,7 @@ def main(input_data, output_data_reactivity, output_data_coverage, output_interv
     track_coverage.finalize()
 
     with open(output_intervals, 'w') as f:
-        for d in diseqs:
+        for d in diseqs.values():
             f.write(str(d.intervals) + '\n')
 
     # # output disjoint intervals for each of the K folds
