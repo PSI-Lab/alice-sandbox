@@ -1,0 +1,15 @@
+genome_annotation: 'ucsc_refseq.2017-06-25'
+
+#cell_line_gene_expression: 'Pnb4DN'
+
+gtrack_encoding_reactivity: 'f16'
+
+gtrack_encoding_coverage: 'f2'
+
+default_val_reactivity: -1.0
+
+missing_val_reactivity: -1.0
+
+default_val_coverage: 0.0
+
+missing_val_coverage: 0.0
