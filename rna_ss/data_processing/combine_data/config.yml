@@ -4,7 +4,7 @@ genome_annotation: 'ucsc_refseq.2017-06-25'
 
 gtrack_encoding_reactivity: 'f16'
 
-gtrack_encoding_coverage: 'f2'
+gtrack_encoding_coverage: 'f16'
 
 default_val_reactivity: -1.0
 
