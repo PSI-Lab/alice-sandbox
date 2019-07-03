@@ -15,9 +15,9 @@ python make_data.py --input_data raw_data/solomon2017/HepG2_rep1.tab.gz --output
 python make_data.py --input_data raw_data/solomon2017/HepG2_rep2.tab.gz --output_data_reactivity data/reactivity_hepg2_rep2.gtrack --output_data_coverage data/coverage_hepg2_rep2.gtrack --output_intervals data/intervals_hepg2_rep2.txt --data_type pars --config config.yml
 
 
-## zubradt 2016 # TODO
-#
-#python make_data.py --input_data raw_data/zubradt2016/
+# zubradt 2016 # TODO
+
+python make_data.py --input_data raw_data/zubradt2016/hek293_2.tab.gz --output_data_reactivity data/reactivity_hek293.gtrack --output_data_coverage data/coverage_hek293.gtrack --output_intervals data/intervals_hek293.txt --data_type dms --config config.yml
 
 
 # rouskin 2014
