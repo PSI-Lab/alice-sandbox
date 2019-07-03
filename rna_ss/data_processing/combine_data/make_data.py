@@ -47,7 +47,7 @@ def main(input_data, output_data_reactivity, output_data_coverage, output_interv
     genome = Genome(config['genome_annotation'])
 
     # reader = csv.DictReader(gzip.open(dc.Client().get_path(input_data)), delimiter='\t')
-    reader = csv.DictReader(input_data, delimiter='\t')
+    reader = csv.DictReader(gzip.open(input_data), delimiter='\t')
     diseqs = dict()
 
     track_reactivity = GenomeTrackBuilder(output_data_reactivity, config['gtrack_encoding_reactivity'])
