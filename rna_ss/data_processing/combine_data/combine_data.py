@@ -98,3 +98,6 @@ for diseq in diseqs:
 track_reactivity.finalize()
 track_coverage.finalize()
 df_data_info.to_csv('data/data_info.csv', index=False)
+with open('data/intervals_combined.txt', 'w') as f:
+    for d in diseqs:
+        f.write(str(list(d)) + '\n')
