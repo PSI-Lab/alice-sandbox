@@ -66,7 +66,7 @@ track_coverage = GenomeTrackBuilder('data/coverage_combined.gtrack', dim=len(df_
 track_coverage.set_default_value(config['default_val_coverage'])
 
 for diseq in diseqs:
-    print(diseq)
+    # print(diseq)
     for itv in diseq:
         # reactivity
         combine_array = []
@@ -75,7 +75,11 @@ for diseq in diseqs:
             assert _d.shape[1] == 1  # make sure it's 1D
             combine_array.append(_d)
         combine_array = np.concatenate(combine_array, axis=1)
-        track_reactivity.set_data(itv, combine_array)
+        try:
+            track_reactivity.set_data(itv, combine_array)
+        except ValueError as e:
+            print(str(e))
+            continue
 
         # coverage
         combine_array = []
@@ -84,7 +88,11 @@ for diseq in diseqs:
             assert _d.shape[1] == 1  # make sure it's 1D
             combine_array.append(_d)
         combine_array = np.concatenate(combine_array, axis=1)
-        track_coverage.set_data(itv, combine_array)
+        try:
+            track_coverage.set_data(itv, combine_array)
+        except ValueError as e:
+            print(str(e))
+            continue
 
 # output
 track_reactivity.finalize()
