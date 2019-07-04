@@ -2,11 +2,11 @@
 
 # wan 2014
 
-python make_data.py --input_data raw_data/wan2014/GM12878_renatured.tab.gz --output_data_reactivity data/reactivity_human_﻿lymphoblastoid_family_child.gtrack --output_data_coverage data/coverage_human_﻿lymphoblastoid_family_child.gtrack --output_intervals data/intervals_human_﻿lymphoblastoid_family_child.txt --data_type pars --config config.yml
+python make_data.py --input_data raw_data/wan2014/GM12878_renatured.tab.gz --output_data_reactivity data/reactivity_human_lymphoblastoid_family_child.gtrack --output_data_coverage data/coverage_human_lymphoblastoid_family_child.gtrack --output_intervals data/intervals_human_lymphoblastoid_family_child.txt --data_type pars --config config.yml
 
-python make_data.py --input_data raw_data/wan2014/GM12891_renatured.tab.gz --output_data_reactivity data/reactivity_human_﻿lymphoblastoid_family_father.gtrack --output_data_coverage data/coverage_human_﻿lymphoblastoid_family_father.gtrack --output_intervals data/intervals_human_﻿lymphoblastoid_family_father.txt --data_type pars --config config.yml
+python make_data.py --input_data raw_data/wan2014/GM12891_renatured.tab.gz --output_data_reactivity data/reactivity_human_lymphoblastoid_family_father.gtrack --output_data_coverage data/coverage_human_lymphoblastoid_family_father.gtrack --output_intervals data/intervals_human_lymphoblastoid_family_father.txt --data_type pars --config config.yml
 
-python make_data.py --input_data raw_data/wan2014/GM12892_renatured.tab.gz --output_data_reactivity data/reactivity_human_﻿lymphoblastoid_family_mother.gtrack --output_data_coverage data/coverage_human_﻿lymphoblastoid_family_mother.gtrack --output_intervals data/intervals_human_﻿lymphoblastoid_family_mother.txt --data_type pars --config config.yml
+python make_data.py --input_data raw_data/wan2014/GM12892_renatured.tab.gz --output_data_reactivity data/reactivity_human_lymphoblastoid_family_mother.gtrack --output_data_coverage data/coverage_human_lymphoblastoid_family_mother.gtrack --output_intervals data/intervals_human_lymphoblastoid_family_mother.txt --data_type pars --config config.yml
 
 # solomon 2017
 

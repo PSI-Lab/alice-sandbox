@@ -1,5 +1,11 @@
+import yaml
 import pandas as pd
-from genome_kit import GenomeTrack, Interval
+import numpy as np
+from genome_kit import GenomeTrack, Interval, GenomeTrackBuilder
+
+
+with open('config.yml', 'r') as f:
+    config = yaml.safe_load(f)
 
 
 # list of tuples (data_set_name, type)
@@ -43,4 +49,42 @@ for data_name in df_data_info['data_name']:
     diseqs.append(itvs)
 diseqs = set.union(*diseqs)
 
-print(len(diseqs))
+print('All intervals: {}'.format(len(diseqs)))
+
+# load gtracks
+reactivity_tracks = [GenomeTrack('data/reactivity_{}.gtrack'.format(data_name)) for data_name in
+                     df_data_info['data_name']]
+coverage_tracks = [GenomeTrack('data/coverage_{}.gtrack'.format(data_name)) for data_name in
+                   df_data_info['data_name']]
+
+# output tracks
+track_reactivity = GenomeTrackBuilder('data/reactivity_combined.gtrack', config['gtrack_encoding_reactivity'])
+track_reactivity.set_default_value(config['default_val_reactivity'])
+track_coverage = GenomeTrackBuilder('data/coverage_combined.gtrack', config['gtrack_encoding_coverage'])
+track_coverage.set_default_value(config['default_val_coverage'])
+
+for diseq in diseqs:
+    print(diseq)
+    for itv in diseq:
+        # reactivity
+        combine_array = []
+        for t in reactivity_tracks:
+            _d = t(itv)
+            assert _d.shape[1] == 1  # make sure it's 1D
+            combine_array.append(_d)
+        combine_array = np.concatenate(combine_array, axis=1)
+        track_reactivity.set_data(itv, combine_array)
+
+        # coverage
+        combine_array = []
+        for t in coverage_tracks:
+            _d = t(itv)
+            assert _d.shape[1] == 1  # make sure it's 1D
+            combine_array.append(_d)
+        combine_array = np.concatenate(combine_array, axis=1)
+        track_coverage.set_data(itv, combine_array)
+
+# output
+track_reactivity.finalize()
+track_coverage.finalize()
+df_data_info.to_csv('data/data_info.csv', index=False)
