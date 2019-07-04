@@ -58,9 +58,11 @@ coverage_tracks = [GenomeTrack('data/coverage_{}.gtrack'.format(data_name)) for 
                    df_data_info['data_name']]
 
 # output tracks
-track_reactivity = GenomeTrackBuilder('data/reactivity_combined.gtrack', config['gtrack_encoding_reactivity'])
+track_reactivity = GenomeTrackBuilder('data/reactivity_combined.gtrack', dim=len(df_data_info),
+                                      etype=config['gtrack_encoding_reactivity'])
 track_reactivity.set_default_value(config['default_val_reactivity'])
-track_coverage = GenomeTrackBuilder('data/coverage_combined.gtrack', config['gtrack_encoding_coverage'])
+track_coverage = GenomeTrackBuilder('data/coverage_combined.gtrack', dim=len(df_data_info),
+                                    etype=config['gtrack_encoding_coverage'])
 track_coverage.set_default_value(config['default_val_coverage'])
 
 for diseq in diseqs:
