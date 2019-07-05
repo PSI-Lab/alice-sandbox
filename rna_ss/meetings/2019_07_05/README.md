@@ -17,6 +17,8 @@
 
 * Multi-task with `11` sigmoid output, for different cell line and reps
 
+* Specific cell line seems to be hard to train on
+
 * See [../../model/multi_task/](../../model/multi_task/)
 
 ## Evaluation
@@ -27,7 +29,7 @@
 
 * AUC on solved structure (mostly non-human) lower than rnafold
 
-* See [../../eval/multi_task](../../eval/multi_task)
+* See [../../eval/multi_task/eval.ipynb](../../eval/multi_task/eval.ipynb)
 
 ## TODOs
 
@@ -39,13 +41,19 @@
 
 * Ribosnotch dataset?
 
-* Train cell type specific model (e.g. reps + vivo + vitro)
+* Train cell type specific model (e.g. reps + vivo + vitro), use correlation between rep to weight each transcript
 
 * Re-process HEK293T dataset
 
 * Re-run eval using different transcripts for cell lines
 
+* Some studies also did targeted probing, can be used as validation data?
+
 ## Extra
+
+TODOs:
+
+intervals.txt also save transcript ID
 
 ### Data processing
 
