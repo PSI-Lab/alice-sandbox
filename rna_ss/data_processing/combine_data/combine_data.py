@@ -77,7 +77,7 @@ for diseq in diseqs:
             # normalize value to 0-1 for PARS dataset
             # except for 'missing values' (-1)
             data_type = df_data_info.iloc[i]['data_type']
-            if data_type == 'pars' and not np.all(_d != config['missing_val_reactivity']):
+            if data_type == 'pars' and not np.all(_d == config['missing_val_reactivity']):
                 # clip at 2, then divide by 2
                 assert np.min(_d[_d != config['missing_val_reactivity']]) >= 0
                 _d = np.clip(_d, -1, 2)
