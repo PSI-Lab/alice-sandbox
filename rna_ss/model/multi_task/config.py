@@ -86,7 +86,7 @@ config = {
     'n_repeat_in_residual_unit': 2,
     'skip_conn_every_n': 4,
 
-    'example_length': 500,
+    'example_length': 100,
     'batch_size': 10,
     'learning_rate': 0.000001,
     'residual': True,
