@@ -70,12 +70,25 @@ for diseq in diseqs:
     for itv in diseq:
         # reactivity
         combine_array = []
-        for t in reactivity_tracks:
+        for i, t in enumerate(reactivity_tracks):
             _d = t(itv)
             assert _d.shape[1] == 1  # make sure it's 1D
+
+            # normalize value to 0-1 for PARS dataset
+            # except for 'missing values' (-1)
+            data_type = df_data_info.iloc[i]['data_type']
+            if data_type == 'pars':
+                # clip at 2, then divide by 2
+                assert np.min(_d[_d != config['missing_val_reactivity']]) >= 0
+                _d = np.clip(_d, -1, 2)
+                _d[_d != config['missing_val_reactivity']] = _d[_d != config['missing_val_reactivity']] / 2.0
+            assert np.max(_d) <= 1
+
             combine_array.append(_d)
         combine_array = np.concatenate(combine_array, axis=1)
+
         try:
+            assert np.max(combine_array) <= 1
             track_reactivity.set_data(itv, combine_array)
         except ValueError as e:
             print(str(e))
