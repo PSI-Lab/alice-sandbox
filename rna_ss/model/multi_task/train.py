@@ -142,9 +142,7 @@ def main(validation_fold_idx):
         Histories(),
         ValidationSetMetrics(validation_dataset),
         tensorboard,
-        # FIXME (shreshth)
-        # This should have lower patience than the early stopping monitor right? Otherwise, early-stopping would kick in before LR is reduced. Also makes sense to set a min_lr at 1e-6 or something.
-        ReduceLROnPlateau(patience=10, cooldown=2, verbose=1),
+        ReduceLROnPlateau(patience=5, cooldown=2, verbose=1),
         early_stopping_monitor,
         ModelCheckpoint(os.path.join(run_dir, 'checkpoint.{epoch:03d}.hdf5'),
                         save_best_only=False, period=1),

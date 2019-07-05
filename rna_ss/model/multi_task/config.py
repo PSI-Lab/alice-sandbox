@@ -88,7 +88,7 @@ config = {
 
     'example_length': 500,
     'batch_size': 10,
-    'learning_rate': 0.00001,
+    'learning_rate': 0.000002,
     'residual': True,
     'skipconn': True,
     'gated': False,
