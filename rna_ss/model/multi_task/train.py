@@ -62,7 +62,7 @@ class ValidationSetMetrics(Callback):
             for k in range(_y.shape[0]):
                 _val = []
                 # for each output dimension
-                for j in range(_y.shape[1]):
+                for j in range(_y.shape[2]):
                     y = _y[k, :, j]
                     yp = _yp[k, :, j]
 
