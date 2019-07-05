@@ -53,26 +53,45 @@ class ValidationSetMetrics(Callback):
         # get self.batch_size batch of validation data
         idx_start = np.random.randint(0, len(self.validation_data) - self.batch_size)
 
+        _corr_data = []
         for batch_idx in range(idx_start, idx_start + self.batch_size):
             _x, _y = self.validation_data[batch_idx]
             _yp = self.model.predict(_x)
 
             # compute correlation for each example
             for k in range(_y.shape[0]):
-                y = _y[k, :]
-                yp = _yp[k, :]
-                # remove missing val
-                idx_valid = np.where(y != -1)  # TODO compute for each dataset
-                y = y[idx_valid]
-                yp = yp[idx_valid]
-                # compute correlation
-                c, p = pearsonr(y, yp)
-                corr.append(c)
-        _df = pd.Series(corr)
+                _val = []
+                # for each output dimension
+                for j in range(_y.shape[1]):
+                    y = _y[k, :, j]
+                    yp = _yp[k, :, j]
+
+                    # remove missing val
+                    idx_valid = np.where(y != -1)  # TODO compute for each dataset
+                    y = y[idx_valid]
+                    yp = yp[idx_valid]
+                    # compute correlation
+                    c, p = pearsonr(y, yp)
+                    _val.append(c)
+                _corr_data.append(_val)
+        _corr_data = pd.DataFrame(_corr_data)
         print("Correlation")
-        print(_df.describe())
-        self.corr.append(_df.median())
+        print(_corr_data.describe())
+        self.corr.append(_corr_data.median())
         return
+
+                # # remove missing val
+                # idx_valid = np.where(y != -1)  # TODO compute for each dataset
+                # y = y[idx_valid]
+                # yp = yp[idx_valid]
+                # # compute correlation
+                # c, p = pearsonr(y, yp)
+                # corr.append(c)
+        # _df = pd.Series(corr)
+        # print("Correlation")
+        # print(_df.describe())
+        # self.corr.append(_df.median())
+        # return
 
 
 def main(validation_fold_idx):
@@ -121,7 +140,7 @@ def main(validation_fold_idx):
 
     callbacks = [
         Histories(),
-        # ValidationSetMetrics(validation_dataset),  #  TODO add back
+        ValidationSetMetrics(validation_dataset),
         tensorboard,
         # FIXME (shreshth)
         # This should have lower patience than the early stopping monitor right? Otherwise, early-stopping would kick in before LR is reduced. Also makes sense to set a min_lr at 1e-6 or something.
