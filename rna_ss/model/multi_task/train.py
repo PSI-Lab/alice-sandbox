@@ -75,8 +75,8 @@ class ValidationSetMetrics(Callback):
                     _val.append(c)
                 _corr_data.append(_val)
         _corr_data = pd.DataFrame(_corr_data)
-        print("Correlation")
-        print(_corr_data.describe())
+        # print("Correlation")
+        print(_corr_data.describe(percentiles=[0.75]))
         self.corr.append(_corr_data.median())
         return
 
@@ -140,6 +140,7 @@ def main(validation_fold_idx):
 
     callbacks = [
         Histories(),
+        ValidationSetMetrics(training_dataset),
         ValidationSetMetrics(validation_dataset),
         tensorboard,
         ReduceLROnPlateau(patience=5, cooldown=2, verbose=1),
