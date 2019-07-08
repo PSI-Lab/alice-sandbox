@@ -16,7 +16,7 @@ config = {
 
 
     # model
-    'n_filters': 32,  # n filter in first layer
+    'n_filters': 64,  # n filter in first layer
     'residual_conv': [
         {'num_filter': 64, 'filter_width': 11, 'dilation': 1},
         {'num_filter': 64, 'filter_width': 11, 'dilation': 1},
