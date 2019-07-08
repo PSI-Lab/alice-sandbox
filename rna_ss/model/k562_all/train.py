@@ -79,7 +79,7 @@ class ValidationSetMetrics(Callback):
         print(_corr_data.describe(percentiles=[0.75]))
         self.corr.append(_corr_data.median())
         return
-    
+
 
 def main(validation_fold_idx):
     chrom_folds = config['chrom_folds']
