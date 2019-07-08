@@ -33,7 +33,7 @@ config = {
 
     'example_length': 100,
     'batch_size': 10,
-    'learning_rate': 0.000001,
+    'learning_rate': 0.0001,
     'residual': True,
     'skipconn': True,
     'gated': False,
