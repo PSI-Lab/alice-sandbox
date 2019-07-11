@@ -16,24 +16,16 @@ config = {
 
 
     # model
-    'n_filters': 64,  # n filter in first layer
+    'n_filters': 256,  # n filter in first layer
     'residual_conv': [
-        {'num_filter': 64, 'filter_width': 11, 'dilation': 1},
-        {'num_filter': 64, 'filter_width': 11, 'dilation': 1},
-        {'num_filter': 64, 'filter_width': 11, 'dilation': 1},
-        {'num_filter': 64, 'filter_width': 11, 'dilation': 1},
-        {'num_filter': 64, 'filter_width': 11, 'dilation': 4},
-        {'num_filter': 64, 'filter_width': 11, 'dilation': 4},
-        {'num_filter': 64, 'filter_width': 11, 'dilation': 4},
-        {'num_filter': 64, 'filter_width': 11, 'dilation': 4},
-        {'num_filter': 64, 'filter_width': 21, 'dilation': 10},
-        {'num_filter': 64, 'filter_width': 21, 'dilation': 10},
-        # {'num_filter': 32, 'filter_width': 21, 'dilation': 10},
-        # {'num_filter': 32, 'filter_width': 21, 'dilation': 10},
-        # {'num_filter': 32, 'filter_width': 41, 'dilation': 25},
-        # {'num_filter': 32, 'filter_width': 41, 'dilation': 25},
-        # {'num_filter': 32, 'filter_width': 41, 'dilation': 25},
-        # {'num_filter': 32, 'filter_width': 41, 'dilation': 25},
+        {'num_filter': 256, 'filter_width': 8, 'dilation': 1},
+        {'num_filter': 256, 'filter_width': 8, 'dilation': 2},
+        {'num_filter': 256, 'filter_width': 8, 'dilation': 4},
+        {'num_filter': 256, 'filter_width': 8, 'dilation': 8},
+        {'num_filter': 256, 'filter_width': 8, 'dilation': 16},
+        {'num_filter': 256, 'filter_width': 8, 'dilation': 32},
+        {'num_filter': 256, 'filter_width': 8, 'dilation': 64},
+        {'num_filter': 256, 'filter_width': 8, 'dilation': 128},
     ],
 
 
