@@ -75,6 +75,8 @@ for data_name in df_data_info['data_name']:
 df_all = reduce(lambda x, y: pd.merge(x, y, on=['transcript_id', 'disjoint_intervals'], how='outer'), dfs_diseq)
 
 # transcript_id should be unique
+print(len(df_all))
+print(df_all['transcript_id'].nunique())
 assert len(df_all) == df_all['transcript_id'].nunique()
 
 print('All intervals: {}'.format(len(df_all)))

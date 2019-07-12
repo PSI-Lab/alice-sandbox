@@ -42,6 +42,10 @@ def main(input_data, output_data_reactivity, output_data_coverage, output_interv
 
     for row in reader:
 
+        # FIXME debug
+        if len(diseqs) >= 10:
+            break
+
         tx_id = row['tx_id']
         chrom = row['chr']
         strand = row['strand']
@@ -131,7 +135,8 @@ def main(input_data, output_data_reactivity, output_data_coverage, output_interv
 
     # data info df
     # transcript_id, diseq, gene expression in the cell line
-    df_diseqs = pd.DataFrame(diseqs.items(), columns=['transcript_id', 'disjoint_intervals'])
+    _diseqs = {k: v.intervals for k, v in diseqs.iteritems()}
+    df_diseqs = pd.DataFrame(_diseqs.items(), columns=['transcript_id', 'disjoint_intervals'])
     # # add gene expression
     # df_diseqs = add_column(df_diseqs, 'transcript', ['transcript_id'], lambda x: genome.transcripts[x])
     # df_diseqs = add_column(df_diseqs, 'tpm', ['transcript'],
