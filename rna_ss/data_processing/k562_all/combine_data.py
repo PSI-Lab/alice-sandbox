@@ -28,17 +28,13 @@ def get_diseq_data(diseq, gtrack):
 def compute_transcript_correlation(diseq, gtrack, idx_for_corr):
     assert len(idx_for_corr) == 2
     _y = get_diseq_data(diseq, gtrack)
-    _y1 = _y[: idx_for_corr[0]]
-    _y2 = _y[: idx_for_corr[1]]
+    _y1 = _y[:, idx_for_corr[0]]
+    _y2 = _y[:, idx_for_corr[1]]
     # select positions where both are not -1 (missing val indicator)
     idx = np.where((_y1 != -1) & (_y2 != -1))
     y1 = _y1[idx]
     y2 = _y2[idx]
     corr, pval = pearsonr(y1, y2)
-    print(_y1)
-    print(_y2)
-    print(corr, pval)
-    print('')
     return corr, pval
 
 
