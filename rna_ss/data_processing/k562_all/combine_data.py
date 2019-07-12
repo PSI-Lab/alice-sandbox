@@ -149,8 +149,9 @@ track_coverage.finalize()
 genome = Genome(config['genome_annotation'])
 
 # transcript level correlation
+loaded_track = GenomeTrack('data/reactivity_combined.gtrack')
 df_all = add_columns(df_all, ['pearson_corr', 'pearson_pval'], ['disjoint_intervals'],
-                     lambda x: compute_transcript_correlation(x, track_reactivity, idx_for_corr))
+                     lambda x: compute_transcript_correlation(x, loaded_track, idx_for_corr))
 
 # add gene expression
 df_all = add_column(df_all, 'transcript', ['transcript_id'], lambda x: genome.transcripts[x])
