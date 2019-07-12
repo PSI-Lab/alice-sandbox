@@ -16,16 +16,14 @@ config = {
 
 
     # model
-    'n_filters': 256,  # n filter in first layer
+    'n_filters': 512,  # n filter in first layer
     'residual_conv': [
-        {'num_filter': 256, 'filter_width': 8, 'dilation': 1},
-        {'num_filter': 256, 'filter_width': 8, 'dilation': 2},
-        {'num_filter': 256, 'filter_width': 8, 'dilation': 4},
-        {'num_filter': 256, 'filter_width': 8, 'dilation': 8},
-        {'num_filter': 256, 'filter_width': 8, 'dilation': 16},
-        {'num_filter': 256, 'filter_width': 8, 'dilation': 32},
-        {'num_filter': 256, 'filter_width': 8, 'dilation': 64},
-        {'num_filter': 256, 'filter_width': 8, 'dilation': 128},
+        {'num_filter': 512, 'filter_width': 8, 'dilation': 1},
+        {'num_filter': 512, 'filter_width': 8, 'dilation': 2},
+        {'num_filter': 512, 'filter_width': 8, 'dilation': 4},
+        {'num_filter': 512, 'filter_width': 8, 'dilation': 8},
+        {'num_filter': 512, 'filter_width': 8, 'dilation': 16},
+        {'num_filter': 512, 'filter_width': 8, 'dilation': 32},
     ],
 
 
@@ -34,7 +32,7 @@ config = {
 
     'example_length': 100,
     'batch_size': 10,
-    'learning_rate': 0.000001,
+    'learning_rate': 0.0001,
     'residual': True,
     'skipconn': True,
     'gated': False,
