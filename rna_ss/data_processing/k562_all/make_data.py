@@ -143,13 +143,11 @@ def main(input_data, output_data_reactivity, output_data_coverage, output_interv
     #                        lambda x: gene2tpm.get(x.gene.name, None))
 
     # output
-    # metadata = dataframe.Metadata(
-    #     version="1",
-    #     encoding={
-    #         "disjoint_intervals": dataframe.Metadata.GENOMEKIT,
-    #     })
     metadata = dataframe.Metadata(
-        version="1")
+        version="1",
+        encoding={
+            "disjoint_intervals": dataframe.Metadata.GENOMEKIT,
+        })
     write_dataframe(metadata, df_diseqs, output_intervals)
 
 
