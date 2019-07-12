@@ -4,24 +4,10 @@ import yaml
 import argparse
 import numpy as np
 import pandas as pd
-# import datacorral as dc
 import deepgenomics.pandas.v1 as dataframe
 from genome_kit import Genome, Interval, GenomeTrackBuilder
 from dgutils.pandas import add_column, add_columns, write_dataframe
 from dgutils.interval import DisjointIntervalsSequence, IntervalData
-
-
-# def parse_expression_data(expression_file, cell_line):
-#     # parse gene expression file downloaded from protein atlas
-#     # rna_celline.tsv
-#     df = pd.read_csv(expression_file, sep='\t')
-#     df = df[['Gene name', 'Sample', 'Value']].rename(columns={'Gene name': 'gene_name',
-#                                                               'Sample': 'cell_line',
-#                                                               'Value': 'tpm'})
-#     assert cell_line in df['cell_line'].unique()
-#     df = df[df['cell_line'] == cell_line].drop(columns=['cell_line'])
-#     # convert the two column df to dict, gene_name -> tpm
-#     return pd.Series(df.tpm.values, index=df.gene_name).to_dict()
 
 
 def main(input_data, output_data_reactivity, output_data_coverage, output_intervals, data_type, config):
@@ -35,17 +21,9 @@ def main(input_data, output_data_reactivity, output_data_coverage, output_interv
     track_coverage = GenomeTrackBuilder(output_data_coverage, config['gtrack_encoding_coverage'])
     track_coverage.set_default_value(config['default_val_coverage'])
 
-    # # set of gene symbols passing min TPM
-    # gene2tpm = parse_expression_data(dc.Client().get_path(config['cell_line_gene_expression']), config['cell_line_name'])
-
     skipped_transcripts = set()
 
     for row in reader:
-
-        # FIXME debug
-        if len(diseqs) >= 10:
-            break
-
         tx_id = row['tx_id']
         chrom = row['chr']
         strand = row['strand']
@@ -68,10 +46,6 @@ def main(input_data, output_data_reactivity, output_data_coverage, output_interv
 
         diseq = diseqs[tx_id]
 
-        # # validate
-        # # skip non training/validation chromosomes
-        # if chrom not in config['chrom_all']:
-        #     continue
 
         assert diseq.intervals[0].chromosome == chrom, (row, chrom)
         assert diseq.intervals[0].strand == strand, (row, diseq.intervals)
@@ -137,10 +111,6 @@ def main(input_data, output_data_reactivity, output_data_coverage, output_interv
     # transcript_id, diseq, gene expression in the cell line
     _diseqs = {k: v.intervals for k, v in diseqs.iteritems()}
     df_diseqs = pd.DataFrame(_diseqs.items(), columns=['transcript_id', 'disjoint_intervals'])
-    # # add gene expression
-    # df_diseqs = add_column(df_diseqs, 'transcript', ['transcript_id'], lambda x: genome.transcripts[x])
-    # df_diseqs = add_column(df_diseqs, 'tpm', ['transcript'],
-    #                        lambda x: gene2tpm.get(x.gene.name, None))
 
     # output
     metadata = dataframe.Metadata(
