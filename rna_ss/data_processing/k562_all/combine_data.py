@@ -74,6 +74,7 @@ for data_name in df_data_info['data_name']:
     dfs_diseq.append(df_diseq)
 # df_all = reduce(lambda x, y: pd.merge(x, y, on=['transcript_id', 'disjoint_intervals'], how='outer'), dfs_diseq)
 df_all = pd.concat(dfs_diseq).drop_duplicates(subset=['transcript_id'])
+df_all = df_all.fillna(value={x: False for x in data_name})
 
 
 # transcript_id should be unique

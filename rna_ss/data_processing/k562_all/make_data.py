@@ -43,7 +43,7 @@ def main(input_data, output_data_reactivity, output_data_coverage, output_interv
     for row in reader:
 
         # FIXME debug
-        if len(diseqs) >= 10:
+        if len(diseqs) >= 50:
             break
 
         tx_id = row['tx_id']
