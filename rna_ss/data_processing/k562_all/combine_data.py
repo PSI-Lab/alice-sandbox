@@ -35,6 +35,10 @@ def compute_transcript_correlation(diseq, gtrack, idx_for_corr):
     y1 = _y1[idx]
     y2 = _y2[idx]
     corr, pval = pearsonr(y1, y2)
+    print(_y1)
+    print(_y2)
+    print(corr, pval)
+    print('')
     return corr, pval
 
 
