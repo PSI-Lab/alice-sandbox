@@ -25,6 +25,7 @@ config = {
         {'num_filter': 512, 'filter_width': 8, 'dilation': 16},
         {'num_filter': 512, 'filter_width': 8, 'dilation': 32},
     ],
+    # 'n_hidden_units': [50, 10, 3],  # "fully connected" (exclude temporal dimension) layers, 3 is number of output
 
 
     'n_repeat_in_residual_unit': 2,

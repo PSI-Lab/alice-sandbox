@@ -73,10 +73,15 @@ def build_model(L, residual_conv, n_repeat_in_residual_unit, skip_conn_every_n,
             else:
                 skip = Conv1D(L, 1)(conv)
 
-    skip_cropped = Cropping1D(context / 2)(skip)
+    # skip_cropped = Cropping1D(context / 2)(skip)
+    #
+    # # [0, 1]
+    # output0 = Conv1D(3, 1, activation='sigmoid')(skip_cropped)
 
-    # [0, 1]
-    output0 = Conv1D(3, 1, activation='sigmoid')(skip_cropped)
+    hid = Cropping1D(context / 2)(skip)
+    for n_units in [50, 10]:
+        hid = Conv1D(n_units, 1, activation='relu')(hid)
+    output0 = Conv1D(3, 1, activation='sigmoid')(hid)
 
     # # remove single dimension
     # output0 = Lambda(lambda x: kb.squeeze(x, axis=2), name='output0')(output0)
