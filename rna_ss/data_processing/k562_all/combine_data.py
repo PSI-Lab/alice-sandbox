@@ -73,9 +73,12 @@ for data_name in df_data_info['data_name']:
     print("{}: {} diseqs".format(data_name, len(df_diseq)))
     dfs_diseq.append(df_diseq)
 # df_all = reduce(lambda x, y: pd.merge(x, y, on=['transcript_id', 'disjoint_intervals'], how='outer'), dfs_diseq)
-df_all = pd.concat(dfs_diseq).drop_duplicates(subset=['transcript_id'])
-df_all = df_all.fillna(value={x: False for x in data_name})
-
+_df_diseq = pd.concat(dfs_diseq).drop_duplicates(subset=['transcript_id'])
+_dfs_id = [y[['transcript_id', x]] for x, y in zip(df_data_info['data_name'], dfs_diseq)]
+df_all = reduce(lambda x, y: pd.merge(x, y, on='transcript_id', how='outer'), _dfs_id)
+df_all = df_all.fillna(value={x: False for x in df_data_info['data_name']})
+assert len(df_all) == len(_df_diseq)
+df_all = pd.merge(df_all, _df_diseq[['transcript_id', 'disjoint_intervals']], on='transcript_id')
 
 # transcript_id should be unique
 print(len(df_all))
