@@ -5,7 +5,7 @@ from scipy.stats import pearsonr
 import datacorral as dc
 import deepgenomics.pandas.v1 as dataframe
 from genome_kit import Genome, GenomeTrack, Interval, GenomeTrackBuilder
-from dgtuls.pandas import read_dataframe, write_dataframe, add_column, add_columns
+from dgutils.pandas import read_dataframe, write_dataframe, add_column, add_columns
 
 
 def parse_expression_data(expression_file, cell_line):
