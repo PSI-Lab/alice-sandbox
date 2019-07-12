@@ -7,7 +7,7 @@ import pandas as pd
 # import datacorral as dc
 import deepgenomics.pandas.v1 as dataframe
 from genome_kit import Genome, Interval, GenomeTrackBuilder
-from dgtuls.pandas import add_column, add_columns, write_dataframe
+from dgutils.pandas import add_column, add_columns, write_dataframe
 from dgutils.interval import DisjointIntervalsSequence, IntervalData
 
 
