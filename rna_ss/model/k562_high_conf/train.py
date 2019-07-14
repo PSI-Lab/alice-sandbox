@@ -57,6 +57,10 @@ class ValidationSetMetrics(Callback):
         _corr_data = []
         for batch_idx in range(idx_start, idx_start + self.batch_size):
             _x, _y, _w = self.validation_data[batch_idx]
+            # focus on high conf examples
+            if _w <= 0.25:
+                continue
+
             _yp = self.model.predict(_x)
 
             # compute correlation for each example

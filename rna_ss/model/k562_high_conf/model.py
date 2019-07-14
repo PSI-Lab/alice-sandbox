@@ -4,6 +4,7 @@ from keras.layers.core import Activation, Dense, Lambda
 from keras.layers.convolutional import Conv1D, Cropping1D, ZeroPadding1D
 from keras.layers.normalization import BatchNormalization
 from keras.layers.merge import add, concatenate, multiply
+from keras import regularizers
 import keras.backend as kb
 from keras.losses import binary_crossentropy, mean_squared_error, categorical_crossentropy
 import tensorflow as tf
@@ -30,7 +31,8 @@ def residual_unit(l, w, ar, n_repeat_in_residual_unit, residual=True, gated=True
             bn = BatchNormalization()(conv)
             if not gated:
                 act = Activation('relu')(bn)
-                conv = Conv1D(l, w, dilation_rate=ar, padding='same')(act)
+                conv = Conv1D(l, w, dilation_rate=ar, padding='same',
+                              kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01))(act)
             else:
                 # act_tanh = Activation('tanh')(bn)
                 # act_sigmoid = Activation('sigmoid')(bn)
@@ -39,8 +41,10 @@ def residual_unit(l, w, ar, n_repeat_in_residual_unit, residual=True, gated=True
                 
                 # TODO (shreshth)
                 # Some people have reported gated linear units working better than gated tanh units on some tasks. I don't have any intuition or preference, but may be worth trying. Ref. https://arxiv.org/abs/1612.08083
-                act_tanh = Conv1D(l, w, dilation_rate=ar, padding='same', activation='tanh')(bn)
-                act_sigmoid = Conv1D(l, w, dilation_rate=ar, padding='same', activation='sigmoid')(bn)
+                act_tanh = Conv1D(l, w, dilation_rate=ar, padding='same', activation='tanh',
+                                  kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01))(bn)
+                act_sigmoid = Conv1D(l, w, dilation_rate=ar, padding='same', activation='sigmoid',
+                                     kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01))(bn)
                 conv = multiply([act_tanh, act_sigmoid])
 
         if residual:
@@ -59,7 +63,7 @@ def build_model(L, residual_conv, n_repeat_in_residual_unit, skip_conn_every_n,
 
     input0 = Input(shape=(None, 4), name='input0')
     conv = Conv1D(L, 1)(input0)
-    skip = Conv1D(L, 1)(conv)
+    skip = Conv1D(L, 1)(conv)  # TODO ?
 
     for i, layer_config in enumerate(residual_conv):
         conv = residual_unit(layer_config['num_filter'], layer_config['filter_width'], layer_config['dilation'],
@@ -68,7 +72,7 @@ def build_model(L, residual_conv, n_repeat_in_residual_unit, skip_conn_every_n,
         if (i + 1) % skip_conn_every_n == 0 or (i + 1) == len(residual_conv):
             if skipconn:
                 # Skip connections to the output after every 4 residual units
-                dense = Conv1D(L, 1)(conv)
+                dense = Conv1D(L, 1)(conv)  # TODO ?
                 skip = add([skip, dense])
             else:
                 skip = Conv1D(L, 1)(conv)
@@ -80,7 +84,8 @@ def build_model(L, residual_conv, n_repeat_in_residual_unit, skip_conn_every_n,
 
     hid = Cropping1D(context / 2)(skip)
     for n_units in [50, 10]:
-        hid = Conv1D(n_units, 1, activation='relu')(hid)
+        hid = Conv1D(n_units, 1, activation='relu',
+                     kernel_regularizer=regularizers.l1_l2(l1=0.01, l2=0.01))(hid)
     output0 = Conv1D(3, 1, activation='sigmoid')(hid)
 
     # # remove single dimension
