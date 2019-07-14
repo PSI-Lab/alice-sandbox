@@ -84,7 +84,7 @@ class ValidationSetMetrics(Callback):
 
 def main(validation_fold_idx):
     chrom_folds = config['chrom_folds']
-    df_intervals = read_dataframe(config['all_inervals'])
+    _, df_intervals = read_dataframe(config['all_inervals'])
     df_intervals = add_column(df_intervals, 'chromosome', ['transcript'], lambda x: x.chromosome)
 
     # interval_folds = [[] for _ in range(len(chrom_folds))]
