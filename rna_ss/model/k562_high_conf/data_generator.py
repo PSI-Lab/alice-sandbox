@@ -18,7 +18,7 @@ class DataGenerator(keras.utils.Sequence):
 
     def __init__(self, df_intervals, gtrack=config['gtrack'],
                  train_length=config['example_length'],
-                 context=resolve_contex(config['residual_conv'], config['n_repeat_in_residual_unit']),
+                 context=resolve_contex(config['dense_conv']),
                  batch_size=config['batch_size'], genome=config['genome_annotation'],
                  min_log_tpm=config['min_log_tpm'], min_rep_corr=config['min_rep_corr'],
                  example_reweighting=config['example_reweighting']):
