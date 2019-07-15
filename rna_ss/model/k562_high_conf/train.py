@@ -172,8 +172,10 @@ def main(validation_fold_idx):
 
     callbacks = [
         Histories(),
-        ValidationSetMetrics(training_dataset, os.path.join(run_dir, 'metric_training.csv')),
-        ValidationSetMetrics(validation_dataset, os.path.join(run_dir, 'metric_validation.csv')),
+        ValidationSetMetrics(training_dataset, os.path.join(run_dir, 'metric_training.csv'),
+                             batch_size=config['num_batch_for_validation']),
+        ValidationSetMetrics(validation_dataset, os.path.join(run_dir, 'metric_validation.csv'),
+                             batch_size=config['num_batch_for_validation']),
         tensorboard,
         ReduceLROnPlateau(patience=5, cooldown=2, verbose=1),
         early_stopping_monitor,
