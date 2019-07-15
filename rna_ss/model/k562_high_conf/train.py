@@ -8,7 +8,7 @@ import tensorflow as tf
 import keras
 import datacorral as dc
 import pandas as pd
-from scipy.stats import pearsonr
+from scipy.stats import pearsonr, spearmanr
 from keras import objectives
 import keras.backend as kb
 from keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, CSVLogger, Callback
@@ -77,7 +77,7 @@ class ValidationSetMetrics(Callback):
                     y = y[idx_valid]
                     yp = yp[idx_valid]
                     # compute correlation
-                    c, p = pearsonr(y, yp)
+                    c, p = spearmanr(y, yp)
                     _val.append(c)
                 _corr_data.append(_val)
         _corr_data = pd.DataFrame(_corr_data)
@@ -87,9 +87,9 @@ class ValidationSetMetrics(Callback):
 
         row = {'epoch': epoch,
                'num_example': len(_corr_data),
-               'pearson_median': _corr_data.median().values[0],
-               'pearson_25': _corr_data.quantile(0.25).values[0],
-               'pearson_75': _corr_data.quantile(0.75).values[0]}
+               'spearmanr_median': _corr_data.median().values[0],
+               'spearmanr_25': _corr_data.quantile(0.25).values[0],
+               'spearmanr_75': _corr_data.quantile(0.75).values[0]}
         return row
 
     def on_train_begin(self, logs={}):
