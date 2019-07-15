@@ -46,13 +46,13 @@ config = {
 
     'example_length': 500,
     'batch_size': 10,
-    'learning_rate': 0.0004,
+    'learning_rate': 0.0001,
     'residual': True,
     'skipconn': True,
     'gated': False,
 
     'num_epoch': 200,
-    'num_batch_for_validation': 10,
+    'num_batch_for_validation': 50,
     'es_patience': 10,
 
     # final models
