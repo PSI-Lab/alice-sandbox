@@ -80,7 +80,7 @@ def build_model(dense_conv):
         act = Activation('relu')(bn)
         _conv = Conv1D(layer_config['num_filter'], layer_config['filter_width'],
                        dilation_rate=layer_config['dilation'], padding='same')(act)  # TODO L1? L2?
-        conv = Concatenate(axis=1)([conv, _conv])
+        conv = Concatenate(axis=-1)([conv, _conv])
 
     hid = Cropping1D(context / 2)(conv)
     for n_units in [50, 10]:
