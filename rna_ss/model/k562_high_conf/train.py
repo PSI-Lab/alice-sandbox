@@ -1,5 +1,6 @@
 import os
 import sys
+import csv
 import shutil
 import numpy as np
 from time import gmtime, strftime
@@ -41,16 +42,15 @@ class Histories(Callback):
 
 class ValidationSetMetrics(Callback):
 
-    def __init__(self, val_data, batch_size=20):
+    def __init__(self, val_data, output_file, batch_size=20):
         super(ValidationSetMetrics, self).__init__()
         self.validation_data = val_data
         self.batch_size = batch_size
+        self.csv_file = open(output_file, 'w')
+        self.writer = None
 
-    def on_train_begin(self, logs={}):
-        self.corr = []
-
-    def on_epoch_end(self, epoch, logs=None):
-        corr = []
+    def _compute_corr(self, epoch):
+        # corr = []
         # get self.batch_size batch of validation data
         idx_start = np.random.randint(0, len(self.validation_data) - self.batch_size)
 
@@ -84,7 +84,34 @@ class ValidationSetMetrics(Callback):
         # print("Correlation")
         print(_corr_data.describe(percentiles=[0.75]))
         self.corr.append(_corr_data.median())
+
+        row = {'epoch': epoch,
+               'num_example': len(_corr_data),
+               'pearson_median': _corr_data.median(),
+               'pearson_25': _corr_data.quantile(0.25),
+               'pearson_75': _corr_data.quantile(0.75)}
+        return row
+
+    def on_train_begin(self, logs={}):
+        self.corr = []
+        row = self._compute_corr(-1)  # use epoch -1 to represent before training start
+        if not self.writer:
+            self.writer = csv.DictWriter(self.csv_file, fieldnames=row.keys())
+            self.writer.writeheader()
+        self.writer.writerow(row)
+
+    def on_epoch_end(self, epoch, logs=None):
+        row = self._compute_corr(epoch)
+        if not self.writer:
+            self.writer = csv.DictWriter(self.csv_file, fieldnames=row.keys())
+            self.writer.writeheader()
+        self.writer.writerow(row)
+
         return
+
+    def on_train_end(self, logs=None):
+        self.csv_file.close()
+        self.writer = None
 
 
 def main(validation_fold_idx):
@@ -145,8 +172,8 @@ def main(validation_fold_idx):
 
     callbacks = [
         Histories(),
-        ValidationSetMetrics(training_dataset),
-        ValidationSetMetrics(validation_dataset),
+        ValidationSetMetrics(training_dataset, os.path.join(run_dir, 'metric_training.csv')),
+        ValidationSetMetrics(validation_dataset, os.path.join(run_dir, 'metric_validation.csv')),
         tensorboard,
         ReduceLROnPlateau(patience=5, cooldown=2, verbose=1),
         early_stopping_monitor,

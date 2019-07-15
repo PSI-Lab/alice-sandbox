@@ -38,10 +38,10 @@ config = {
     'dense_conv': [
         {'num_filter': 32, 'filter_width': 8, 'dilation': 1},
         {'num_filter': 32, 'filter_width': 8, 'dilation': 2},
-        {'num_filter': 64, 'filter_width': 8, 'dilation': 4},
+        {'num_filter': 32, 'filter_width': 8, 'dilation': 4},
         {'num_filter': 64, 'filter_width': 8, 'dilation': 8},
-        {'num_filter': 128, 'filter_width': 8, 'dilation': 16},
-        {'num_filter': 128, 'filter_width': 8, 'dilation': 32},
+        {'num_filter': 64, 'filter_width': 8, 'dilation': 16},
+        {'num_filter': 64, 'filter_width': 8, 'dilation': 32},
     ],
 
     'example_length': 500,
