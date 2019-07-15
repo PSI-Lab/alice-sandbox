@@ -87,9 +87,9 @@ class ValidationSetMetrics(Callback):
 
         row = {'epoch': epoch,
                'num_example': len(_corr_data),
-               'pearson_median': _corr_data.median(),
-               'pearson_25': _corr_data.quantile(0.25),
-               'pearson_75': _corr_data.quantile(0.75)}
+               'pearson_median': _corr_data.median().values[0],
+               'pearson_25': _corr_data.quantile(0.25).values[0],
+               'pearson_75': _corr_data.quantile(0.75).values[0]}
         return row
 
     def on_train_begin(self, logs={}):
