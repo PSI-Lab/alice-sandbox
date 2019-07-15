@@ -1,7 +1,10 @@
 import os
 import sys
+import imp
 import csv
+import yaml
 import shutil
+import argparse
 import numpy as np
 from time import gmtime, strftime
 import tensorflow as tf
@@ -16,7 +19,7 @@ from genome_kit import Interval
 from data_generator import DataGenerator
 from dgutils.pandas import read_dataframe, add_column
 from model import build_model, resolve_contex, custom_loss
-from config import config
+# from config import config
 
 
 # def _load_interval(file):
@@ -185,6 +188,10 @@ def main(validation_fold_idx):
         Histories(),
     ]
 
+    # dump config
+    with open(os.path.join(run_dir, 'config.yml'), 'w') as outfile:
+        yaml.dump(config, outfile, default_flow_style=True)
+
     model.fit_generator(generator=training_dataset,
                         validation_data=validation_dataset,
                         validation_steps=config['num_batch_for_validation'],
@@ -204,6 +211,13 @@ def main(validation_fold_idx):
 
 
 if __name__ == "__main__":
-    fold_idx = int(sys.argv[1])
-    assert 0 <= fold_idx < len(config['chrom_folds'])
-    main(fold_idx)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', type=str, help='path to config file')
+    parser.add_argument('--fold', type=int, help='validation fold ID')
+    args = parser.parse_args()
+    config_module = imp.load_source('config', args.config)  # TODO update to use yaml file
+    config = config_module.config
+
+    # fold_idx = int(sys.argv[1])
+    assert 0 <= args.fold < len(config['chrom_folds'])
+    main(args.fold)
