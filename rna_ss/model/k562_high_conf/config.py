@@ -19,21 +19,30 @@ config = {
     'min_rep_corr':  0.2,   # set to -inf to turn this off
     'example_reweighting': True,   # see code for details on method
 
-    # model
-    'n_filters': 128,  # n filter in first layer
-    'residual_conv': [
-        {'num_filter': 128, 'filter_width': 8, 'dilation': 1},
-        {'num_filter': 128, 'filter_width': 8, 'dilation': 2},
-        {'num_filter': 128, 'filter_width': 8, 'dilation': 4},
-        {'num_filter': 128, 'filter_width': 8, 'dilation': 8},
-        {'num_filter': 128, 'filter_width': 8, 'dilation': 16},
-        {'num_filter': 128, 'filter_width': 8, 'dilation': 32},
+    # # model
+    # 'n_filters': 128,  # n filter in first layer
+    # 'residual_conv': [
+    #     {'num_filter': 128, 'filter_width': 8, 'dilation': 1},
+    #     {'num_filter': 128, 'filter_width': 8, 'dilation': 2},
+    #     {'num_filter': 128, 'filter_width': 8, 'dilation': 4},
+    #     {'num_filter': 128, 'filter_width': 8, 'dilation': 8},
+    #     {'num_filter': 128, 'filter_width': 8, 'dilation': 16},
+    #     {'num_filter': 128, 'filter_width': 8, 'dilation': 32},
+    # ],
+    # # 'n_hidden_units': [50, 10, 3],  # "fully connected" (exclude temporal dimension) layers, 3 is number of output
+    #
+    #
+    # 'n_repeat_in_residual_unit': 2,
+    # 'skip_conn_every_n': 4,
+
+    'dense_conv': [
+        {'num_filter': 64, 'filter_width': 8, 'dilation': 1},
+        {'num_filter': 64, 'filter_width': 8, 'dilation': 2},
+        {'num_filter': 64, 'filter_width': 8, 'dilation': 4},
+        {'num_filter': 64, 'filter_width': 8, 'dilation': 8},
+        {'num_filter': 64, 'filter_width': 8, 'dilation': 16},
+        {'num_filter': 64, 'filter_width': 8, 'dilation': 32},
     ],
-    # 'n_hidden_units': [50, 10, 3],  # "fully connected" (exclude temporal dimension) layers, 3 is number of output
-
-
-    'n_repeat_in_residual_unit': 2,
-    'skip_conn_every_n': 4,
 
     'example_length': 100,
     'batch_size': 10,

@@ -1,9 +1,9 @@
 from keras.models import Model
-from keras.layers import Input, Bidirectional
+from keras.layers import Input, Bidirectional, Concatenate
 from keras.layers.core import Activation, Dense, Lambda
 from keras.layers.convolutional import Conv1D, Cropping1D, ZeroPadding1D
 from keras.layers.normalization import BatchNormalization
-from keras.layers.merge import add, concatenate, multiply
+from keras.layers.merge import add, multiply
 from keras import regularizers
 import keras.backend as kb
 from keras.losses import binary_crossentropy, mean_squared_error, categorical_crossentropy
@@ -12,15 +12,22 @@ from sklearn.metrics import roc_auc_score
 import numpy as np
 
 
-# FIXME move to congif
+# FIXME move to config
 L1_L2_PNT = 0.001
 
 
-def resolve_contex(residual_conv, n_repeat_in_residual_unit):
+def resolve_contex_old(residual_conv, n_repeat_in_residual_unit):
     n = 0
     for layer_config in residual_conv:
         n += (layer_config['filter_width'] - 1) * layer_config['dilation']
     return n * n_repeat_in_residual_unit
+
+
+def resolve_contex(dense_conv):
+    n = 0
+    for layer_config in dense_conv:
+        n += (layer_config['filter_width'] - 1) * layer_config['dilation']
+    return n
 
 
 def residual_unit(l, w, ar, n_repeat_in_residual_unit, residual=True, gated=True):
@@ -61,9 +68,33 @@ def residual_unit(l, w, ar, n_repeat_in_residual_unit, residual=True, gated=True
     return f
 
 
-def build_model(L, residual_conv, n_repeat_in_residual_unit, skip_conn_every_n,
+def build_model(dense_conv):
+    context = resolve_contex(dense_conv)
+
+    input0 = Input(shape=(None, 4), name='input0')
+
+    conv = Lambda(lambda x: kb.identity(x))(input0)
+
+    for i, layer_config in enumerate(dense_conv):
+        bn = BatchNormalization()(conv)
+        act = Activation('relu')(bn)
+        _conv = Conv1D(layer_config['num_filter'], layer_config['filter_width'],
+                       dilation_rate=layer_config['dilation'], padding='same')(act)  # TODO L1? L2?
+        conv = Concatenate(axis=1)([conv, _conv])
+
+    hid = Cropping1D(context / 2)(conv)
+    for n_units in [50, 10]:
+        hid = Conv1D(n_units, 1, activation='relu')(hid)
+    output0 = Conv1D(3, 1, activation='sigmoid')(hid)
+
+    model = Model(inputs=input0, outputs=output0)
+
+    return model
+
+
+def build_model_old(L, residual_conv, n_repeat_in_residual_unit, skip_conn_every_n,
                 residual=True, skipconn=True, gated=True):
-    context = resolve_contex(residual_conv, n_repeat_in_residual_unit)
+    context = resolve_contex_old(residual_conv, n_repeat_in_residual_unit)
 
     input0 = Input(shape=(None, 4), name='input0')
     conv = Conv1D(L, 1)(input0)

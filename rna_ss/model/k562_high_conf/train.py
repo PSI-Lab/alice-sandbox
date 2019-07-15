@@ -121,10 +121,13 @@ def main(validation_fold_idx):
     sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
     kb.tensorflow_backend._get_available_gpus()
 
-    model = build_model(config['n_filters'], config['residual_conv'], config['n_repeat_in_residual_unit'],
-                        config['skip_conn_every_n'], config['residual'], config['skipconn'], config['gated'])
+    # model = build_model(config['n_filters'], config['residual_conv'], config['n_repeat_in_residual_unit'],
+    #                     config['skip_conn_every_n'], config['residual'], config['skipconn'], config['gated'])
+
+    model = build_model(config['dense_conv'])
+
     opt = keras.optimizers.Adam(lr=config['learning_rate'], beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0,
-                                amsgrad=False)
+                                amsgrad=False)  # TODO weight decay
     model.compile(loss=custom_loss,
                   optimizer=opt)
 
