@@ -42,6 +42,8 @@ config = {
         {'num_filter': 64, 'filter_width': 8, 'dilation': 8},
         {'num_filter': 128, 'filter_width': 8, 'dilation': 16},
         {'num_filter': 128, 'filter_width': 8, 'dilation': 32},
+        {'num_filter': 256, 'filter_width': 8, 'dilation': 64},
+        {'num_filter': 256, 'filter_width': 8, 'dilation': 128},
     ],
 
     'example_length': 500,
