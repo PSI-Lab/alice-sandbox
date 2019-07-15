@@ -52,7 +52,7 @@ config = {
     'gated': False,
 
     'num_epoch': 200,
-    'num_batch_for_validation': 50,
+    'num_batch_for_validation': 200,  # use more mini batched so it's more robust
     'es_patience': 10,
 
     # final models
