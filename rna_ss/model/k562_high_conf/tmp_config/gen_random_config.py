@@ -26,17 +26,17 @@ for i in range(n):
     else:
         dilations = [2 ** (k // 2 + 1) for k in range(n_layer)]
 
-    dense_conv = [{"dilation": d, "filter_width": filter_width, "num_filter": f} for d, f in
+    dense_conv = [{"dilation": int(d), "filter_width": int(filter_width), "num_filter": int(f)} for d, f in
                   zip(dilations, num_filters)]
 
     # lr
-    learning_rate = np.random.choice([0.01, 0.001, 0.005, 0.0001])
+    learning_rate = float(np.random.choice([0.01, 0.001, 0.005, 0.0001]))
 
     # update config
     config_new = config_ref.copy()
     config_new['dense_conv'] = dense_conv
     config_new['learning_rate'] = learning_rate
-    
+
     # output
     with open('config_{}.yml'.format(i), 'w') as fo:
         yaml.dump(config_new, fo)
