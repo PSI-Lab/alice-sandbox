@@ -11,6 +11,9 @@ dense_conv:
 - {dilation: 2, filter_width: 16, num_filter: 32}
 - {dilation: 4, filter_width: 16, num_filter: 32}
 - {dilation: 8, filter_width: 16, num_filter: 32}
+hid_units:
+- 50
+- 10
 es_patience: 10
 example_length: 500
 example_reweighting: true
