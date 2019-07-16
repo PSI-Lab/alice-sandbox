@@ -5,7 +5,7 @@ from genome_kit import Genome, GenomeTrack, Interval
 from dgutils.interval import DisjointIntervalsSequence
 from dgutils.pandas import add_column
 from model import resolve_contex
-from config import config
+# from config import config
 
 
 class DataGenerator(keras.utils.Sequence):
@@ -16,19 +16,22 @@ class DataGenerator(keras.utils.Sequence):
                                [0, 0, 1, 0],
                                [0, 0, 0, 1]])
 
-    def __init__(self, df_intervals, gtrack=config['gtrack'],
-                 train_length=config['example_length'],
-                 context=resolve_contex(config['dense_conv']),
-                 batch_size=config['batch_size'], genome=config['genome_annotation'],
-                 min_log_tpm=config['min_log_tpm'], min_rep_corr=config['min_rep_corr'],
-                 example_reweighting=config['example_reweighting']):
-        self.genome = Genome(genome)
-        self.train_length = train_length
-        self.context = context
-        self.batch_size = batch_size
-        self.gtrack = GenomeTrack(gtrack)
-        self.diseqs, self.intervals = self._process_transcript_intervals(df_intervals, min_log_tpm, min_rep_corr,
-                                                                         example_reweighting)
+    # def __init__(self, df_intervals, gtrack=config['gtrack'],
+    #              train_length=config['example_length'],
+    #              context=resolve_contex(config['dense_conv']),
+    #              batch_size=config['batch_size'], genome=config['genome_annotation'],
+    #              min_log_tpm=config['min_log_tpm'], min_rep_corr=config['min_rep_corr'],
+    #              example_reweighting=config['example_reweighting']):
+    def __init__(self, df_intervals, config):
+
+        self.genome = Genome(config['genome_annotation'])
+        self.train_length = config['example_length']
+        self.context = resolve_contex(config['dense_conv'])
+        self.batch_size = config['batch_size']
+        self.gtrack = GenomeTrack(config['gtrack'])
+        self.diseqs, self.intervals = self._process_transcript_intervals(df_intervals, config['min_log_tpm'],
+                                                                         config['min_rep_corr'],
+                                                                         config['example_reweighting'])
         # shuffle indexes before generating data
         self.on_epoch_end()
 

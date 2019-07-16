@@ -117,7 +117,7 @@ class ValidationSetMetrics(Callback):
         self.writer = None
 
 
-def main(validation_fold_idx):
+def main(config, validation_fold_idx):
     chrom_folds = config['chrom_folds']
     _, df_intervals = read_dataframe(config['all_inervals'])
     df_intervals = add_column(df_intervals, 'chromosome', ['transcript'], lambda x: x.chromosome)
@@ -145,8 +145,8 @@ def main(validation_fold_idx):
     print("Num disjoint intervals in training: %d" % len(df_training_intervals))
     print("Num disjoint intervals in validation: %d" % len(df_validation_intervals))
 
-    training_dataset = DataGenerator(df_training_intervals)
-    validation_dataset = DataGenerator(df_validation_intervals)
+    training_dataset = DataGenerator(df_training_intervals, config)
+    validation_dataset = DataGenerator(df_validation_intervals, config)
 
     sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
     kb.tensorflow_backend._get_available_gpus()
@@ -220,4 +220,4 @@ if __name__ == "__main__":
 
     # fold_idx = int(sys.argv[1])
     assert 0 <= args.fold < len(config['chrom_folds'])
-    main(args.fold)
+    main(config, args.fold)
