@@ -29,6 +29,10 @@ for i in range(n):
     dense_conv = [{"dilation": int(d), "filter_width": int(filter_width), "num_filter": int(f)} for d, f in
                   zip(dilations, num_filters)]
 
+    # hid
+    n_hid_layer = np.random.randint(1, 5)
+    hid_units = [int(np.random.randint(10, 200)) for _ in range(n_hid_layer)]
+
     # lr
     learning_rate = float(np.random.choice([0.01, 0.001, 0.005, 0.0001]))
 
@@ -36,6 +40,7 @@ for i in range(n):
     config_new = config_ref.copy()
     config_new['dense_conv'] = dense_conv
     config_new['learning_rate'] = learning_rate
+    config_new['hid_units'] = hid_units
 
     # output
     with open('config_{}.yml'.format(i), 'w') as fo:
