@@ -190,7 +190,7 @@ def main(config, validation_fold_idx):
 
     # dump config
     with open(os.path.join(run_dir, 'config.yml'), 'w') as outfile:
-        yaml.dump(config, outfile, default_flow_style=True)
+        yaml.dump(config, outfile)
 
     model.fit_generator(generator=training_dataset,
                         validation_data=validation_dataset,
