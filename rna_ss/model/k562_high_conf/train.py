@@ -1,6 +1,6 @@
 import os
-import sys
-import imp
+# import sys
+# import imp
 import csv
 import yaml
 import shutil
@@ -215,8 +215,11 @@ if __name__ == "__main__":
     parser.add_argument('--config', type=str, help='path to config file')
     parser.add_argument('--fold', type=int, help='validation fold ID')
     args = parser.parse_args()
-    config_module = imp.load_source('config', args.config)  # TODO update to use yaml file
-    config = config_module.config
+    # config_module = imp.load_source('config', args.config)  # TODO update to use yaml file
+    # config = config_module.config
+
+    with open(args.config, 'r') as f:
+        config = yaml.load(f)
 
     # fold_idx = int(sys.argv[1])
     assert 0 <= args.fold < len(config['chrom_folds'])
