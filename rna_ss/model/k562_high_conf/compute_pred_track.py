@@ -83,9 +83,10 @@ for _, row in df_intervals.iterrows():
     fold_idx = row['fold_idx']
     diseq = DisjointIntervalsSequence(itvs, genome)
     seq = diseq.dna(diseq.interval)
-    if fold_idx is not None:
+    if not np.isnan(fold_idx):
         yp = predictors[int(fold_idx)].predict_seq(seq)[0, :, :]
     else:
+        print("Processing {} {} using all models".format(row['gene_name'], row['transcript_id']))
         yps = []
         for _idx in range(len(config['chrom_folds'])):
             yps.append(predictors[_idx].predict_seq(seq))
