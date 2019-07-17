@@ -11,16 +11,18 @@ dense_conv:
 - {dilation: 2, filter_width: 16, num_filter: 32}
 - {dilation: 4, filter_width: 16, num_filter: 32}
 - {dilation: 8, filter_width: 16, num_filter: 32}
+- {dilation: 16, filter_width: 16, num_filter: 32}
 hid_units:
-- 50
-- 10
+- 150
 es_patience: 10
 example_length: 500
 example_reweighting: true
 gated: false
 genome_annotation: ucsc_refseq.2017-06-25
 gtrack: data/reactivity_combined.gtrack
-learning_rate: 0.0001
+learning_rate: 0.001
+penalty_l1: 0.0
+penalty_l2: 0.001
 min_log_tpm: 1
 min_rep_corr: 0.2
 model_dir: model/
