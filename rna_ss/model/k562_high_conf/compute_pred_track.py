@@ -77,7 +77,7 @@ predictors = [Predictor('model/fold_{}.hdf5'.format(fold_idx), context)
 
 # generate data
 for _, row in df_intervals.iterrows():
-    print("{} {}".format(row['gene_name'], row['transcript_id']))
+    # print("{} {}".format(row['gene_name'], row['transcript_id']))
 
     itvs = row['disjoint_intervals']
     fold_idx = row['fold_idx']
@@ -98,7 +98,13 @@ for _, row in df_intervals.iterrows():
         data_start = len(Interval.spanning(diseq.interval.end5, itv_lifted.end5))
         data_end = data_start + len(itv)
         yp_slice = yp[data_start:data_end, :]
-        pred_track.set_data(itv, yp_slice)
+
+        # TODO there are still overlapping blocks?!
+        try:
+            pred_track.set_data(itv, yp_slice)
+        except ValueError as e:
+            print(e)
+            continue
 
 pred_track.finalize()
 
