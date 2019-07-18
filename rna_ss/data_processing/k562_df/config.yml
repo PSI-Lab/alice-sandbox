@@ -1,0 +1,12 @@
+genome_annotation: 'ucsc_refseq.2017-06-25'
+
+cell_line_gene_expression: 'Pnb4DN'
+
+# to look up the above file
+cell_line_name: 'K-562'   # note that we're assuming all data are from the same cell line
+
+missing_val_reactivity: -1.0
+
+default_val_coverage: 0.0
+
+missing_val_coverage: 0.0
