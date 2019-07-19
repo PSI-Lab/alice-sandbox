@@ -54,7 +54,6 @@ def _find_fold(chrom_to_pred, chrom_folds):
 
 
 def predict_row_data(seq, fold_idx, predictors, gene_name, transcript_id):
-    assert type(fold_idx) == float   # pandas will use NaN for missing val
     if not np.isnan(fold_idx):
         yp = predictors[int(fold_idx)].predict_seq(seq)[0, :, :]
     else:
