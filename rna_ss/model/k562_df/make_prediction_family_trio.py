@@ -88,6 +88,7 @@ def main(config):
     df = pd.read_csv(dc.Client().get_path('aoLEcQ'))
     genome = Genome(config['genome_annotation'])
     df = add_column(df, 'transcript', ['transcript_id'], lambda tx_id: genome.transcripts[tx_id])
+    df = add_column(df, 'chrom', ['transcript'], lambda x: x.chromosome)
     df = add_column(df, 'variant', ['variant'], lambda x: Variant.from_string(x, genome), pbar=False)
     df = add_column(df, 'varg', ['variant'], lambda x: VariantGenome(genome, x), pbar=False)
 

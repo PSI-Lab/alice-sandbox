@@ -25,4 +25,4 @@ gzip prediction/training_data_cv.csv
 CUDA_VISIBLE_DEVICES=2 python make_prediction_rna_strand_db.py --config tmp_config/config_2.yml
 
 
-
+CUDA_VISIBLE_DEVICES=0 python make_prediction_family_trio.py --config tmp_config/config_2.yml
