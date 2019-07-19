@@ -79,9 +79,8 @@ def predict_row_data(variant, transcript, fold_idx, genome, varg, predictors, da
     yp_mt = _predict_seq(seq_mt, fold_idx, predictors, data_names)
 
     # to list
-    return tuple(
-        [np.around(yp_wt[:, i], 4).tolist() for i in range(yp_wt.shape[1])] + [np.around(yp_mt[:, i], 4).tolist() for i
-                                                                               in range(yp_mt.shape[1])])
+    return tuple([seq_wt, seq_mt] + [np.around(yp_wt[:, i], 4).tolist() for i in range(yp_wt.shape[1])] + [
+        np.around(yp_mt[:, i], 4).tolist() for i in range(yp_mt.shape[1])])
 
 
 def main(config):
@@ -104,9 +103,8 @@ def main(config):
                   for fold_idx in range(len(config['chrom_folds']))]
 
     # prediction
-    df = add_columns(df, ['{}_pred_wt'.format(x) for x in config['target_cols']] + ['{}_pred_mt'.format(x) for x in
-                                                                                    config['target_cols']],
-                     ['variant', 'transcript', 'fold_idx', 'varg'],
+    df = add_columns(df, ['seq_wt', 'seq_mt'] + ['{}_pred_wt'.format(x) for x in config['target_cols']] + [
+        '{}_pred_mt'.format(x) for x in config['target_cols']], ['variant', 'transcript', 'fold_idx', 'varg'],
                      lambda v, t, i, g: predict_row_data(v, t, i, genome, g, predictors, config['target_cols'], 50))
 
     # drop columns
