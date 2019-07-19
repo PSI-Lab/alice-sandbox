@@ -67,9 +67,8 @@ def predict_row_data(seq, fold_idx, predictors, gene_name, transcript_id, data_n
     assert yp.shape[1] == len(data_names)
 
     # adjust precision for output
-    yp = np.around(yp, 4)
     # 1D output for each data prediction, for output (since we don't support list of lists)
-    return tuple([yp[:, i].tolist() for i in range(yp.shape[1])])
+    return tuple([np.around(yp[:, i]).tolist() for i in range(yp.shape[1])])
 
 
 def _add_sequence(itvs, genome):
@@ -100,6 +99,9 @@ def main(config):
     df = add_columns(df, ['{}_pred'.format(x) for x in config['target_cols']],
                      ['sequence', 'fold_idx', 'gene_name', 'transcript_id'],
                      lambda s, i, g, t: predict_row_data(s, i, predictors, g, t, config['target_cols']))
+
+    # drop sequence
+    df = df.drop(columns=['sequence'])
 
     # add new metadata, output
     for x in config['target_cols']:
