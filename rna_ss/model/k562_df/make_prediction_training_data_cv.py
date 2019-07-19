@@ -73,7 +73,8 @@ def main(config):
 
     # use the data_generator only to process the df
     tmp = DataGenerator(_df_intervals, config)
-    df = tmp.df
+    df = add_column(_df_intervals, 'sequence', ['disjoint_intervals'], tmp._add_sequence)
+    df = add_column(df, 'log_tpm', ['tpm'], np.log)
 
     # find the model to use for making CV prediction
     df = add_column(df, 'fold_idx', ['chrom'], lambda x: _find_fold(x, config['chrom_folds']))
