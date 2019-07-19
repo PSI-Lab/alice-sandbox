@@ -23,7 +23,7 @@ from genome_kit import Interval, Genome
 import deepgenomics.pandas.v1 as dataframe
 from data_generator import DataGenerator
 from dgutils.interval import DisjointIntervalsSequence
-from dgutils.pandas import read_dataframe, add_column, write_dataframe
+from dgutils.pandas import read_dataframe, add_column, write_dataframe, add_columns
 from model import build_model, resolve_contex, custom_loss
 
 
@@ -97,11 +97,13 @@ def main(config):
                   for fold_idx in range(len(config['chrom_folds']))]
 
     # prediction
-    df = add_column(df, 'pred', ['sequence', 'fold_idx', 'gene_name', 'transcript_id'],
-                    lambda s, i, g, t: predict_row_data(s, i, predictors, g, t))
+    df = add_columns(df, ['{}_pred'.format(x) for x in config['target_cols']],
+                     ['sequence', 'fold_idx', 'gene_name', 'transcript_id'],
+                     lambda s, i, g, t: predict_row_data(s, i, predictors, g, t, config['target_cols']))
 
     # add new metadata, output
-    metadata.encoding['pred'] = dataframe.Metadata.LIST
+    for x in config['target_cols']:
+        metadata.encoding['{}_pred'.format(x)] = dataframe.Metadata.LIST
     write_dataframe(metadata, df, 'prediction/training_data_cv.csv')
 
 
