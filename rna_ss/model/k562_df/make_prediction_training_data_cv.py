@@ -68,7 +68,7 @@ def predict_row_data(seq, fold_idx, predictors, gene_name, transcript_id, data_n
 
     # adjust precision for output
     # 1D output for each data prediction, for output (since we don't support list of lists)
-    return tuple([np.around(yp[:, i]).tolist() for i in range(yp.shape[1])])
+    return tuple([np.around(yp[:, i], 4).tolist() for i in range(yp.shape[1])])
 
 
 def _add_sequence(itvs, genome):
