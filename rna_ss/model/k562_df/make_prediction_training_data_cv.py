@@ -67,8 +67,8 @@ def predict_row_data(seq, fold_idx, predictors, gene_name, transcript_id):
     return yp.tolist()  # list for df output
 
 
-def _add_sequence(self, itvs, genome):
-    diseq = DisjointIntervalsSequence(itvs, self.genome)
+def _add_sequence(itvs, genome):
+    diseq = DisjointIntervalsSequence(itvs, genome)
     return diseq.dna(diseq.interval)
 
 
