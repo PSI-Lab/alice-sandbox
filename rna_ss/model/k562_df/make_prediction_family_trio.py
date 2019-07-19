@@ -1,5 +1,5 @@
 """
-Make CV prediction on training dataset
+Make prediction on family trio dataset
 """
 import os
 # import sys
@@ -19,7 +19,7 @@ from scipy.stats import pearsonr, spearmanr
 from keras import objectives
 import keras.backend as kb
 from keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, CSVLogger, Callback
-from genome_kit import Interval, Genome
+from genome_kit import Interval, Genome, Variant, VariantGenome
 import deepgenomics.pandas.v1 as dataframe
 from data_generator import DataGenerator
 from dgutils.interval import DisjointIntervalsSequence
@@ -53,60 +53,73 @@ def _find_fold(chrom_to_pred, chrom_folds):
     return None
 
 
-def predict_row_data(seq, fold_idx, predictors, gene_name, transcript_id, data_names):
+def _predict_seq(seq, fold_idx, predictors, data_names):
     if not np.isnan(fold_idx):
         yp = predictors[int(fold_idx)].predict_seq(seq)[0, :, :]
     else:
-        print("Processing {} {} using all models".format(gene_name, transcript_id))
+        print("Processing {} using all models".format(seq))
         yps = []
         for _idx in range(len(config['chrom_folds'])):
             yps.append(predictors[_idx].predict_seq(seq))
         yp = np.mean(np.concatenate(yps, axis=0), axis=0)  # TODO using mean for now
         assert len(yp.shape) == 2
-
     assert yp.shape[1] == len(data_names)
-
-    # adjust precision for output # TODO this rounding is not working for output
-    # 1D output for each data prediction, for output (since we don't support list of lists)
-    return tuple([np.around(yp[:, i], 4).tolist() for i in range(yp.shape[1])])
+    return yp
 
 
-def _add_sequence(itvs, genome):
-    diseq = DisjointIntervalsSequence(itvs, genome)
-    return diseq.dna(diseq.interval)
+def predict_row_data(variant, transcript, fold_idx, genome, varg, predictors, data_names, flank=50):
+    diseq_wt = DisjointIntervalsSequence(transcript.exons, genome)
+    diseq_mt = DisjointIntervalsSequence(transcript.exons, varg)
+    variant_lifted = diseq_wt.lift_interval(variant)
+
+    seq_wt = diseq_wt.dna(variant_lifted.expand(flank))
+    seq_mt = diseq_mt.dna(variant_lifted.expand(flank))
+
+    yp_wt = _predict_seq(seq_wt, fold_idx, predictors, data_names)
+    yp_mt = _predict_seq(seq_mt, fold_idx, predictors, data_names)
+
+    # to list
+    return tuple(
+        [np.around(yp_wt[:, i], 4).tolist() for i in range(yp_wt.shape[1])] + [np.around(yp_mt[:, i], 4).tolist() for i
+                                                                               in range(yp_mt.shape[1])])
 
 
 def main(config):
-    metadata, _df_intervals = read_dataframe(gzip.open(dc.Client().get_path(config['dataset_dc_id'])))
-    _df_intervals = add_column(_df_intervals, 'chrom', ['transcript'], lambda x: x.chromosome)
-    _df_intervals = add_column(_df_intervals, 'gene_name', ['transcript'], lambda x: x.gene.name)
-
-    # use the data_generator only to process the df
+    df = pd.read_csv(dc.Client().get_path('aoLEcQ'))
     genome = Genome(config['genome_annotation'])
-    df = add_column(_df_intervals, 'sequence', ['disjoint_intervals'], lambda x: _add_sequence(x, genome))
-    df = add_column(df, 'log_tpm', ['tpm'], np.log)
+    df = add_column(df, 'transcript', ['transcript_id'], lambda tx_id: genome.transcripts[tx_id])
+    df = add_column(df, 'variant', ['variant'], lambda x: Variant.from_string(x, genome), pbar=False)
+    df = add_column(df, 'varg', ['variant'], lambda x: VariantGenome(genome, x), pbar=False)
+
+    # # add column to indicate if it's A/C nucleotide
+    # df = add_column(df, 'is_ac', ['variant'], lambda x: x.ref in ['A', 'C'] or x.alt in ['A', 'C'])
 
     # find the model to use for making CV prediction
     df = add_column(df, 'fold_idx', ['chrom'], lambda x: _find_fold(x, config['chrom_folds']))
 
     context = resolve_contex(config['dense_conv'])
     print("Context: %d" % context)
-
     predictors = [Predictor('model/fold_{}.hdf5'.format(fold_idx), context)
                   for fold_idx in range(len(config['chrom_folds']))]
 
     # prediction
-    df = add_columns(df, ['{}_pred'.format(x) for x in config['target_cols']],
-                     ['sequence', 'fold_idx', 'gene_name', 'transcript_id'],
-                     lambda s, i, g, t: predict_row_data(s, i, predictors, g, t, config['target_cols']))
+    df = add_columns(df, ['{}_pred_wt'.format(x) for x in config['target_cols']] + ['{}_pred_mt'.format(x) for x in
+                                                                                    config['target_cols']],
+                     ['variant', 'transcript', 'fold_idx', 'varg'],
+                     lambda v, t, i, g: predict_row_data(v, t, i, genome, g, predictors, config['target_cols'], 50))
 
-    # drop sequence
-    df = df.drop(columns=['sequence'])
+    # drop columns
+    df = df.drop(columns=['varg'])
 
-    # add new metadata, output
+    # add metadata, output
+    metadata = dataframe.Metadata()
+    metadata.version = "1"
     for x in config['target_cols']:
-        metadata.encoding['{}_pred'.format(x)] = dataframe.Metadata.LIST
-    write_dataframe(metadata, df, 'prediction/training_data_cv.csv')
+        metadata.encoding['{}_pred_wt'.format(x)] = dataframe.Metadata.LIST
+        metadata.encoding['{}_pred_mt'.format(x)] = dataframe.Metadata.LIST
+    metadata.encoding["transcript"] = dataframe.Metadata.GENOMEKIT
+    metadata.encoding["variant"] = dataframe.Metadata.GENOMEKIT
+    write_dataframe(metadata, df, 'prediction/family_trio.csv')
 
 
 if __name__ == "__main__":
@@ -122,5 +135,3 @@ if __name__ == "__main__":
         config = yaml.load(f)
 
     main(config)
-
-

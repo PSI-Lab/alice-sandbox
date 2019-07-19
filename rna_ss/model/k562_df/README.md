@@ -22,5 +22,7 @@ CUDA_VISIBLE_DEVICES=2 python make_prediction_training_data_cv.py --config tmp_c
 gzip prediction/training_data_cv.csv
 
 
+CUDA_VISIBLE_DEVICES=2 python make_prediction_rna_strand_db.py --config tmp_config/config_2.yml
+
 
 
