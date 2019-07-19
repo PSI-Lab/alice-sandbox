@@ -22,6 +22,7 @@ from keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping, ReduceL
 from genome_kit import Interval, Genome
 import deepgenomics.pandas.v1 as dataframe
 from data_generator import DataGenerator
+from dgutils.interval import DisjointIntervalsSequence
 from dgutils.pandas import read_dataframe, add_column, write_dataframe
 from model import build_model, resolve_contex, custom_loss
 
@@ -66,14 +67,19 @@ def predict_row_data(seq, fold_idx, predictors, gene_name, transcript_id):
     return yp.tolist()  # list for df output
 
 
+def _add_sequence(self, itvs, genome):
+    diseq = DisjointIntervalsSequence(itvs, self.genome)
+    return diseq.dna(diseq.interval)
+
+
 def main(config):
     metadata, _df_intervals = read_dataframe(gzip.open(dc.Client().get_path(config['dataset_dc_id'])))
     _df_intervals = add_column(_df_intervals, 'chrom', ['transcript'], lambda x: x.chromosome)
     _df_intervals = add_column(_df_intervals, 'gene_name', ['transcript'], lambda x: x.gene.name)
 
     # use the data_generator only to process the df
-    tmp = DataGenerator(_df_intervals, config)
-    df = add_column(_df_intervals, 'sequence', ['disjoint_intervals'], tmp._add_sequence)
+    genome = Genome(config['genome_annotation'])
+    df = add_column(_df_intervals, 'sequence', ['disjoint_intervals'], lambda x: _add_sequence(x, genome))
     df = add_column(df, 'log_tpm', ['tpm'], np.log)
 
     # find the model to use for making CV prediction
@@ -81,7 +87,6 @@ def main(config):
 
     context = resolve_contex(config['dense_conv'])
     print("Context: %d" % context)
-    # genome = Genome(config['genome_annotation'])
 
     predictors = [Predictor('model/fold_{}.hdf5'.format(fold_idx), context)
                   for fold_idx in range(len(config['chrom_folds']))]
