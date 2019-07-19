@@ -102,8 +102,8 @@ df_master = add_column(df_master, 'tpm', ['transcript'],
 # output
 metadata = dataframe.Metadata()
 metadata.version = "1"
-metadata.encoding["k562_vivo1"] = dataframe.Metadata.LIST
-metadata.encoding["k562_vivo2"] = dataframe.Metadata.LIST
+for data_name in data_names:
+    metadata.encoding[data_name] = dataframe.Metadata.LIST
 metadata.encoding["transcript"] = dataframe.Metadata.GENOMEKIT
 metadata.encoding["disjoint_intervals"] = dataframe.Metadata.LIST_OF_GENOMEKIT
 
