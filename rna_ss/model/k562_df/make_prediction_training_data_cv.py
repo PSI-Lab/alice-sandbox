@@ -53,7 +53,7 @@ def _find_fold(chrom_to_pred, chrom_folds):
     return None
 
 
-def predict_row_data(seq, fold_idx, predictors, gene_name, transcript_id):
+def predict_row_data(seq, fold_idx, predictors, gene_name, transcript_id, data_names):
     if not np.isnan(fold_idx):
         yp = predictors[int(fold_idx)].predict_seq(seq)[0, :, :]
     else:
@@ -63,7 +63,13 @@ def predict_row_data(seq, fold_idx, predictors, gene_name, transcript_id):
             yps.append(predictors[_idx].predict_seq(seq))
         yp = np.mean(np.concatenate(yps, axis=0), axis=0)  # TODO using mean for now
         assert len(yp.shape) == 2
-    return yp.tolist()  # list for df output
+
+    assert yp.shape[1] == len(data_names)
+
+    # adjust precision for output
+    yp = np.around(yp, 4)
+    # 1D output for each data prediction, for output (since we don't support list of lists)
+    return tuple([yp[:, i].tolist() for i in yp.shape[1]])
 
 
 def _add_sequence(itvs, genome):
