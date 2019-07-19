@@ -1,6 +1,7 @@
 import os
 # import sys
 # import imp
+import gzip
 import csv
 import yaml
 import shutil
@@ -119,7 +120,11 @@ class ValidationSetMetrics(Callback):
 
 def main(config, validation_fold_idx):
     chrom_folds = config['chrom_folds']
-    _, df_intervals = read_dataframe(config['all_inervals'])
+    # _, df_intervals = read_dataframe(config['all_inervals'])
+    # df_intervals = add_column(df_intervals, 'chromosome', ['transcript'], lambda x: x.chromosome)
+
+    # load data
+    _, df_intervals = read_dataframe(gzip.open(dc.Client().get_path(config['dataset_dc_id'])))
     df_intervals = add_column(df_intervals, 'chromosome', ['transcript'], lambda x: x.chromosome)
 
     # interval_folds = [[] for _ in range(len(chrom_folds))]

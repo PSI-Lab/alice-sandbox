@@ -17,16 +17,13 @@ class DataGenerator(keras.utils.Sequence):
                                [0, 0, 1, 0],
                                [0, 0, 0, 1]])
 
-    def __init__(self, config):
+    def __init__(self, df, config):
 
         self.genome = Genome(config['genome_annotation'])
         self.train_length = config['example_length']
         self.context = resolve_contex(config['dense_conv'])
         self.batch_size = config['batch_size']
         # self.gtrack = GenomeTrack(config['gtrack'])
-
-        # load data
-        _, df = read_dataframe(gzip.open(dc.Client().get_path(config['dataset_dc_id'])))
 
         df = self._process_df_array(df, config['target_cols'], 'target_val')
 
