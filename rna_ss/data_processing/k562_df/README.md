@@ -20,5 +20,5 @@ python combine_data.py
 gzip data/k562_combined.csv
 
 
-upload `data/k562_combined.csv` to DC: `xxx`
+upload `data/k562_combined.csv` to DC: `oovVmC`
 
