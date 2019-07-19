@@ -159,7 +159,7 @@ def main(config, validation_fold_idx):
     # model = build_model(config['n_filters'], config['residual_conv'], config['n_repeat_in_residual_unit'],
     #                     config['skip_conn_every_n'], config['residual'], config['skipconn'], config['gated'])
 
-    model = build_model(config['dense_conv'], config['hid_units'])
+    model = build_model(config)
 
     opt = keras.optimizers.Adam(lr=config['learning_rate'], beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0,
                                 amsgrad=False)  # TODO weight decay
