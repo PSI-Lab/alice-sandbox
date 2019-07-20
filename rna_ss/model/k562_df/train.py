@@ -19,7 +19,7 @@ from keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping, ReduceL
 from genome_kit import Interval
 from data_generator import DataGenerator
 from dgutils.pandas import read_dataframe, add_column
-from model import build_model, resolve_contex, custom_loss
+from model import build_model_dense_net, build_model_res_net, resolve_contex, custom_loss
 # from config import config
 
 
@@ -159,7 +159,8 @@ def main(config, validation_fold_idx):
     # model = build_model(config['n_filters'], config['residual_conv'], config['n_repeat_in_residual_unit'],
     #                     config['skip_conn_every_n'], config['residual'], config['skipconn'], config['gated'])
 
-    model = build_model(config)
+    # model = build_model_dense_net(config)
+    model = build_model_res_net(config)
 
     opt = keras.optimizers.Adam(lr=config['learning_rate'], beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0,
                                 amsgrad=False)  # TODO weight decay
