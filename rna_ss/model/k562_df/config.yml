@@ -10,29 +10,12 @@ chrom_folds:
 - [chr3, chr8, chr11, chr17]
 - [chr4, chr7, chr12, chr18]
 - [chr5, chr6, chr13, chr16, chrX]
-
-
-#dense_conv:
-#- {dilation: 1, filter_width: 16, num_filter: 64}
-#- {dilation: 2, filter_width: 16, num_filter: 64}
-#- {dilation: 4, filter_width: 16, num_filter: 64}
-#- {dilation: 8, filter_width: 16, num_filter: 64}
-#- {dilation: 16, filter_width: 16, num_filter: 64}
-
-residual_conv:
-- {num_filter: 512, filter_width: 8, dilation: 1}
-- {num_filter: 512, filter_width: 8, dilation: 2}
-- {num_filter: 512, filter_width: 8, dilation: 4}
-- {num_filter: 512, filter_width: 8, dilation: 8}
-- {num_filter: 512, filter_width: 8, dilation: 16}
-- {num_filter: 512, filter_width: 8, dilation: 32}
-n_repeat_in_residual_unit: 2
-skip_conn_every_n: 2
-initial_num_filter: 512
-residual: true
-gated: false
-skipconn: true
-
+dense_conv:
+- {dilation: 1, filter_width: 16, num_filter: 64}
+- {dilation: 2, filter_width: 16, num_filter: 64}
+- {dilation: 4, filter_width: 16, num_filter: 64}
+- {dilation: 8, filter_width: 16, num_filter: 64}
+- {dilation: 16, filter_width: 16, num_filter: 64}
 hid_units:
 - 150
 - 50
@@ -43,7 +26,7 @@ gated: false
 genome_annotation: ucsc_refseq.2017-06-25
 learning_rate: 0.001
 penalty_l1: 0.0
-penalty_l2: 0.0
+penalty_l2: 0.0001
 min_log_tpm: 1
 min_rep_corr: 0.2
 model_dir: model/

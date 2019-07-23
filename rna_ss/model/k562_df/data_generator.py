@@ -5,7 +5,7 @@ import datacorral as dc
 from genome_kit import Genome, GenomeTrack, Interval
 from dgutils.interval import DisjointIntervalsSequence
 from dgutils.pandas import add_column, read_dataframe
-from model import resolve_contex, resolve_contex_old
+from model import resolve_contex
 # from config import config
 
 
@@ -21,10 +21,7 @@ class DataGenerator(keras.utils.Sequence):
 
         self.genome = Genome(config['genome_annotation'])
         self.train_length = config['example_length']
-
-        # self.context = resolve_contex(config['dense_conv'])
-        self.context = resolve_contex_old(config['residual_conv'], config['n_repeat_in_residual_unit'])
-
+        self.context = resolve_contex(config['dense_conv'])
         self.batch_size = config['batch_size']
         # self.gtrack = GenomeTrack(config['gtrack'])
 
