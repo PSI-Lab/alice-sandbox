@@ -126,7 +126,7 @@ def main(config, validation_fold_idx):
     # load data
     # _, df_intervals = read_dataframe(gzip.open(dc.Client().get_path(config['dataset_dc_id'])))
     _, df_intervals = read_dataframe('data/yeast_test.csv')
-    df_intervals = add_column(df_intervals, 'chromosome', ['transcript'], lambda x: x.chromosome)
+    # df_intervals = add_column(df_intervals, 'chromosome', ['transcript'], lambda x: x.chromosome)
 
     # interval_folds = [[] for _ in range(len(chrom_folds))]
     #
@@ -143,8 +143,8 @@ def main(config, validation_fold_idx):
     #                       idx != validation_fold_idx]
     # validation_intervals = interval_folds[validation_fold_idx]
 
-    df_training_intervals = df_intervals[~df_intervals['chromosome'].isin(chrom_folds[validation_fold_idx])]
-    df_validation_intervals = df_intervals[df_intervals['chromosome'].isin(chrom_folds[validation_fold_idx])]
+    df_training_intervals = df_intervals[~df_intervals['chrom'].isin(chrom_folds[validation_fold_idx])]
+    df_validation_intervals = df_intervals[df_intervals['chrom'].isin(chrom_folds[validation_fold_idx])]
     assert len(df_training_intervals) + len(df_validation_intervals) == len(df_intervals)
 
     print("Validation fold index: %d" % validation_fold_idx)
