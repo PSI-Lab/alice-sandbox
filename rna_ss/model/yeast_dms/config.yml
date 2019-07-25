@@ -1,0 +1,35 @@
+#dataset_dc_id: oovVmC
+#target_cols:
+#- k562_vitro
+#- k562_vivo1
+#- k562_vivo2
+batch_size: 10
+chrom_folds:
+- [chrM, chrVIII, chrII, chrXV]
+- [chrI, chrV, chrXIII, chrIV]
+- [chrVI, chrXI, chrXVI]
+- [chrIII, chrX, chrXII]
+- [chrIX, chrXIV, chrVII]
+dense_conv:
+- {dilation: 1, filter_width: 16, num_filter: 128}
+- {dilation: 2, filter_width: 16, num_filter: 128}
+- {dilation: 4, filter_width: 16, num_filter: 128}
+- {dilation: 8, filter_width: 16, num_filter: 128}
+hid_units:
+- 150
+- 50
+es_patience: 10
+example_length: 50
+#example_reweighting: true
+gated: false
+#genome_annotation: ucsc_refseq.2017-06-25
+learning_rate: 0.001
+penalty_l1: 0.00001
+penalty_l2: 0.00001
+#min_log_tpm: 1
+#min_rep_corr: 0.2
+model_dir: model/
+num_batch_for_validation: 200
+num_epoch: 200
+residual: true
+skipconn: true
