@@ -176,9 +176,9 @@ class DataGenerator(keras.utils.Sequence):
         # Generate indexes of the batch
         indexes = self.indexes[index * self.batch_size:(index + 1) * self.batch_size]
         # Generate data
-        x, y, w = self.__data_generation(indexes)
+        x, y = self.__data_generation(indexes)
         # note that this need to match the model, see model.py
-        return x, y, w
+        return x, y
 
     def on_epoch_end(self):
         """Updates indexes after each epoch"""
@@ -187,9 +187,9 @@ class DataGenerator(keras.utils.Sequence):
 
     def __data_generation(self, indexes):
         """Generates data containing batch_size samples"""
-        x, y, w = self.get_data([self.intervals[i] for i in indexes])
+        x, y = self.get_data([self.intervals[i] for i in indexes])
 
-        return x, y, w
+        return x, y
 
     # def _get_x(self, itv, diseq):
     #     # middle part
@@ -254,13 +254,10 @@ class DataGenerator(keras.utils.Sequence):
     def get_data(self, intervals):
         x = []
         y = []
-        w = []
         for idx, arr_start, arr_end in intervals:
-            _x, _y, _w = self.get_data_single(idx, arr_start, arr_end)
+            _x, _y = self.get_data_single(idx, arr_start, arr_end)
             x.append(_x)
             y.append(_y)
-            w.append(_w)
         x = np.asarray(x)
         y = np.asarray(y)
-        w = np.asarray(w)
-        return x, y, w
+        return x, y
