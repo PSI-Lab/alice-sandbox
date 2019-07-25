@@ -71,28 +71,7 @@ def _add_data(itv, w=50):
                 end = idx[(k + 1) * w]
                 check_len = True
 
-            # print(start, end, end - start)
             yp = _norm(x[start:end], w, check_len)
-
-            # if k == 0:
-            #     start = 0
-            #     end = idx[(k + 1) * w]
-            #     print(start, end, end - start)
-            #     yp = _norm(x[start:end], w)
-            # # last batch, use the last index in x
-            # elif k == ks -1:
-            #     start = idx[k * w]
-            #     end = len(x)
-            #     print(start, end, end-start)
-            #     yp = _norm(x[start:end], w, check_len=False)
-            # else:
-            #     start = idx[k * w]
-            #     end = idx[(k + 1) * w]
-            #     print(start, end, end - start)
-            #     yp = _norm(x[start:end], w)
-            # end = (k + 1) * w
-            # if end > len(idx):
-            #     end = idx[-1]
 
             y.append(yp)
         y = np.concatenate(y)
