@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
 import deepgenomics.pandas.v1 as dataframe
-from dgutils.pandas import add_column, write_dataframe
-from utils import Interval, FastaGenome, WigTrack
+from dgutils.pandas import add_column, write_dataframe, add_columns
+from utils import Interval, FastaGenome, WigTrack, _sort_ditvs
 
 
 def get_transcript_ditv(chrom, strand, exon_starts, exon_ends):
@@ -46,8 +46,40 @@ def _norm(x, w=50, check_len=True):
     return x
 
 
-def _add_data(itv, w=50):
-    x = wig_track[itv]
+def _align_data(itv, seq, n=10):
+    # print('before ', itv)
+    if type(itv) == list:
+        itv = _sort_ditvs(itv)
+        l = sum([len(x) for x in itv])
+        itv[0] = itv[0].expand(n, 0)
+        itv[-1] = itv[-1].expand(0, n)
+        new_l = sum([len(x) for x in itv])
+        assert new_l == l + 2*n, (new_l, l)
+    else:
+        l = len(itv)
+        itv = itv.expand(n, n)
+        new_l = len(itv)
+        assert new_l == l + 2 * n, (new_l, l)
+    # print('after ', itv)
+    _data = wig_track[itv]
+    nac = []
+    for i in range(2 * n):
+        data = _data[i:i+l]
+        idx = np.where(~np.isnan(data))[0]  # index of non missing values
+        n_ac_covered = len([i for i in idx if seq[i] in ['A', 'C', 'a', 'c']])
+        nac.append(n_ac_covered)
+    i_selected = nac.index(max(nac))  # argmax
+    relative_shift = i_selected - n
+    best_coverage = float(nac[i_selected])/(seq.count('A') + seq.count('C') + seq.count('a') + seq.count('c'))
+    print("relative shift {}, A/C coverage {}".format(relative_shift, best_coverage))
+    return _data[i_selected:i_selected+l], best_coverage, relative_shift
+
+
+def _add_data(itv, seq, w=50):
+    # raw data seems to be random shifted
+    # re-align by looking for the offset that maximize coverage on A/C bases
+    x, ac_coverage, relative_shift = _align_data(itv, seq)
+
     # normalize to 0 - 1
     # window normalization?
     # use window size 50 (50 non missing values)
@@ -56,7 +88,6 @@ def _add_data(itv, w=50):
     if len(idx) > 0:
         y = []
         ks = (len(idx) - 1)//w + 1
-        print(len(idx), ks)
         for k in range(ks):
             # first batch, use first index in x
             if k == 0:
@@ -80,10 +111,10 @@ def _add_data(itv, w=50):
         y = x
     # replace nan with -1
     y[np.where(np.isnan(y))] = -1
-    return y.tolist()
+    return y.tolist(), ac_coverage, relative_shift
 
 
-df_anno = add_column(df_anno, 'data', ['ditv'], lambda x: _add_data(x, w=50))
+df_anno = add_columns(df_anno, ['data', 'ac_coverage', 'relative_shift'], ['ditv', 'sequence'], lambda x, y: _add_data(x, y, w=50))
 
 # output
 df_anno = df_anno[['name', 'chrom', 'strand', 'tx_start', 'tx_end', 'name_2', 'sequence', 'data']].rename(

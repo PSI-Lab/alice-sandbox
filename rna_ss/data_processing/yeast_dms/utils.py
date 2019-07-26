@@ -43,6 +43,12 @@ class Interval(object):
         else:  # Reverse strand
             return -self.end, -(self.start + 1)
 
+    def expand(self, up, dn):
+        if self.strand == '+':
+            return Interval(self.chromosome, self.strand, self.start - up, self.end + dn)
+        else:
+            return Interval(self.chromosome, self.strand, self.start - dn, self.end + up)
+
     def as_opposite_strand(self):
         strand = '-' if self.strand == '+' else '+'
         return Interval(self.chromosome, strand, self.start, self.end)
