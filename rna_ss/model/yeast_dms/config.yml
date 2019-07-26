@@ -15,7 +15,7 @@ dense_conv:
 - {dilation: 2, filter_width: 16, num_filter: 128}
 - {dilation: 4, filter_width: 16, num_filter: 128}
 - {dilation: 8, filter_width: 16, num_filter: 128}
-hid_units:
+hid_units:  # TODO remove?
 - 150
 - 50
 es_patience: 10
@@ -26,6 +26,9 @@ gated: false
 learning_rate: 0.001
 penalty_l1: 0.00001
 penalty_l2: 0.00001
+
+min_ac_coverage: 0.8
+
 #min_log_tpm: 1
 #min_rep_corr: 0.2
 model_dir: model/

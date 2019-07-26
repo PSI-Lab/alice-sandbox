@@ -28,6 +28,13 @@ class DataGenerator(keras.utils.Sequence):
         # df = self._process_df_array(df, config['target_cols'], 'target_val')
         df = self._process_df_array(df, 'data', 'target_val')
 
+        # select rows where A/C coverage is good
+        print(
+            "Dropping {} rows where A/C coverage is below {}".format(
+                sum(df['ac_coverage'] <= config['min_ac_coverage']),
+                config['min_ac_coverage']))
+        df = df[df['ac_coverage'] > config['min_ac_coverage']]
+
         # df = add_column(df, 'sequence', ['disjoint_intervals'], self._add_sequence)
         # df = add_column(df, 'log_tpm', ['tpm'], np.log)
 
