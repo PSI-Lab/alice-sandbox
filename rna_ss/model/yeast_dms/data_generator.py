@@ -103,7 +103,7 @@ class DataGenerator(keras.utils.Sequence):
                 else:
                     all_intervals.append((idx, arr_start, arr_end))
 
-                if n_skipped % 100 == 0 or len(all_intervals) % 1000 == 0:
+                if n_skipped % 2000 == 0 or len(all_intervals) % 5000 == 0:
                     print("Intervals: %d, skipped: %d" % (len(all_intervals), n_skipped))
 
         return df, all_intervals
