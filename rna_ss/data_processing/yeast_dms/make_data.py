@@ -117,7 +117,8 @@ def _add_data(itv, seq, w=50):
 df_anno = add_columns(df_anno, ['data', 'ac_coverage', 'relative_shift'], ['ditv', 'sequence'], lambda x, y: _add_data(x, y, w=50))
 
 # output
-df_anno = df_anno[['name', 'chrom', 'strand', 'tx_start', 'tx_end', 'name_2', 'sequence', 'data']].rename(
+df_anno = df_anno[['name', 'chrom', 'strand', 'tx_start', 'tx_end',
+                   'name_2', 'sequence', 'data', 'ac_coverage', 'relative_shift']].rename(
     columns={'name': 'transcript_id', 'name_2': 'gene_name'})
 
 metadata = dataframe.Metadata()
