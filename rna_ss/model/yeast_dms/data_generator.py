@@ -33,7 +33,7 @@ class DataGenerator(keras.utils.Sequence):
             "Dropping {} rows where A/C coverage is below {}".format(
                 sum(df['ac_coverage'] <= config['min_ac_coverage']),
                 config['min_ac_coverage']))
-        df = df[df['ac_coverage'] > config['min_ac_coverage']]
+        df = df[df['ac_coverage'] > config['min_ac_coverage']].reset_index(drop=True)
 
         # df = add_column(df, 'sequence', ['disjoint_intervals'], self._add_sequence)
         # df = add_column(df, 'log_tpm', ['tpm'], np.log)
