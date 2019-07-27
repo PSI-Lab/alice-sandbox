@@ -16,8 +16,11 @@ def _sort_ditvs(itvs):
     itvs = sorted(itvs, key=lambda x: x.as_rna1())
     # check that they do not overlap
     assert not any([x.overlaps(y) for x, y in zip(itvs[:-1], itvs[1:])])
-    # make sure there is no adjacent contiguous intervals
-    assert not any([x.end == y.start for x, y in zip(itvs[:-1], itvs[1:])])
+    # # make sure there is no adjacent contiguous intervals
+    # assert not any([x.end == y.start for x, y in zip(itvs[:-1], itvs[1:])]), itvs
+    # print a warning if there are adjacent contiguous intervals
+    if any([x.end == y.start for x, y in zip(itvs[:-1], itvs[1:])]):
+        print("Warning: adjacent contiguous intervals in {}".format(itvs))
     return itvs
 
 
