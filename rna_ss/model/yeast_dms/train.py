@@ -215,6 +215,9 @@ def main(config, validation_fold_idx):
     model_file_des = os.path.join(config['model_dir'], 'fold_%d.hdf5' % validation_fold_idx)
     shutil.copy(model_file_src, model_file_des)
     print("Model from epoch %d is saved at: %s" % (best_epoch, model_file_des))
+    # also dump the config in that folder
+    with open(os.path.join(config['model_dir'], 'config_%d.yml'.format(validation_fold_idx)), 'w') as outfile:
+        yaml.dump(config, outfile)
 
 
 if __name__ == "__main__":
