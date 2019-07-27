@@ -82,20 +82,23 @@ def _norm(x, w=50, check_len=True):
 #     return _data[i_selected:i_selected+l], best_coverage, relative_shift
 
 
-def _align_data(itv, seq):
+def _align_data(itv, seq, gene_name, transcript_id):
     # just reporting
     data = wig_track[itv]
-    n_ac_covered = len([x for x in seq if x in ['A', 'C', 'a', 'c']])
+    idx = np.where(~np.isnan(data))[0]  # index of non missing values
+    n_ac_covered = len([i for i in idx if seq[i] in ['A', 'C', 'a', 'c']])
+    n_gt_covered = len([i for i in idx if seq[i] in ['G', 'T', 'g', 't']])
     ac_coverage = float(n_ac_covered)/(seq.count('A') + seq.count('C') + seq.count('a') + seq.count('c'))
-    print("A/C coverage {}".format(ac_coverage))
+    gt_coverage = float(n_gt_covered)/(seq.count('G') + seq.count('T') + seq.count('g') + seq.count('t'))
+    print("{} {} A/C coverage {} G/T coverage {}".format(gene_name, transcript_id, ac_coverage, gt_coverage))
     return data, ac_coverage
 
 
-def _add_data(itv, seq, w=50):
+def _add_data(itv, seq, gene_name, transcript_id, w=50):
     # raw data seems to be random shifted
     # re-align by looking for the offset that maximize coverage on A/C bases
     # x, ac_coverage, relative_shift = _align_data(itv, seq)
-    x, ac_coverage = _align_data(itv, seq)
+    x, ac_coverage = _align_data(itv, seq, gene_name, transcript_id)
 
     # normalize to 0 - 1
     # window normalization?
@@ -133,7 +136,8 @@ def _add_data(itv, seq, w=50):
 
 
 # df_anno = add_columns(df_anno, ['data', 'ac_coverage', 'relative_shift'], ['ditv', 'sequence'], lambda x, y: _add_data(x, y, w=50))
-df_anno = add_columns(df_anno, ['data', 'ac_coverage'], ['ditv', 'sequence'], lambda x, y: _add_data(x, y, w=50))
+df_anno = add_columns(df_anno, ['data', 'ac_coverage'], ['ditv', 'sequence', 'name_2', 'name'],
+                      lambda x, y, n1, n2: _add_data(x, y, n1, n2, w=50))
 
 # output
 # df_anno = df_anno[['name', 'chrom', 'strand', 'tx_start', 'tx_end',
