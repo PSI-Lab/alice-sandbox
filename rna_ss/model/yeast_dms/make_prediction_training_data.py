@@ -85,7 +85,8 @@ def main(config):
     # prediction
     df = add_columns(df, ['{}_pred'.format(x) for x in config['target_cols']],
                      ['sequence', 'fold_idx', 'gene_name', 'transcript_id'],
-                     lambda s, i, g, t: predict_row_data(s, i, predictors, g, t, config['target_cols']))
+                     lambda s, i, g, t: predict_row_data(s, i, predictors, g, t, config['target_cols'],
+                                                         config['chrom_folds']))
 
     # add new metadata, output
     for x in config['target_cols']:
