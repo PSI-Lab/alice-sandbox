@@ -94,41 +94,57 @@ def _align_data(itv, seq, gene_name, transcript_id):
     return data, ac_coverage
 
 
+# def _add_data(itv, seq, gene_name, transcript_id, w=50):
+#     # raw data seems to be random shifted
+#     # re-align by looking for the offset that maximize coverage on A/C bases
+#     # x, ac_coverage, relative_shift = _align_data(itv, seq)
+#     x, ac_coverage = _align_data(itv, seq, gene_name, transcript_id)
+#
+#     # normalize to 0 - 1
+#     # window normalization?
+#     # use window size 50 (50 non missing values)
+#     idx = np.where(~np.isnan(x))[0]  # index of non missing values
+#
+#     if len(idx) > 0:
+#         y = []
+#         ks = (len(idx) - 1)//w + 1
+#         for k in range(ks):
+#             # first batch, use first index in x
+#             if k == 0:
+#                 start = 0
+#             else:
+#                 start = idx[k * w]
+#             # last batch, use the last index in x
+#             if k == ks -1:
+#                 end = len(x)
+#                 check_len = False
+#             else:
+#                 end = idx[(k + 1) * w]
+#                 check_len = True
+#
+#             yp = _norm(x[start:end], w, check_len)
+#
+#             y.append(yp)
+#         y = np.concatenate(y)
+#         assert len(y) == len(x), (len(y), len(x))
+#     else:
+#         y = x
+#     # replace nan with -1
+#     y[np.where(np.isnan(y))] = -1
+#     # return y.tolist(), ac_coverage, relative_shift
+#     return y.tolist(), ac_coverage
+
+
 def _add_data(itv, seq, gene_name, transcript_id, w=50):
-    # raw data seems to be random shifted
-    # re-align by looking for the offset that maximize coverage on A/C bases
-    # x, ac_coverage, relative_shift = _align_data(itv, seq)
+    # just reporting
     x, ac_coverage = _align_data(itv, seq, gene_name, transcript_id)
 
     # normalize to 0 - 1
-    # window normalization?
-    # use window size 50 (50 non missing values)
-    idx = np.where(~np.isnan(x))[0]  # index of non missing values
+    # just dividing by 1000
+    y = x/1000.0
+    assert np.nanmax(y) <= 1
+    assert np.nanmin(y) >= 0
 
-    if len(idx) > 0:
-        y = []
-        ks = (len(idx) - 1)//w + 1
-        for k in range(ks):
-            # first batch, use first index in x
-            if k == 0:
-                start = 0
-            else:
-                start = idx[k * w]
-            # last batch, use the last index in x
-            if k == ks -1:
-                end = len(x)
-                check_len = False
-            else:
-                end = idx[(k + 1) * w]
-                check_len = True
-
-            yp = _norm(x[start:end], w, check_len)
-
-            y.append(yp)
-        y = np.concatenate(y)
-        assert len(y) == len(x), (len(y), len(x))
-    else:
-        y = x
     # replace nan with -1
     y[np.where(np.isnan(y))] = -1
     # return y.tolist(), ac_coverage, relative_shift
@@ -150,4 +166,4 @@ df_anno = df_anno[['name', 'chrom', 'strand', 'tx_start', 'tx_end',
 metadata = dataframe.Metadata()
 metadata.version = "1"
 metadata.encoding['data'] = dataframe.Metadata.LIST
-write_dataframe(metadata, df_anno, 'data/yeast_test.csv')
+write_dataframe(metadata, df_anno, 'data/yeast_no_norm.csv')
