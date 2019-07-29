@@ -36,16 +36,30 @@ df_anno = add_column(df_anno, 'sequence', ['ditv'], lambda x: genome.dna(x))
 # add data
 
 
-def _norm(x, w=50, check_len=True):
-    # Each reactivity value above the 95th percentile is set to the 95th percentile
-    # and each reactivity value below the 5th percentile is set to the 5th percentile,
-    # then the reactivity at each position of the transcript is divided by the value of the 95th percentile
+# def _norm(x, w=50, check_len=True):
+#     # Each reactivity value above the 95th percentile is set to the 95th percentile
+#     # and each reactivity value below the 5th percentile is set to the 5th percentile,
+#     # then the reactivity at each position of the transcript is divided by the value of the 95th percentile
+#     if check_len:
+#         assert np.sum(~np.isnan(x)) == w, (x, np.sum(~np.isnan(x)))
+#     q95 = np.nanquantile(x, 0.95)
+#     q05 = np.quantile(x, 0.05)
+#     x = np.clip(x, q05, q95)
+#     x = x/q95
+#     assert np.nanmin(x) >= 0, np.nanmin(x)
+#     assert np.nanmax(x) <= 1, np.nanmin(x)
+#     return x
+
+
+def _norm(x, w=100, check_len=True):
+    # just divide by the max
     if check_len:
         assert np.sum(~np.isnan(x)) == w, (x, np.sum(~np.isnan(x)))
-    q95 = np.nanquantile(x, 0.95)
-    q05 = np.quantile(x, 0.05)
-    x = np.clip(x, q05, q95)
-    x = x/q95
+    # q95 = np.nanquantile(x, 0.95)
+    # q05 = np.quantile(x, 0.05)
+    # x = np.clip(x, q05, q95)
+    # x = x/q95
+    x = x/np.nanmax(x)
     assert np.nanmin(x) >= 0, np.nanmin(x)
     assert np.nanmax(x) <= 1, np.nanmin(x)
     return x
@@ -135,31 +149,72 @@ def _align_data(itv, seq, gene_name, transcript_id):
 #     return y.tolist(), ac_coverage
 
 
-def _add_data(itv, seq, gene_name, transcript_id):
-    # just reporting
+def _add_data(itv, seq, gene_name, transcript_id, w=100):
+    # raw data seems to be random shifted
+    # re-align by looking for the offset that maximize coverage on A/C bases
+    # x, ac_coverage, relative_shift = _align_data(itv, seq)
     x, ac_coverage = _align_data(itv, seq, gene_name, transcript_id)
 
     # normalize to 0 - 1
-    if not np.all(np.isnan(x)):
-        # just dividing by max
-        _div = np.nanmax(x)
-        print("{} {} dividing by {}".format(gene_name, transcript_id, _div))
-        y = x / _div
-        assert np.nanmax(y) <= 1, np.nanmax(y)
-        assert np.nanmin(y) >= 0, np.nanmin(y)
-    else:
-        print("{} {} all missing val".format(gene_name, transcript_id))
-        y = x
+    # window normalization?
+    # use window size W W non missing values)
+    idx = np.where(~np.isnan(x))[0]  # index of non missing values
 
+    if len(idx) > 0:
+        y = []
+        ks = (len(idx) - 1)//w + 1
+        for k in range(ks):
+            # first batch, use first index in x
+            if k == 0:
+                start = 0
+            else:
+                start = idx[k * w]
+            # last batch, use the last index in x
+            if k == ks -1:
+                end = len(x)
+                check_len = False
+            else:
+                end = idx[(k + 1) * w]
+                check_len = True
+
+            yp = _norm(x[start:end], w, check_len)
+
+            y.append(yp)
+        y = np.concatenate(y)
+        assert len(y) == len(x), (len(y), len(x))
+    else:
+        y = x
     # replace nan with -1
     y[np.where(np.isnan(y))] = -1
     # return y.tolist(), ac_coverage, relative_shift
     return y.tolist(), ac_coverage
 
 
+# def _add_data(itv, seq, gene_name, transcript_id):
+#     # just reporting
+#     x, ac_coverage = _align_data(itv, seq, gene_name, transcript_id)
+#
+#     # normalize to 0 - 1
+#     if not np.all(np.isnan(x)):
+#         # just dividing by max
+#         _div = np.nanmax(x)
+#         print("{} {} dividing by {}".format(gene_name, transcript_id, _div))
+#         y = x / _div
+#         assert np.nanmax(y) <= 1, np.nanmax(y)
+#         assert np.nanmin(y) >= 0, np.nanmin(y)
+#     else:
+#         print("{} {} all missing val".format(gene_name, transcript_id))
+#         y = x
+#
+#     # replace nan with -1
+#     y[np.where(np.isnan(y))] = -1
+#     # return y.tolist(), ac_coverage, relative_shift
+#     return y.tolist(), ac_coverage
+
+
 # df_anno = add_columns(df_anno, ['data', 'ac_coverage', 'relative_shift'], ['ditv', 'sequence'], lambda x, y: _add_data(x, y, w=50))
 df_anno = add_columns(df_anno, ['data', 'ac_coverage'], ['ditv', 'sequence', 'name_2', 'name'],
-                      lambda x, y, n1, n2: _add_data(x, y, n1, n2))
+                      lambda x, y, n1, n2: _add_data(x, y, n1, n2, w=100))
 
 # output
 # df_anno = df_anno[['name', 'chrom', 'strand', 'tx_start', 'tx_end',
