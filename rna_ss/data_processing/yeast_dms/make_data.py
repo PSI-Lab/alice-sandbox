@@ -135,15 +135,21 @@ def _align_data(itv, seq, gene_name, transcript_id):
 #     return y.tolist(), ac_coverage
 
 
-def _add_data(itv, seq, gene_name, transcript_id, w=50):
+def _add_data(itv, seq, gene_name, transcript_id):
     # just reporting
     x, ac_coverage = _align_data(itv, seq, gene_name, transcript_id)
 
     # normalize to 0 - 1
-    # just dividing by 1000
-    y = x/1000.0
-    assert np.nanmax(y) <= 1
-    assert np.nanmin(y) >= 0
+    if not np.all(np.isnan(x)):
+        # just dividing by max
+        _div = np.nanmax(x)
+        print("{} {} dividing by {}".format(gene_name, transcript_id, _div))
+        y = x / _div
+        assert np.nanmax(y) <= 1, np.nanmax(y)
+        assert np.nanmin(y) >= 0, np.nanmin(y)
+    else:
+        print("{} {} all missing val".format(gene_name, transcript_id))
+        y = x
 
     # replace nan with -1
     y[np.where(np.isnan(y))] = -1
@@ -153,7 +159,7 @@ def _add_data(itv, seq, gene_name, transcript_id, w=50):
 
 # df_anno = add_columns(df_anno, ['data', 'ac_coverage', 'relative_shift'], ['ditv', 'sequence'], lambda x, y: _add_data(x, y, w=50))
 df_anno = add_columns(df_anno, ['data', 'ac_coverage'], ['ditv', 'sequence', 'name_2', 'name'],
-                      lambda x, y, n1, n2: _add_data(x, y, n1, n2, w=50))
+                      lambda x, y, n1, n2: _add_data(x, y, n1, n2))
 
 # output
 # df_anno = df_anno[['name', 'chrom', 'strand', 'tx_start', 'tx_end',
