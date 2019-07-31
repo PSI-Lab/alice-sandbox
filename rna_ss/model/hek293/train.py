@@ -124,7 +124,7 @@ def main(config, validation_fold_idx):
     # df_intervals = add_column(df_intervals, 'chromosome', ['transcript'], lambda x: x.chromosome)
 
     # load data
-    _, df_intervals = read_dataframe(gzip.open('data/hek293_vivo2.csv.gz '))  # FIXME tmp file
+    _, df_intervals = read_dataframe(gzip.open('data/hek293_vivo2.csv.gz'))  # FIXME tmp file
     df_intervals = add_column(df_intervals, 'chromosome', ['transcript'], lambda x: x.chromosome)
 
     # interval_folds = [[] for _ in range(len(chrom_folds))]
