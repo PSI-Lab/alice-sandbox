@@ -1,0 +1,36 @@
+#dataset_dc_id: oovVmC
+target_cols:
+- reactivity_data
+batch_size: 10
+chrom_folds:
+- [chr1, chr10, chr15, chr20, chr22]
+- [chr2, chr9, chr14, chr19, chr21]
+- [chr3, chr8, chr11, chr17]
+- [chr4, chr7, chr12, chr18]
+- [chr5, chr6, chr13, chr16, chrX]
+dense_conv:
+- {dilation: 1, filter_width: 16, num_filter: 128}
+- {dilation: 2, filter_width: 16, num_filter: 128}
+- {dilation: 4, filter_width: 16, num_filter: 128}
+- {dilation: 8, filter_width: 16, num_filter: 128}
+- {dilation: 16, filter_width: 16, num_filter: 128}
+- {dilation: 32, filter_width: 16, num_filter: 128}
+#hid_units:
+#- 150
+#- 50
+hid_units: []
+es_patience: 10
+example_length: 500
+#example_reweighting: true
+gated: false
+genome_annotation: ucsc_refseq.2017-06-25
+learning_rate: 0.001
+penalty_l1: 0.00001
+penalty_l2: 0.00001
+#min_log_tpm: 1
+#min_rep_corr: 0.2
+model_dir: model/
+num_batch_for_validation: 200
+num_epoch: 200
+residual: true
+skipconn: true
