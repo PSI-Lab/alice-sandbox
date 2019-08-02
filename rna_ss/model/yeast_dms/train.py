@@ -124,10 +124,10 @@ def main(config, validation_fold_idx):
     # df_intervals = add_column(df_intervals, 'chromosome', ['transcript'], lambda x: x.chromosome)
 
     # load data
-    # _, df_intervals = read_dataframe(gzip.open(dc.Client().get_path(config['dataset_dc_id'])))
+    _, df_intervals = read_dataframe(gzip.open(dc.Client().get_path(config['dataset_dc_id'])))
 
     # _, df_intervals = read_dataframe('data/yeast_test.csv')
-    _, df_intervals = read_dataframe('data/yeast_no_norm.csv')
+    # _, df_intervals = read_dataframe('data/yeast_no_norm.csv')
 
     # df_intervals = add_column(df_intervals, 'chromosome', ['transcript'], lambda x: x.chromosome)
 
