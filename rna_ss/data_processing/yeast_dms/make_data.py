@@ -36,33 +36,33 @@ df_anno = add_column(df_anno, 'sequence', ['ditv'], lambda x: genome.dna(x))
 # add data
 
 
-# def _norm(x, w=50, check_len=True):
-#     # Each reactivity value above the 95th percentile is set to the 95th percentile
-#     # and each reactivity value below the 5th percentile is set to the 5th percentile,
-#     # then the reactivity at each position of the transcript is divided by the value of the 95th percentile
-#     if check_len:
-#         assert np.sum(~np.isnan(x)) == w, (x, np.sum(~np.isnan(x)))
-#     q95 = np.nanquantile(x, 0.95)
-#     q05 = np.quantile(x, 0.05)
-#     x = np.clip(x, q05, q95)
-#     x = x/q95
-#     assert np.nanmin(x) >= 0, np.nanmin(x)
-#     assert np.nanmax(x) <= 1, np.nanmin(x)
-#     return x
-
-
-def _norm(x, w=100, check_len=True):
-    # just divide by the max
+def _norm(x, w=50, check_len=True):
+    # Each reactivity value above the 95th percentile is set to the 95th percentile
+    # and each reactivity value below the 5th percentile is set to the 5th percentile,
+    # then the reactivity at each position of the transcript is divided by the value of the 95th percentile
     if check_len:
         assert np.sum(~np.isnan(x)) == w, (x, np.sum(~np.isnan(x)))
-    # q95 = np.nanquantile(x, 0.95)
-    # q05 = np.quantile(x, 0.05)
-    # x = np.clip(x, q05, q95)
-    # x = x/q95
-    x = x/np.nanmax(x)
+    q95 = np.nanquantile(x, 0.95)
+    q05 = np.quantile(x, 0.05)
+    x = np.clip(x, q05, q95)
+    x = x/q95
     assert np.nanmin(x) >= 0, np.nanmin(x)
     assert np.nanmax(x) <= 1, np.nanmin(x)
     return x
+
+
+# def _norm(x, w=100, check_len=True):
+#     # just divide by the max
+#     if check_len:
+#         assert np.sum(~np.isnan(x)) == w, (x, np.sum(~np.isnan(x)))
+#     # q95 = np.nanquantile(x, 0.95)
+#     # q05 = np.quantile(x, 0.05)
+#     # x = np.clip(x, q05, q95)
+#     # x = x/q95
+#     x = x/np.nanmax(x)
+#     assert np.nanmin(x) >= 0, np.nanmin(x)
+#     assert np.nanmax(x) <= 1, np.nanmin(x)
+#     return x
 
 
 # def _align_data(itv, seq, n=10):
@@ -150,9 +150,7 @@ def _align_data(itv, seq, gene_name, transcript_id):
 
 
 def _add_data(itv, seq, gene_name, transcript_id, w=100):
-    # raw data seems to be random shifted
-    # re-align by looking for the offset that maximize coverage on A/C bases
-    # x, ac_coverage, relative_shift = _align_data(itv, seq)
+    # just reporting
     x, ac_coverage = _align_data(itv, seq, gene_name, transcript_id)
 
     # normalize to 0 - 1
@@ -227,4 +225,4 @@ df_anno = df_anno[['name', 'chrom', 'strand', 'tx_start', 'tx_end',
 metadata = dataframe.Metadata()
 metadata.version = "1"
 metadata.encoding['data'] = dataframe.Metadata.LIST
-write_dataframe(metadata, df_anno, 'data/yeast_no_norm.csv')
+write_dataframe(metadata, df_anno, 'data/yeast_dms_vivo.csv')
