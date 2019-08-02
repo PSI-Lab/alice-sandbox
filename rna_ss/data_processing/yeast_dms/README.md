@@ -57,6 +57,7 @@ curl -O ftp://ftp.ncbi.nlm.nih.gov/geo/series/GSE45nnn/GSE45803/suppl/GSE45803_F
 cd ../../
 
 python make_data.py
+gzip data/yeast_dms_vivo.csv 
 
 ```
 
