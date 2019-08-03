@@ -102,8 +102,16 @@ def _align_data(itv, seq, gene_name, transcript_id, remove_non_ac_vals=False):
     idx = np.where(~np.isnan(data))[0]  # index of non missing values
     n_ac_covered = len([i for i in idx if seq[i] in ['A', 'C', 'a', 'c']])
     n_gt_covered = len([i for i in idx if seq[i] in ['G', 'T', 'g', 't']])
-    ac_coverage = float(n_ac_covered)/(seq.count('A') + seq.count('C') + seq.count('a') + seq.count('c'))
-    gt_coverage = float(n_gt_covered)/(seq.count('G') + seq.count('T') + seq.count('g') + seq.count('t'))
+    ac_total = seq.count('A') + seq.count('C') + seq.count('a') + seq.count('c')
+    if ac_total > 0:
+        ac_coverage = float(n_ac_covered)/ac_total
+    else:
+        ac_coverage = 0.0
+    gt_total = seq.count('G') + seq.count('T') + seq.count('g') + seq.count('t')
+    if gt_total > 0:
+        gt_coverage = float(n_gt_covered)/gt_total
+    else:
+        gt_coverage = 0.0
     if remove_non_ac_vals:
         idx_non_ac = [i for i in range(len(seq)) if seq[i] not in ['A', 'C', 'a', 'c']]
         data[idx_non_ac] = np.nan
@@ -155,6 +163,9 @@ def _align_data(itv, seq, gene_name, transcript_id, remove_non_ac_vals=False):
 
 
 def _add_data(itv, seq, gene_name, transcript_id, w=100):
+    if len(seq) == 0:
+        return [], 0.0
+
     # just reporting
     x, ac_coverage = _align_data(itv, seq, gene_name, transcript_id, remove_non_ac_vals=True)
 
