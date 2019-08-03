@@ -96,7 +96,7 @@ def _norm(x, w=50, check_len=True):
 #     return _data[i_selected:i_selected+l], best_coverage, relative_shift
 
 
-def _align_data(itv, seq, gene_name, transcript_id):
+def _align_data(itv, seq, gene_name, transcript_id, remove_non_ac_vals=False):
     # just reporting
     data = wig_track[itv]
     idx = np.where(~np.isnan(data))[0]  # index of non missing values
@@ -104,6 +104,11 @@ def _align_data(itv, seq, gene_name, transcript_id):
     n_gt_covered = len([i for i in idx if seq[i] in ['G', 'T', 'g', 't']])
     ac_coverage = float(n_ac_covered)/(seq.count('A') + seq.count('C') + seq.count('a') + seq.count('c'))
     gt_coverage = float(n_gt_covered)/(seq.count('G') + seq.count('T') + seq.count('g') + seq.count('t'))
+    if remove_non_ac_vals:
+        idx_non_ac = [i for i in range(len(seq)) if seq[i] not in ['A', 'C', 'a', 'c']]
+        data[idx_non_ac] = np.nan
+        idx = np.where(~np.isnan(data))[0]  # index of non missing values
+        assert len([i for i in idx if seq[i] in ['G', 'T', 'g', 't']]) == 0
     print("{} {} A/C coverage {} G/T coverage {}".format(gene_name, transcript_id, ac_coverage, gt_coverage))
     return data, ac_coverage
 
@@ -151,7 +156,7 @@ def _align_data(itv, seq, gene_name, transcript_id):
 
 def _add_data(itv, seq, gene_name, transcript_id, w=100):
     # just reporting
-    x, ac_coverage = _align_data(itv, seq, gene_name, transcript_id)
+    x, ac_coverage = _align_data(itv, seq, gene_name, transcript_id, remove_non_ac_vals=True)
 
     # normalize to 0 - 1
     # window normalization?
