@@ -27,7 +27,7 @@ df_anno = pd.read_csv('raw_data/annotation/xenoRefGene.txt.gz', sep='\t', header
 
 
 # select transcripts with complete cds status
-df_anno = df_anno[(df_anno['cds_start_stat'] == 'cmpl') & (df_anno['cds_end_stat'] == 'cmpl')]
+# df_anno = df_anno[(df_anno['cds_start_stat'] == 'cmpl') & (df_anno['cds_end_stat'] == 'cmpl')]
 # get ditv
 df_anno = add_column(df_anno, 'ditv', ['chrom', 'strand', 'exon_starts', 'exon_ends'], get_transcript_ditv)
 # add sequence
