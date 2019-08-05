@@ -77,7 +77,9 @@ def _add_sequence(itvs, genome):
 
 
 def main(config):
-    metadata, _df_intervals = read_dataframe(gzip.open(dc.Client().get_path(config['dataset_dc_id'])))
+    # metadata, _df_intervals = read_dataframe(gzip.open(dc.Client().get_path(config['dataset_dc_id'])))
+
+    metadata, _df_intervals = read_dataframe(gzip.open('data/hek293_vivo2.csv.gz'))  # FIXME tmp file
     _df_intervals = add_column(_df_intervals, 'chrom', ['transcript'], lambda x: x.chromosome)
     _df_intervals = add_column(_df_intervals, 'gene_name', ['transcript'], lambda x: x.gene.name)
 
