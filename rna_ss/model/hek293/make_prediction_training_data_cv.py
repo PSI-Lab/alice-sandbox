@@ -86,7 +86,7 @@ def main(config):
     # use the data_generator only to process the df
     genome = Genome(config['genome_annotation'])
     df = add_column(_df_intervals, 'sequence', ['disjoint_intervals'], lambda x: _add_sequence(x, genome))
-    df = add_column(df, 'log_tpm', ['tpm'], np.log)
+    # df = add_column(df, 'log_tpm', ['tpm'], np.log)
 
     # find the model to use for making CV prediction
     df = add_column(df, 'fold_idx', ['chrom'], lambda x: _find_fold(x, config['chrom_folds']))
