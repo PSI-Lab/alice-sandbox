@@ -32,7 +32,8 @@ Training data was constructed from `[1]`.
 
 - poly-A selected, fragmented and sequenced
 
-
+- Removed outlier positions by ﻿90% Winsorization,
+and normalized raw read counts by dividing by the max in each 100nt window
 
 ### Model
 
@@ -49,6 +50,8 @@ Layer parameters are:
 - {dilation: 8, filter_width: 16, num_filter: 256}
 - {dilation: 16, filter_width: 16, num_filter: 512}
 ```
+
+RNA positions with non-A/C bases are masked out in the loss function and back propagation.
 
 BatchNorm is added for each conv layer,
 and L1 and L2 regularization was applied to all conv layer filters.
@@ -76,13 +79,45 @@ Model was trained using 5-fold CV with early stopping.
 
 ### Data
 
-training, testing
+Training data was constructed from `[1]`.
+
+- K562 cell line
+
+- treated with DMS (only react with A/C base)
+
+- poly-A selected, fragmented and sequenced
+
+- Removed outlier positions by ﻿90% Winsorization,
+and normalized raw read counts by dividing by the max in each 100nt window
+
+- Filtered out transcripts where the gene expression log TPM is below 1,
+or the correlation between the two biological reps is below 0.2
+
 
 ### Model
 
+Similar to the yeast model, with added example weighting for each transcript:
+
+```
+# tpm weight
+w1 = 1/(1 + np.exp(-1.5 * (log_tpm - 3)))
+# corr weight
+w2 = 1/(1 + np.exp(-10 * (rep_corr - 0.5)))
+transcript_weight = w1 * w2
+```
+
+
 ### CV Performance
 
+![plot/k562_training_cv.png](plot/k562_training_cv.png)
+
+
+
 ### Evaluation
+
+#### HEK293 icSHAPE Dataset
+
+![plot/k562_hek293_icshape.png](plot/k562_hek293_icshape.png)
 
 ## Future Work
 
