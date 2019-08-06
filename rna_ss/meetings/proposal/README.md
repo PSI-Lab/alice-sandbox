@@ -24,7 +24,6 @@ enabled the discovery of whole transcriptome RNA structure in multiple species a
 
 ### Data
 
-Training data was constructed from `[1]`.
 
 - ﻿Yeast strain BY4741
 
@@ -79,7 +78,6 @@ Model was trained using 5-fold CV with early stopping.
 
 ### Data
 
-Training data was constructed from `[1]`.
 
 - K562 cell line
 
@@ -121,9 +119,9 @@ transcript_weight = w1 * w2
 
 ## Future Work
 
+- Combine prediction with thermodynamic models to predict the actual base-pairing for sequences in vivo
 
-## Reference
+- Multi-task training of multiple species and cell types
 
-`[1]` Rouskin, S., Zubradt, M., Washietl, S., Kellis, M. & Weissman, J. S. Genome-wide probing of RNA structure reveals active unfolding of mRNA structures in vivo. Nature 505, 701–705 (2014).
 
 
