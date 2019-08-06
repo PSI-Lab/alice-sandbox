@@ -129,7 +129,7 @@ def main(config, validation_fold_idx):
     # _, df_intervals = read_dataframe('data/yeast_test.csv')
     # _, df_intervals = read_dataframe('data/yeast_no_norm.csv')
 
-    # df_intervals = add_column(df_intervals, 'chromosome', ['transcript'], lambda x: x.chromosome)
+    df_intervals = add_column(df_intervals, 'chrom', ['transcript'], lambda x: x.chromosome)
 
     # interval_folds = [[] for _ in range(len(chrom_folds))]
     #
