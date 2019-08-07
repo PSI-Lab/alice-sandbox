@@ -73,6 +73,7 @@ def predict_row_data(seq, fold_idx, predictors, gene_name, transcript_id, data_n
 
 def main(config):
     metadata, df = read_dataframe(gzip.open(dc.Client().get_path(config['dataset_dc_id'])))
+    df = add_column(df, 'chrom', ['transcript'], lambda x: x.chromosome)
     df = add_column(df, 'fold_idx', ['chrom'], lambda x: _find_fold(x, config['chrom_folds']))
 
     context = resolve_contex(config['dense_conv'])
