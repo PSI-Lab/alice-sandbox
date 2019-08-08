@@ -2,16 +2,20 @@ import genome_kit as gk
 import deepgenomics.pandas.v1 as dataframe
 import pandas as pd
 import math
+import sys
 from dgutils.interval import DisjointIntervalsSequence
 from dgutils.pandas import write_dataframe, add_column, add_columns
 import gzip
 
 
+in_file = sys.argv[1]
+out_file = sys.argv[2]
+
 genome = gk.Genome('gencode.vM19')
 
 data = []
 # TODO this is the chromatin dataset, shall we also process the nucleo and cytoplasm one?
-with gzip.open('raw_data/GSM3310478_mes_ch_vivo.out.txt.gz') as f:
+with gzip.open(in_file) as f:
     for line in f:
         line = line.rstrip()
         fields = line.split('\t')
@@ -68,4 +72,4 @@ metadata.version = "1"
 metadata.encoding["transcript"] = dataframe.Metadata.GENOMEKIT
 metadata.encoding["vals"] = dataframe.Metadata.LIST
 
-write_dataframe(metadata, df, 'data/mouse_esc_v65_icshape_ch_vivo.csv')
+write_dataframe(metadata, df, out_file)
