@@ -269,23 +269,70 @@ For each transcript, we used the model that wasn't trained on its chromosome to 
 We computed the Spearman correlation between the prediction and the target for each transcript.
 Fig \ref{fig:yeast_cv_performance} shows the distribution of Spearman correlation across all transcripts.
 
-\begin{figure}
+\begin{figure}[h!]
 \includegraphics[width=\textwidth]{yeast_cv_performance.png}
 \caption{Densely connected neural network used for the yeast model}
 \label{fig:yeast_cv_performance}
 \centering
 \end{figure}
 
+\subsection{Ribosomal RNA}
 
+Next we used our model to predict the reactivity for all A/C bases in yeast $18S$ and $15S$ ribosomal RNAs,
+both were never seen by the model (neither in the training nor validation set).
+
+Raw read count data for $18S$ and $15S$ was downloaded from GSE45803, and was processed similarly to the training dataset,
+since the experimental protocol was identical.
+
+Correlation between prediction and the normalized read count is shown in Fig\ref{fig:yeast_r18_performance} and Fig\ref{fig:yeast_r25_performance},
+where each data point is one A/C base in the corresponding transcript.
+In comparison, RNAfold (window size $50$ and span $50$) achieves a correlation of $0.3217$ and $0.4529$ for $18S$ and $15S$, respectively.
+
+\begin{figure}[h!]
+\includegraphics[width=\textwidth]{yeast_r18_performance.png}
+\caption{Densely connected neural network used for the yeast model}
+\label{fig:yeast_r18_performance}
+\centering
+\end{figure}
+
+\begin{figure}[h!]
+\includegraphics[width=\textwidth]{yeast_r25_performance.png}
+\caption{Densely connected neural network used for the yeast model}
+\label{fig:yeast_r25_performance}
+\centering
+\end{figure}
+
+
+\subsection{Noncoding RNAs}
+
+To evaluate whether the model generalizes to noncoding transcripts and different experimental protocol,
+we processed yeast data from the ModSeq paper\cite{talkish2014mod},
+where yeast was treated with DMS or no-DMS (as control),
+and the authors identified positions that are significantly modified between treated and control,
+in selected noncoding and rRNA transcripts.
+
+For each transcript, we use our models to predict on all A/C positions,
+and computed the au-ROC on how well the prediction distinguish the significantly modified bases from the rest.
+We also compare the performance of our model to that of RNAfold, as shown in Fig\ref{fig:yeast_modseq_performance}.
+
+\begin{figure}[h!]
+\includegraphics[width=\textwidth]{yeast_modseq_performance.png}
+\caption{Densely connected neural network used for the yeast model}
+\label{fig:yeast_modseq_performance}
+\centering
+\end{figure}
 
 
 \section{Future Work}
 
-TODO RT stop / total coverage
+\begin{itemize}
+  \item Improve training and generalization performance, by making use of the raw sequencing data, and biological replicates.
+  In additional to counts of RT stops, read coverage at each position can be used to infer the confidence of calling that position paired/unpaired.
+  Transcript can be reweighted during training, according to the agreement between different biological reps.
 
-TODO 4 reps, re-weight each position
+  \item Multi-resolution learning. 
+\end{itemize}
 
-multi resolution
 
 \chapter{Mouse Model}
 
