@@ -37,21 +37,110 @@
 \section{RNA secondary structure}
 
 
+%relationship to gene regulation, splicing, polyA, half life, stability, translation (uORF)
+%cite papers
+%
+%ribosnitch
+%
+%RNA structure & disease
+%
+%RNA structure & interaction with protein
+%
+%secondary v.s. tertiary structure
+%
+%what determines RNA structure, focus on vivo
+%
+%review thermodynamic based models
+%
+%context-free-grammar based models
+%
+%conservation based models
+%
+%review DMfold-like models
+%
+%why do we need a computational model for in vivo folding?
+%
+%- prediction long RNA structure without the need to probe them (any limitation in probing long RNAs?)
+%
+%- predict structure of RNA with low abundance (hard to measure, need to do targetted sequencing)
+%
+%- predict structure of novel RNA, e.g. with mutation,
+%
+%- structure representation for transfer learning
+
+
+
 \section{High throughput probing of RNS secondary structure}
 
-K562 and yeast DMS data\cite{rouskin2014genome}
-
-Mouse embryonic stem cell v6.5 icSHAPE data\cite{spitale2015structural}
-
-Yeast ModSeq validation data\cite{talkish2014mod}
-
-Hek293 and mouse validation data (different compartments)\cite{sun2019rna}
+%review different experimental technique, comparison, pros v.s. cons
+%
+%vivo v.s. vitro
+%
+%enzymes v.s. chemicals
+%
+%
+%K562 and yeast DMS data\cite{rouskin2014genome}
+%
+%Mouse embryonic stem cell v6.5 icSHAPE data\cite{spitale2015structural}
+%
+%Yeast ModSeq validation data\cite{talkish2014mod}
+%
+%Hek293 and mouse validation data (different compartments)\cite{sun2019rna}
 
 
 
 \section{Deep neural network}
 
+%sequence to sequence models, RNN, LSTM, transformer
+%
+%residual net, dense net
+%
+%cite spliceAI
+
 \chapter{Yeast Model}
+
+To model in vivo RNA secondary structure, we compiled training data from \cite{rouskin2014genome}.
+In this study, yeast strain was treated with ﻿dimethyl sulphate (DMS), which reacts with ﻿unpaired adenine and cytosine bases.
+The pool of modified RNAs were fragmented and sequenced.
+Since ﻿DMS modification blocks reverse transcription, ﻿
+number of reads (TODO stops?) at each position is indicative of relative accessibility of that site.
+
+Raw count data was downloaded from GSE45803 (GSE45803_Feb13_VivoAllextra_1_15_PLUS.wig.gz and GSE45803_Feb13_VivoAllextra_1_15_Minus.wig.gz).
+The authors aligned 25nt of each read to a non-redundant set of RefSeq transcripts,
+where each gene is represented by its longest protein-coding transcript.
+Only uniquely mapped reads with less than 2 mismatches were retained,
+and the authors further filtered out aligned reads whose RT stop is not A/C.
+The count at each position represents the combined number of RT stops at that site, across $4$ biological replicates.
+
+To construct training dataset, Saccharomyces cerevisiae assembly R61 (secCer2) RefSeq gene annotation was used to extract mRNA sequences.
+For each transcript, we first extract the raw read count for all adenine (A) and cytosine (C) bases
+(A/C positions with no RT stop coverage were set to a count of $0$),
+and applied ﻿$90\%$ Winsorization to remove outliers.
+Specifically, for each non-overlapping window of 100 A/C bases, values above the $95\%$ percentile was set to the $95\%$ percentile,
+and values below the $5\%$ percentile was set to the $5\%$ percentile.
+Then, all values within this window were divided by the max, to obtain values between $0$ and $1$.
+
+%To avoid inclusion of low quality data points in the training set, we filtered out transcripts whose A/C coverage is below $0.2$,
+%where A/C coverage is defined as
+
+We used the poly-A selected yeast data to compile training dataset consists of mRNAs.
+
+%Alignments were performed with bowtie using the first 25 nt of each read
+%Reads were first aligned to the ribosomal RNA and the unaligned reads were then aligned to the genome
+%reads were filtered for unique map to the genome and no mismatches
+%reads were filtered for reverse transcriptase stops at As and Cs only
+%Genome_build: Saccharomyces cerevisiae assembly R61 (UCSC: sacCer2).
+%Supplementary_files_format_and_content: The position number directly indicates the DMS modified position starting at 1. Raw reads for each replicates were combined together in wiggle format. Separate files are provided for positive and negative strand maching reads.
+
+5-fold CV, chromosomes
+
+soft label cross entropy
+
+missing value, loss/gradient masking
+
+TODO RT stop / total coverage
+
+TODO 4 reps
 
 \chapter{Mouse Model}
 
@@ -59,6 +148,11 @@ Hek293 and mouse validation data (different compartments)\cite{sun2019rna}
 \chapter{Human Model}
 
 \chapter{Conclusion and future work}
+
+one dataset that has multiple mods per sequence, so we can reconstruct colleciton of structures
+
+joint learning of accessibility and other data, e.g. chip-seq peaks
+
 
 \addcontentsline{toc}{chapter}{Bibliography}
 \bibliographystyle{plain}
