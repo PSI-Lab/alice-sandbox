@@ -6,6 +6,7 @@ import csv
 import yaml
 import shutil
 import argparse
+import subprocess
 import numpy as np
 from time import gmtime, strftime
 import tensorflow as tf
@@ -121,6 +122,8 @@ class ValidationSetMetrics(Callback):
 
 
 def main(config, validation_fold_idx):
+    git_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip()
+
     chrom_folds = config['chrom_folds']
     # _, df_intervals = read_dataframe(config['all_inervals'])
     # df_intervals = add_column(df_intervals, 'chromosome', ['transcript'], lambda x: x.chromosome)
@@ -202,6 +205,7 @@ def main(config, validation_fold_idx):
     # dump config
     with open(os.path.join(run_dir, 'config.yml'), 'w') as outfile:
         config['validation_fold_idx'] = validation_fold_idx
+        config['git_hash'] = git_hash
         yaml.dump(config, outfile)
 
     model.fit_generator(generator=training_dataset,
@@ -223,6 +227,7 @@ def main(config, validation_fold_idx):
     # also dump the config in that folder
     with open(os.path.join(config['model_dir'], 'config_{}.yml'.format(validation_fold_idx)), 'w') as outfile:
         config['run_dir'] = run_dir
+        config['git_hash'] = git_hash
         yaml.dump(config, outfile)
 
 
