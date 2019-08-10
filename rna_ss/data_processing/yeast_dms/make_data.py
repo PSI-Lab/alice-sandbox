@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import deepgenomics.pandas.v1 as dataframe
 from dgutils.pandas import add_column, write_dataframe, add_columns
-from utils import Interval, FastaGenome, WigTrack, _sort_ditvs
+from utils import Interval, FastaGenome, WigTrack, _sort_ditvs, _add_data
 
 
 def get_transcript_ditv(chrom, strand, exon_starts, exon_ends):
@@ -25,6 +25,11 @@ df_anno = pd.read_csv('raw_data/annotation/xenoRefGene.txt.gz', sep='\t', header
                              'cds_start', 'cds_end', 'exon_count', 'exon_starts', 'exon_ends',
                              'score', 'name_2', 'cds_start_stat', 'cds_end_stat', 'exon_frames'])
 
+# keep one transcript per gene
+print("Before: {}".format(len(df_anno)))
+df_anno.drop_duplicates(subset=['name_2'], inplace=True)
+print("After: {}".format(len(df_anno)))
+
 
 # select transcripts with complete cds status
 # df_anno = df_anno[(df_anno['cds_start_stat'] == 'cmpl') & (df_anno['cds_end_stat'] == 'cmpl')]
@@ -36,19 +41,7 @@ df_anno = add_column(df_anno, 'sequence', ['ditv'], lambda x: genome.dna(x))
 # add data
 
 
-def _norm(x, w=50, check_len=True):
-    # Each reactivity value above the 95th percentile is set to the 95th percentile
-    # and each reactivity value below the 5th percentile is set to the 5th percentile,
-    # then the reactivity at each position of the transcript is divided by the value of the 95th percentile
-    if check_len:
-        assert np.sum(~np.isnan(x)) == w, (x, np.sum(~np.isnan(x)))
-    q95 = np.nanquantile(x, 0.95)
-    q05 = np.quantile(x, 0.05)
-    x = np.clip(x, q05, q95)
-    x = x/q95
-    assert np.nanmin(x) >= 0, np.nanmin(x)
-    assert np.nanmax(x) <= 1, np.nanmin(x)
-    return x
+
 
 
 # def _norm(x, w=100, check_len=True):
@@ -96,29 +89,6 @@ def _norm(x, w=50, check_len=True):
 #     return _data[i_selected:i_selected+l], best_coverage, relative_shift
 
 
-def _align_data(itv, seq, gene_name, transcript_id, remove_non_ac_vals=False):
-    # just reporting
-    data = wig_track[itv]
-    idx = np.where(~np.isnan(data))[0]  # index of non missing values
-    n_ac_covered = len([i for i in idx if seq[i] in ['A', 'C', 'a', 'c']])
-    n_gt_covered = len([i for i in idx if seq[i] in ['G', 'T', 'g', 't']])
-    ac_total = seq.count('A') + seq.count('C') + seq.count('a') + seq.count('c')
-    if ac_total > 0:
-        ac_coverage = float(n_ac_covered)/ac_total
-    else:
-        ac_coverage = 0.0
-    gt_total = seq.count('G') + seq.count('T') + seq.count('g') + seq.count('t')
-    if gt_total > 0:
-        gt_coverage = float(n_gt_covered)/gt_total
-    else:
-        gt_coverage = 0.0
-    if remove_non_ac_vals:
-        idx_non_ac = [i for i in range(len(seq)) if seq[i] not in ['A', 'C', 'a', 'c']]
-        data[idx_non_ac] = np.nan
-        idx = np.where(~np.isnan(data))[0]  # index of non missing values
-        assert len([i for i in idx if seq[i] in ['G', 'T', 'g', 't']]) == 0
-    print("{} {} A/C coverage {} G/T coverage {}".format(gene_name, transcript_id, ac_coverage, gt_coverage))
-    return data, ac_coverage
 
 
 # def _add_data(itv, seq, gene_name, transcript_id, w=50):
@@ -162,46 +132,7 @@ def _align_data(itv, seq, gene_name, transcript_id, remove_non_ac_vals=False):
 #     return y.tolist(), ac_coverage
 
 
-def _add_data(itv, seq, gene_name, transcript_id, w=100):
-    if len(seq) == 0:
-        return [], 0.0
 
-    # just reporting
-    x, ac_coverage = _align_data(itv, seq, gene_name, transcript_id, remove_non_ac_vals=True)
-
-    # normalize to 0 - 1
-    # window normalization?
-    # use window size W W non missing values)
-    idx = np.where(~np.isnan(x))[0]  # index of non missing values
-
-    if len(idx) > 0:
-        y = []
-        ks = (len(idx) - 1)//w + 1
-        for k in range(ks):
-            # first batch, use first index in x
-            if k == 0:
-                start = 0
-            else:
-                start = idx[k * w]
-            # last batch, use the last index in x
-            if k == ks -1:
-                end = len(x)
-                check_len = False
-            else:
-                end = idx[(k + 1) * w]
-                check_len = True
-
-            yp = _norm(x[start:end], w, check_len)
-
-            y.append(yp)
-        y = np.concatenate(y)
-        assert len(y) == len(x), (len(y), len(x))
-    else:
-        y = x
-    # replace nan with -1
-    y[np.where(np.isnan(y))] = -1
-    # return y.tolist(), ac_coverage, relative_shift
-    return y.tolist(), ac_coverage
 
 
 # def _add_data(itv, seq, gene_name, transcript_id):
@@ -227,15 +158,19 @@ def _add_data(itv, seq, gene_name, transcript_id, w=100):
 
 
 # df_anno = add_columns(df_anno, ['data', 'ac_coverage', 'relative_shift'], ['ditv', 'sequence'], lambda x, y: _add_data(x, y, w=50))
-df_anno = add_columns(df_anno, ['data', 'ac_coverage'], ['ditv', 'sequence', 'name_2', 'name'],
-                      lambda x, y, n1, n2: _add_data(x, y, n1, n2, w=100))
+df_anno = add_column(df_anno, 'data', ['ditv', 'sequence', 'name_2', 'name'],
+                      lambda x, y, n1, n2: _add_data(wig_track, x, y, n1, n2, w=100))
+# drop rows with all missing values
+print("Dropping {} rows with all missing data".format(df_anno['data'].isna().sum()))
+df_anno.dropna(subset=['data'], inplace=True)
+
 
 # output
 # df_anno = df_anno[['name', 'chrom', 'strand', 'tx_start', 'tx_end',
 #                    'name_2', 'sequence', 'data', 'ac_coverage', 'relative_shift']].rename(
 #     columns={'name': 'transcript_id', 'name_2': 'gene_name'})
 df_anno = df_anno[['name', 'chrom', 'strand', 'tx_start', 'tx_end',
-                   'name_2', 'sequence', 'data', 'ac_coverage']].rename(
+                   'name_2', 'sequence', 'data']].rename(
     columns={'name': 'transcript_id', 'name_2': 'gene_name'})
 
 metadata = dataframe.Metadata()

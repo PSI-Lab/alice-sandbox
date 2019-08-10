@@ -164,3 +164,101 @@ class WigTrack(object):
                 self.data[chrom][strand][start:end] = val
 
 
+def _norm(x, w=50, check_len=True):
+    # Each reactivity value above the 95th percentile is set to the 95th percentile
+    # and each reactivity value below the 5th percentile is set to the 5th percentile,
+    # then the reactivity at each position of the transcript is divided by the value of the 95th percentile
+    if check_len:
+        assert np.sum(~np.isnan(x)) == w, (x, np.sum(~np.isnan(x)))
+    q95 = np.nanquantile(x, 0.95)
+    q05 = np.nanquantile(x, 0.05)
+    x = np.clip(x, q05, q95)
+    # some times values are all 0's, do not divide
+    if q95 != 0:
+        x = x/q95
+    assert np.nanmin(x) >= 0, np.nanmin(x)
+    assert np.nanmax(x) <= 1, np.nanmin(x)
+    return x
+
+
+def _align_data(wig_track, itv, seq, gene_name, transcript_id, remove_non_ac_vals=False):
+    # TODO set A/C bases with missing values to 0!!!!
+    data = wig_track[itv]
+    # all missing values
+    if np.all(np.isnan(data)):
+        return None
+
+    idx_ac = [i for i, base in enumerate(seq) if base in ['A', 'C', 'a', 'c']]
+    idx_nan = np.where(np.isnan(data))[0]  # index of missing values
+    _idx = list(set(idx_ac).intersection(set(idx_nan)))  # index of A/C bases with missing value
+    print("{} {} setting {} (total {}) A/C bases with missing value to 0".format(gene_name, transcript_id, len(_idx),
+                                                                                 len(idx_ac)))
+    data[_idx] = 0
+
+    # idx_non_nan = np.where(~np.isnan(data))[0]  # index of non missing values
+    # n_ac_covered = len([i for i in idx if seq[i] in ['A', 'C', 'a', 'c']])
+    # n_gt_covered = len([i for i in idx if seq[i] in ['G', 'T', 'g', 't']])
+    # ac_total = seq.count('A') + seq.count('C') + seq.count('a') + seq.count('c')
+    # if ac_total > 0:
+    #     ac_coverage = float(n_ac_covered)/ac_total
+    # else:
+    #     ac_coverage = 0.0
+    # gt_total = seq.count('G') + seq.count('T') + seq.count('g') + seq.count('t')
+    # if gt_total > 0:
+    #     gt_coverage = float(n_gt_covered)/gt_total
+    # else:
+    #     gt_coverage = 0.0
+    if remove_non_ac_vals:
+        idx_non_ac = [i for i in range(len(seq)) if seq[i] not in ['A', 'C', 'a', 'c']]
+        data[idx_non_ac] = np.nan
+        idx = np.where(~np.isnan(data))[0]  # index of non missing values
+        assert len([i for i in idx if seq[i] in ['G', 'T', 'g', 't']]) == 0
+    # print("{} {} A/C coverage {} G/T coverage {}".format(gene_name, transcript_id, ac_coverage, gt_coverage))
+    # return data, ac_coverage
+    return data
+
+
+def _add_data(wig_track, itv, seq, gene_name, transcript_id, w=100):
+    if len(seq) == 0:
+        return [], 0.0
+
+    # just reporting
+    x = _align_data(wig_track, itv, seq, gene_name, transcript_id, remove_non_ac_vals=True)
+    if x is None:
+        return None
+
+    # normalize to 0 - 1
+    # window normalization?
+    # use window size W W non missing values)
+    idx = np.where(~np.isnan(x))[0]  # index of non missing values
+
+    if len(idx) > 0:
+        y = []
+        ks = (len(idx) - 1)//w + 1
+        for k in range(ks):
+            # first batch, use first index in x
+            if k == 0:
+                start = 0
+            else:
+                start = idx[k * w]
+            # last batch, use the last index in x
+            if k == ks -1:
+                end = len(x)
+                check_len = False
+            else:
+                end = idx[(k + 1) * w]
+                check_len = True
+
+            # print start, end, x[start:end]
+            yp = _norm(x[start:end], w, check_len)
+
+            y.append(yp)
+        y = np.concatenate(y)
+        assert len(y) == len(x), (len(y), len(x))
+    else:
+        y = x
+    # replace nan with -1
+    y[np.where(np.isnan(y))] = -1
+    # return y.tolist(), ac_coverage, relative_shift
+    return y.tolist()
+
