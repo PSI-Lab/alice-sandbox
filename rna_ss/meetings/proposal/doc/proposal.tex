@@ -38,7 +38,70 @@
 \chapter{Introduction}
 %\addcontentsline{toc}{chapter}{Introduction}
 
-\section{RNA secondary structure}
+
+
+
+Although once believed to be an intermediate molecule that serves as messenger between DNA and protein,
+RNA is now known to be involved in many aspects in gene regulation and expression.
+Unlike DNA which forms stable double helix, RNA predominantly stays single-stranded and folds onto itself by
+forming base pairs via hydrogen bonds, including Watson-Crick pair A-U, G-C and non-canonical TODO pair A-U.
+Nearby paired and unpaired bases  \iffalse forms stems and loops, \fi and further leads to the formation TODO of
+hairpins, bulges, internal loops, Multi loops and pseudoknots.
+In addition, secondary structures within an RNA molecule can interact via non-covalent bond, to form tertiary structure.
+
+
+RNA secondary and tertiary structure play key roles in regulating both coding and nocoding transcripts,
+and affect all steps of gene regulation including transcription, splicing, polyadenylation, translation,
+localization and stability\cite{wan2011understanding}.
+Over the past few years, combination of RNA structure probing and high throughput sequencing has enabled
+the discovery? of genome-wide RNA structural in multiple organisms and cell types,
+??? better understanding of the relationship between RNA structure and function.
+
+
+\section{RNA secondary structure and gene regulation}
+
+
+\subsection*{Polyadenylation}
+
+Ding et. al\cite{ding2014vivo} used Structure-Seq (TODO review) to study the genome-wide RNA structure of
+﻿\textit{Arabidopsis thaliana} seedlings and discovered a pattern around alternative polyadenylation sites across $5959$ mRNAs.
+As shown in Fig \ref{fig:poly_a}, region upstream of the site (-15nt to -2nt) is significantly more structured, as indicated by lower reactivity,
+and region downstream of the site (-1nt to +5nt) is significantly less structured, as indicated by higher reactivity.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.6\textwidth]{poly_a.png}
+    \caption{RNA structure around alternative polyadenylation sites in ﻿\textit{Arabidopsis thaliana}. From Ding et. al\cite{ding2014vivo}.}
+    \label{fig:poly_a}
+    \centering
+\end{figure}
+
+
+\begin{enumerate}
+    \item Transcription
+    \item Splicing
+    \item Polyadenylation
+
+    \item Translation
+    \item Localization
+    \item Stability
+\end{enumerate}
+
+\section{High throughput probing of RNS secondary structure}
+
+
+It has been demonstrated in various organisms that in vivo structure can differ significantly from in vitro.
+In a living cell environment, the presence of proteins,  ?ligand, salt, temperature?, all affects RNA structure,
+and he precise reconstruction of these conditions in vitro is almost impossible.
+﻿Rouskin et al.\cite{rouskin2014genome} studied yeast RNA structure and found that RNAs are less structured in vivo than in vitro.
+Moreover, they observed that structures unfold when $Mg^{2+}$ is lowered in vitro,
+and more structured regions emerge when cell is depleted of ATP in vivo.
+(which underscores the importance of in vivo probing that captures the specific physiological condition of the cell type of interest)
+
+
+vast number of non coding RNAs (still being discovered)
+
+constran prediction using data
 
 
 %relationship to gene regulation, splicing, polyA, half life, stability, translation (uORF)
@@ -74,7 +137,7 @@
 
 
 
-\section{High throughput probing of RNS secondary structure}
+
 
 %review different experimental technique, comparison, pros v.s. cons
 %
@@ -330,7 +393,7 @@ We also compare the performance of our model to that of RNAfold, as shown in Fig
   In additional to counts of RT stops, read coverage at each position can be used to infer the confidence of calling that position paired/unpaired.
   Transcript can be reweighted during training, according to the agreement between different biological reps.
 
-  \item Multi-resolution learning. 
+  \item Multi-resolution learning.
 \end{itemize}
 
 
