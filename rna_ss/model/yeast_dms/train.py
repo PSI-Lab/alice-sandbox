@@ -52,6 +52,7 @@ class ValidationSetMetrics(Callback):
         self.batch_size = batch_size
         self.csv_file = open(output_file, 'w')
         self.writer = None
+        self.output_file = output_file
 
     def _compute_corr(self, epoch):
         # corr = []
@@ -86,6 +87,7 @@ class ValidationSetMetrics(Callback):
                 _corr_data.append(_val)
         _corr_data = pd.DataFrame(_corr_data)
         # print("Correlation")
+        print(self.output_file)
         print(_corr_data.describe(percentiles=[0.75]))
         self.corr.append(_corr_data.median())
 
@@ -220,6 +222,7 @@ def main(config, validation_fold_idx):
     print("Model from epoch %d is saved at: %s" % (best_epoch, model_file_des))
     # also dump the config in that folder
     with open(os.path.join(config['model_dir'], 'config_{}.yml'.format(validation_fold_idx)), 'w') as outfile:
+        config['run_dir'] = run_dir
         yaml.dump(config, outfile)
 
 
