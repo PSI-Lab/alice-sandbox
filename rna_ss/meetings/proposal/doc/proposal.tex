@@ -235,29 +235,48 @@ overcome difficulty in training
 
 Long range dependency -> also achived by deep  dilated conv net
 
-\subsection*{Dilated convolution}
+\subsection*{Recurrent neural network and LSTM}
 
-\subsection*{Deep Residual Net}
+Recurrent neural networks(RNNs), especially long short-term memory (LSTM)\cite{hochreiter1997long},
+have been successfully applied to many sequence labelling tasks
+Although LSTM mitigates the vanishing and exploding gradient problem in the vanilla RNNs,
+and has the nice property of being able to model long range dependency of any distance (at least in theory),
+in practise, it falls short due to the computational time,
+which scales linearly with the length of input for both training and inference,
+thus renders it difficult to scale up to long input sequence lengths.
 
-He et. al\cite{he2016deep} proposed an neural network architecture where they reformulated
-each layer, instead of learning the direct mapping $\mathcal{H}(x)$,
+\subsection*{Dilated convolutional neural network, residual function, skip connection and attention mechanism}
+
+Instead, researchers has proposed other alternatives to model long range dependencies while addressing the
+computational time problem that is intrinsic to all recurrent neural networks, including LSTM.
+
+Yu et. al\cite{yu2015multi} proposed a variation of the convolutional neural network (CNN),
+by introducing 'holes' in convolution filters, such that the receptive filed in a single layer is $n$ times of the original,
+where $n-1$ is the number of 'holes' between adjacent connections in the filter.
+Compared to non-dilated CNN with the same number of parameters,
+dilated CNN achieves exponential growth of the receptive filed,
+while maintaining the same resolution and coverage.
+
+Classical CNNs are known to be difficult to optimize as the number of layers grows.
+He et. al\cite{he2016deep} proposed a neural network architecture where they reformulated
+each layer to, instead of learning the direct mapping $\mathcal{H}(x)$,
 learns the residual function $\mathcal{H}(x) - x$.
 They showed that very deep neural network (up to $1000$ layers) can be optimized with no difficulties.
+Combining these residual functions with the above mentioned dilated convolution,
+Jaganathan et. al\cite{jaganathan2019predicting} successfully trained a 32-layer deep neural network to predict
+the location of splice sites from primary sequence.
 
-backprop depth
 
-TODO successful applications
-
-\subsection*{Dense Net}
-
-DenseNet is another architecture proposed by Huang et. al\cite{huang2017densely}
-to mitigate the difficulty in training deep neural network.
-Shorter path between layers is achieved by connecting all pairs of layers,
-i.e. every lasyer receives as input concatenation of all previous layers, and passes its output to all subsequent layers.
+DenseNet, proposed by Huang et. al\cite{huang2017densely}, is another architecture
+to mitigate the difficulty in training deep CNN.
+In order to improve information flow (in both forward and backward direction),
+shorter path between layers is necessary.
+This is achieved by connecting all pairs of layers,
+i.e. every layer receives as input concatenation of all previous layers, and passes its output to all subsequent layers.
 Such dense connection not only alleviates the vanishing gradient problem, but also enables feature reuse which makes the network more parameter-efficient.
 
 
-\subsection*{Transformer Network}
+%\subsection*{Transformer Network}
 
 Attention mechanism (TODO ref) is another technique to model long range dependencies,
 without limitation by distances.
@@ -273,7 +292,19 @@ One drawback of these networks is that substantial memory is required for comput
 (TODO example, typical size)
 
 
+%\subsection*{Application in genomics}
+%
+%david kelly\cite{kelley2016basset}
+%
+
+
+
 TODO plots for NN
+
+
+
+\section{Proposed thesis work}
+
 
 
 vast number of non coding RNAs (still being discovered)
