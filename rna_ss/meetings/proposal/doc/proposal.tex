@@ -2,6 +2,7 @@
 \documentclass{proposal}
 \usepackage{verbatim}
 \usepackage{graphicx}
+\usepackage{amsmath,amssymb}
 \graphicspath{ {./plot/} }
 \usepackage{svg}
 
@@ -160,14 +161,119 @@ On the other hand, genes with more UTR structure like ﻿chaperones and unfolded
 
 \section{High throughput probing of RNS secondary structure}
 
+Teo types of reagents are being used to probe RNA structures: enzymes and chemicals.
+These reagents cleave or modify RNA at specific bases and/or structured regions.
 
-It has been demonstrated in various organisms that in vivo structure can differ significantly from in vitro.
+﻿Parallel analysis of RNA structures (PARS) (TODO ref)
+﻿uses RNase S1 to cleave single-stranded RNA, and RNase V1 to cleave double-stranded region.
+Similarly, ﻿fragmentation sequencing (FragSeq) utilizes ﻿RNase P1 to cleave single-stranded RNA.
+After high throughput sequencing and read alignment to the genome or transcriptome,
+the location of cleavage can be determined.
+In PARS, the ratio between V1 and S1 is calculated (PARS score),
+and in FragSeq, the ratio between ﻿RNase P1 treated and untreated control is calculated. (TODO more on sequencing and meaning of score)
+
+
+﻿Dimethyl sulfide (DMS) reacts with ﻿unpaired adenine (A) and cytosine (C),
+and is being used various protocols to modify RNA. (TODO ref)
+﻿selective 2-hydroxyl acylation analysed by primer extension (SHAPE)
+method uses the chemical N-methylisotoic anhydride (NMIA) and its derivatives to
+modifiy the ribose of nucleotides within flexible regions in RNA secondary structure,
+and is able to react with all four nucleotides.
+In both cases, the modified nucleotides result in ﻿termination of reverse transcription (RT),
+and can be detected via high throughput sequencing.
+The number of RT stops at each position is thus indicative of the relative accessibility of that nucleotide.
+
+Another class of methods can identify actual base-pairing, either intramolecular, or intermolecular.
+Psoralen analysis of RNA interactions and structures (PARIS),
+sequencing of psoralen crosslinked, ligated, and selected hybrids (SPLASH),
+ligation of interacting RNA and high-throughput sequencing (LIGR-seq),
+use psoralens to cross-link the duplex regions of RNA.
+Sequencing of the fragmented and ends-ligated reads provides information on direct base-pairing,
+and ??
+RNA-RNA interaction, tertiary structure.
+
+
+tmp\cite{piao2017rna}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.9\textwidth]{probing_methods.png}
+    \caption{RNA structure probing methods. From Piao et. al\cite{piao2017rna}.}
+    \label{fig:probing_methods}
+    \centering
+\end{figure}
+
+
+
+Different probing methods have their own limitations.
+Enzymes are too big to ﻿permeate through cell membranes, thus can not be used \textit{in vivo}.
+Certain enzymes, e.g. ﻿RNase V1, requires ? physiological condition to be ?.
+On the other hand, although ﻿Dimethyl sulfide (DMS) works \textit{in vivo},
+it only detects unstructured A/C bases.
+
+
+Furthermore, although \textit{in vitro} data provides invaluable insight into the genome-wide organization of RNA structure,
+it has been demonstrated in various organisms that in vivo structure can differ significantly from in vitro.
 In a living cell environment, the presence of proteins,  ?ligand, salt, temperature?, all affects RNA structure,
 and he precise reconstruction of these conditions in vitro is almost impossible.
 ﻿Rouskin et al.\cite{rouskin2014genome} studied yeast RNA structure and found that RNAs are less structured in vivo than in vitro.
 Moreover, they observed that structures unfold when $Mg^{2+}$ is lowered in vitro,
 and more structured regions emerge when cell is depleted of ATP in vivo.
 (which underscores the importance of in vivo probing that captures the specific physiological condition of the cell type of interest)
+
+
+In this thesis, ??
+
+
+\section{Deep neural network for sequence modelling}
+
+NLP, image
+
+overfitting
+
+overcome difficulty in training
+
+Long range dependency -> also achived by deep  dilated conv net
+
+\subsection*{Dilated convolution}
+
+\subsection*{Deep Residual Net}
+
+He et. al\cite{he2016deep} proposed an neural network architecture where they reformulated
+each layer, instead of learning the direct mapping $\mathcal{H}(x)$,
+learns the residual function $\mathcal{H}(x) - x$.
+They showed that very deep neural network (up to $1000$ layers) can be optimized with no difficulties.
+
+backprop depth
+
+TODO successful applications
+
+\subsection*{Dense Net}
+
+DenseNet is another architecture proposed by Huang et. al\cite{huang2017densely}
+to mitigate the difficulty in training deep neural network.
+Shorter path between layers is achieved by connecting all pairs of layers,
+i.e. every lasyer receives as input concatenation of all previous layers, and passes its output to all subsequent layers.
+Such dense connection not only alleviates the vanishing gradient problem, but also enables feature reuse which makes the network more parameter-efficient.
+
+
+\subsection*{Transformer Network}
+
+Attention mechanism (TODO ref) is another technique to model long range dependencies,
+without limitation by distances.
+Vaswani et. al\cite{vaswani2017attention} proposed the Transformer Network,
+which is solely based on attention mechanism to model global dependencies between input and output.
+In each block, the network applies a self-attention mechanism
+which directly models relationships between all positions in the input.
+For each position, the attention scores for other positions are normalized,
+which are used as weights to combine input from all positions to construct a new representation of the current position.
+These networks are highly parameterizable, achieves ?? performance,
+and have the added benefit that mechanistic insight can be drawn from the attention weights. (TODO example)
+One drawback of these networks is that substantial memory is required for computing and storing the attention matrix.
+(TODO example, typical size)
+
+
+TODO plots for NN
 
 
 vast number of non coding RNAs (still being discovered)
@@ -230,7 +336,7 @@ disease
 
 
 
-\section{Deep neural network}
+%\section{Deep neural network}
 
 %sequence to sequence models, RNN, LSTM, transformer
 %
@@ -471,10 +577,10 @@ We also compare the performance of our model to that of RNAfold, as shown in Fig
 \end{itemize}
 
 
-\chapter{Mouse Model}
-
-
-\chapter{Human Model}
+%\chapter{Mouse Model}
+%
+%
+%\chapter{Human Model}
 
 \chapter{Conclusion and future work}
 
