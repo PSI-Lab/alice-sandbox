@@ -42,42 +42,92 @@
 
 
 
-Although once believed to be an intermediate molecule that serves as messenger between DNA and protein,
+Once believed to be an intermediate molecule that serves as messenger between DNA and protein,
 RNA is now known to be involved in many aspects in gene regulation and expression.
 Unlike DNA which forms stable double helix, RNA predominantly stays single-stranded and folds onto itself by
-forming base pairs via hydrogen bonds, including Watson-Crick pair A-U, G-C and non-canonical TODO pair A-U.
-Nearby paired and unpaired bases  \iffalse forms stems and loops, \fi and further leads to the formation TODO of
+forming base pairs via hydrogen bonds, including Watson-Crick pair A-U, G-C and non-canonical pair A-U.
+Nearby paired and unpaired bases  \iffalse forms stems and loops, \fi further leads to the formation of
 hairpins, bulges, internal loops, Multi loops and pseudoknots.
 In addition, secondary structures within an RNA molecule can interact via non-covalent bond, to form tertiary structure.
 
 
 RNA secondary and tertiary structure play key roles in regulating both coding and nocoding transcripts,
 and affect all steps of gene regulation including transcription, splicing, polyadenylation, translation,
-localization and stability\cite{wan2011understanding}.
+localization and stability\cite{wan2011understanding, mortimer2014insights, bevilacqua2016genome}.
 Over the past few years, combination of RNA structure probing and high throughput sequencing has enabled
-the discovery? of genome-wide RNA structural in multiple organisms and cell types,
-??? better understanding of the relationship between RNA structure and function.
+the identification? of genome-wide RNA structural at single nucleotide resolution in multiple organisms and cell types,
+which provides new insight into the relationship between RNA structure and its function.?
+
+\section{High throughput probing of RNS secondary structure}
+
+Two types of reagents are being used to probe RNA structures: enzymes and chemicals.
+These reagents cleave or modify RNA at specific bases and/or structured regions.
+
+﻿Parallel analysis of RNA structures (PARS)\cite{wan2014landscape}
+﻿uses RNase S1 to cleave single-stranded regions, and RNase V1 to cleave double-stranded regions.
+Similarly, ﻿fragmentation sequencing (FragSeq)\cite{underwood2010fragseq} utilizes ﻿RNase P1 to cleave single-stranded RNA.
+After high throughput sequencing and read alignment to the genome or transcriptome,
+the locations of cleavage can be determined.
+In PARS, the ratio between V1 and S1 is calculated (PARS score),
+and in FragSeq, the ratio between ﻿RNase P1 treated and untreated control is calculated. (TODO more on sequencing and meaning of score)
+
+
+﻿Dimethyl sulfide (DMS) reacts with ﻿unpaired adenine (A) and cytosine (C),
+and is being used in various protocols to modify RNA\cite{rouskin2014genome, talkish2014mod}.
+﻿selective 2-hydroxyl acylation analysed by primer extension (SHAPE)
+method uses the chemical N-methylisotoic anhydride (NMIA) and its derivatives to
+modifiy the ribose of nucleotides within flexible regions in RNA secondary structure,
+and is able to react with all four nucleotides.
+In both cases, the modified nucleotides result in ﻿termination of reverse transcription (RT),
+and can be detected via high throughput sequencing.
+The number of RT stops at each position is thus indicative of the relative accessibility of that nucleotide.
+
+In addition to measure the accessibility of a single nucleotide,
+effort is underway to probe the actual base-pairing, either intramolecular, or intermolecular.
+Three methods have been proposed to use psoralens for cross-linking the duplex regions of RNA:
+psoralen analysis of RNA interactions and structures (PARIS)\cite{lu2018paris},
+sequencing of psoralen crosslinked, ligated, and selected hybrids (SPLASH)\cite{aw2016vivo},
+ligation of interacting RNA and high-throughput sequencing (LIGR-seq)\cite{sharma2016global},
+Sequencing of the fragmented and ends-ligated reads provides information on direct base-pairing in the secondary structure,
+and \textit{trans} RNA-RNA interactions.
+TODO limitation
+
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.9\textwidth]{probing_methods.png}
+    \caption{RNA structure probing methods. From Piao et. al\cite{piao2017rna}.}
+    \label{fig:probing_methods}
+    \centering
+\end{figure}
+
+
+
+Different probing methods have their own limitations.
+Enzymes are too big to ﻿permeate through cell membranes, thus can not be used \textit{in vivo}.
+Certain enzymes, e.g. ﻿RNase V1, requires $Mg^{2+}$ concentration much higher than
+in physiological condition to be active?, and $Mg^{2+}$ is known to promote RNA folding.
+On the other hand, although ﻿Dimethyl sulfide (DMS) works \textit{in vivo},
+it only detects unstructured A/C bases.
+TODO cross-link methods
+
+
+Furthermore?, although \textit{in vitro} data provides invaluable insight into the genome-wide organization of RNA structure,
+it has been demonstrated in various organisms that in vivo structure can differ significantly from in vitro.
+In a living cell environment, the presence of proteins,  ?ligand, salt, temperature?, all affects RNA structure,
+and the precise reconstruction of these conditions in vitro is almost impossible.
+﻿Rouskin et al.\cite{rouskin2014genome} studied yeast RNA structure and found that RNAs are less structured in vivo than in vitro.
+Moreover, they observed that structures unfold when $Mg^{2+}$ is lowered in vitro,
+and more structured regions emerge when cell is depleted of ATP in vivo.
+(which underscores the importance of in vivo probing that captures the specific physiological condition of the cell type of interest)
+
+
 
 
 \section{RNA secondary structure and gene regulation}
 
-
-\subsection*{Polyadenylation}
-
-Ding et. al\cite{ding2014vivo} used Structure-Seq (TODO review) to study the genome-wide RNA structure of
-﻿\textit{Arabidopsis thaliana} seedlings \textit{in vivo} and discovered a pattern around alternative polyadenylation sites across $5959$ mRNAs.
-As shown in Fig \ref{fig:poly_a}, region upstream of the site (-15nt to -2nt) is significantly more structured, as indicated by lower reactivity,
-and region downstream of the site (-1nt to +5nt) is significantly less structured, as indicated by higher reactivity.
-This
-
-\begin{figure}[h!]
-    \centering
-    \includegraphics[width=0.6\textwidth]{poly_a.png}
-    \caption{RNA structure around alternative polyadenylation sites in ﻿\textit{Arabidopsis thaliana}. From Ding et. al\cite{ding2014vivo}.}
-    \label{fig:poly_a}
-    \centering
-\end{figure}
-
+Genome-wide RNA structure probing has enabled the analysis of structure and function at a global scale,
+which uncovers new properties and relationship that was never discovered from previous studies.
 
 \subsection*{Transcription}
 
@@ -101,6 +151,7 @@ it was observed that UTRs are only slightly less structured than CDS\cite{wan201
 \end{figure}
 
 
+
 \subsection*{Splicing}
 
 Wan et. al\cite{wan2014landscape} analyzed human lymphoblastoid cell lines from a parent-offspring trio by PARS (TODO review),
@@ -116,6 +167,26 @@ Potential role in efficient splicesome assembly.
     \label{fig:exon_exon_junction}
     \centering
 \end{figure}
+
+
+\subsection*{Polyadenylation}
+
+Ding et. al\cite{ding2014vivo} used Structure-Seq (TODO review) to study the genome-wide RNA structure of
+﻿\textit{Arabidopsis thaliana} seedlings \textit{in vivo} and discovered a pattern around alternative polyadenylation sites across $5959$ mRNAs.
+As shown in Fig \ref{fig:poly_a}, region upstream of the site (-15nt to -2nt) is significantly more structured, as indicated by lower reactivity,
+and region downstream of the site (-1nt to +5nt) is significantly less structured, as indicated by higher reactivity.
+This
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.6\textwidth]{poly_a.png}
+    \caption{RNA structure around alternative polyadenylation sites in ﻿\textit{Arabidopsis thaliana}. From Ding et. al\cite{ding2014vivo}.}
+    \label{fig:poly_a}
+    \centering
+\end{figure}
+
+
+
 
 
 \subsection*{Translation}
@@ -159,81 +230,18 @@ On the other hand, genes with more UTR structure like ﻿chaperones and unfolded
 \end{figure}
 
 
-\section{High throughput probing of RNS secondary structure}
 
-Teo types of reagents are being used to probe RNA structures: enzymes and chemicals.
-These reagents cleave or modify RNA at specific bases and/or structured regions.
-
-﻿Parallel analysis of RNA structures (PARS) (TODO ref)
-﻿uses RNase S1 to cleave single-stranded RNA, and RNase V1 to cleave double-stranded region.
-Similarly, ﻿fragmentation sequencing (FragSeq) utilizes ﻿RNase P1 to cleave single-stranded RNA.
-After high throughput sequencing and read alignment to the genome or transcriptome,
-the location of cleavage can be determined.
-In PARS, the ratio between V1 and S1 is calculated (PARS score),
-and in FragSeq, the ratio between ﻿RNase P1 treated and untreated control is calculated. (TODO more on sequencing and meaning of score)
-
-
-﻿Dimethyl sulfide (DMS) reacts with ﻿unpaired adenine (A) and cytosine (C),
-and is being used various protocols to modify RNA. (TODO ref)
-﻿selective 2-hydroxyl acylation analysed by primer extension (SHAPE)
-method uses the chemical N-methylisotoic anhydride (NMIA) and its derivatives to
-modifiy the ribose of nucleotides within flexible regions in RNA secondary structure,
-and is able to react with all four nucleotides.
-In both cases, the modified nucleotides result in ﻿termination of reverse transcription (RT),
-and can be detected via high throughput sequencing.
-The number of RT stops at each position is thus indicative of the relative accessibility of that nucleotide.
-
-Another class of methods can identify actual base-pairing, either intramolecular, or intermolecular.
-Psoralen analysis of RNA interactions and structures (PARIS),
-sequencing of psoralen crosslinked, ligated, and selected hybrids (SPLASH),
-ligation of interacting RNA and high-throughput sequencing (LIGR-seq),
-use psoralens to cross-link the duplex regions of RNA.
-Sequencing of the fragmented and ends-ligated reads provides information on direct base-pairing,
-and ??
-RNA-RNA interaction, tertiary structure.
-
-
-tmp\cite{piao2017rna}
-
-\begin{figure}[h!]
-    \centering
-    \includegraphics[width=0.9\textwidth]{probing_methods.png}
-    \caption{RNA structure probing methods. From Piao et. al\cite{piao2017rna}.}
-    \label{fig:probing_methods}
-    \centering
-\end{figure}
-
-
-
-Different probing methods have their own limitations.
-Enzymes are too big to ﻿permeate through cell membranes, thus can not be used \textit{in vivo}.
-Certain enzymes, e.g. ﻿RNase V1, requires ? physiological condition to be ?.
-On the other hand, although ﻿Dimethyl sulfide (DMS) works \textit{in vivo},
-it only detects unstructured A/C bases.
-
-
-Furthermore, although \textit{in vitro} data provides invaluable insight into the genome-wide organization of RNA structure,
-it has been demonstrated in various organisms that in vivo structure can differ significantly from in vitro.
-In a living cell environment, the presence of proteins,  ?ligand, salt, temperature?, all affects RNA structure,
-and he precise reconstruction of these conditions in vitro is almost impossible.
-﻿Rouskin et al.\cite{rouskin2014genome} studied yeast RNA structure and found that RNAs are less structured in vivo than in vitro.
-Moreover, they observed that structures unfold when $Mg^{2+}$ is lowered in vitro,
-and more structured regions emerge when cell is depleted of ATP in vivo.
-(which underscores the importance of in vivo probing that captures the specific physiological condition of the cell type of interest)
-
-
-In this thesis, ??
 
 
 \section{Deep neural network for sequence modelling}
 
-NLP, image
+Predicting RNA structure is similar in its nature to many applications in
+computer vision (CV) and natural language processing(NLP),
+where the input is a variable sized sequence,
+and the output is a sequence of the same size as the input.
+Here we review the recent breakthroughs in deep learning and discuss their application in genomics.
+TODO 2D MAP
 
-overfitting
-
-overcome difficulty in training
-
-Long range dependency -> also achived by deep  dilated conv net
 
 \subsection*{Recurrent neural network and LSTM}
 
@@ -247,8 +255,18 @@ thus renders it difficult to scale up to long input sequence lengths.
 
 \subsection*{Dilated convolutional neural network, residual function, skip connection and attention mechanism}
 
-Instead, researchers has proposed other alternatives to model long range dependencies while addressing the
-computational time problem that is intrinsic to all recurrent neural networks, including LSTM.
+%Instead, researchers has proposed other alternatives to model long range dependencies while addressing the
+%computational time problem that is intrinsic to all recurrent neural networks, including LSTM.
+
+Convolutional neural network (CNN) has been applied successfully in
+modelling transcription factor (TF) and RNA binding protein (RBP) binding\cite{alipanahi2015predicting, gandhi2018cdeepbind},
+alternative splicing\cite{bretschneider2018cossmo}, and genome accessibility\cite{kelley2016basset}.
+One limitation of the classical CNN architecture is that the receptive field size grows linearly with the number of
+layers, so in order to construct a large receptive field for modelling long range dependencies,
+the network is typically very deep, but classical CNNs are known to be difficult to optimize as the number of layers grows.
+
+Instead, researchers has proposed improved architectures to model long range dependencies
+while still addressing the computational time problem that is intrinsic to all recurrent neural networks, including LSTM.
 
 Yu et. al\cite{yu2015multi} proposed a variation of the convolutional neural network (CNN),
 by introducing 'holes' in convolution filters, such that the receptive filed in a single layer is $n$ times of the original,
@@ -257,7 +275,7 @@ Compared to non-dilated CNN with the same number of parameters,
 dilated CNN achieves exponential growth of the receptive filed,
 while maintaining the same resolution and coverage.
 
-Classical CNNs are known to be difficult to optimize as the number of layers grows.
+
 He et. al\cite{he2016deep} proposed a neural network architecture where they reformulated
 each layer to, instead of learning the direct mapping $\mathcal{H}(x)$,
 learns the residual function $\mathcal{H}(x) - x$.
@@ -302,16 +320,48 @@ One drawback of these networks is that substantial memory is required for comput
 TODO plots for NN
 
 
+\section{Related work}
+
+Most state-of-the-art RNA structure prediction algorithms, such as ViennaRNA\cite{lorenz2011viennarna} and Mfold\cite{zuker2003mfold},
+are based on the fundamental property of base-pairing.
+Each type of base-pairing, as well as each type of local structure, has its own associated free energy that is measured experimentally.
+Total free energy is the sum of all local free energy, and can be minimized efficiently using dynamic programming.
+
+Researchers have also applied deep learning to predict RNA structure from sequence directly, as described in DMfold\cite{wang2019dmfold}.
+The authors trained a LSTM to classify each nucleotide in one of the seven categories,
+corresponding to each unique symbol in the dot-bracket notation.
+There are two potential limitations of this model.
+First, training and validation set were splited randomly, while the dataset only consists of a handful of RNA families,
+this means the tranining and validation set contain highly similar sequences,
+so the performance reported in the work does not necessarily reflect the generalization performance to unseen RNA sequences or families.
+Second, the output class labels are not guaranteed to be compatible throughout the sequence, in fact,
+the authors need to apply heuristics to post-process the neural network output into compatible labels.
+
+In terms of prediction using RNA probing data,
+so far the only attempt was to use the measured accessibility to guide dynamic programming algorithm like ViennaRNA\cite{lorenz2011viennarna},
+by introducing extra penalty term when computing the free energy.
+
+(usefulness of the model)
+- predict on novel transcript, mutation
+- low abundance and repeated region
+- help with other prediction tasks
 
 \section{Proposed thesis work}
 
+In this thesis, we propose to work on the following directions:
+
+\begin{itemize}
+    \item Train deep learning models to predict in vivo accessibility from sequence, for multiple species and cell types
+    \item
+    \item Improve TF/RBP binding and splicing model using RNA secondary structure model
+\end{itemize}
+
+list of in vivo dataset
+
+list of validation data
 
 
 vast number of non coding RNAs (still being discovered)
-
-constran prediction using data
-
-whereas
 
 disease
 
@@ -613,7 +663,7 @@ We also compare the performance of our model to that of RNAfold, as shown in Fig
 %
 %\chapter{Human Model}
 
-\chapter{Conclusion and future work}
+\chapter{Conclusion}
 
 one dataset that has multiple mods per sequence, so we can reconstruct colleciton of structures
 
