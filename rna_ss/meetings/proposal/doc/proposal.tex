@@ -64,9 +64,10 @@ the discovery? of genome-wide RNA structural in multiple organisms and cell type
 \subsection*{Polyadenylation}
 
 Ding et. al\cite{ding2014vivo} used Structure-Seq (TODO review) to study the genome-wide RNA structure of
-﻿\textit{Arabidopsis thaliana} seedlings and discovered a pattern around alternative polyadenylation sites across $5959$ mRNAs.
+﻿\textit{Arabidopsis thaliana} seedlings \textit{in vivo} and discovered a pattern around alternative polyadenylation sites across $5959$ mRNAs.
 As shown in Fig \ref{fig:poly_a}, region upstream of the site (-15nt to -2nt) is significantly more structured, as indicated by lower reactivity,
 and region downstream of the site (-1nt to +5nt) is significantly less structured, as indicated by higher reactivity.
+This
 
 \begin{figure}[h!]
     \centering
@@ -77,15 +78,85 @@ and region downstream of the site (-1nt to +5nt) is significantly less structure
 \end{figure}
 
 
-\begin{enumerate}
-    \item Transcription
-    \item Splicing
-    \item Polyadenylation
+\subsection*{Transcription}
 
-    \item Translation
-    \item Localization
-    \item Stability
-\end{enumerate}
+Kertesz et. al\cite{kertesz2010genome} performed in vitro profiling of ﻿the budding yeast
+(\textit{Saccharomyces cerevisiae}) RNA structure using PARS (TODO).
+Averaging PARS scores across more than $3000$ mRNAs revealed a unique pattern across the transcript (Fig \ref{fig:yeast_cds_utr}):
+ the UTRs are less structured than the CDS, both start and stop codon are significantly more accessible,
+and the coding region exhibits a three nucleotide periodical pattern,
+where the first nucleotide is more accessible and the second one is less accessible.
+
+In contrary, although RNAs in human show a similar start/stop codon accessibility and CDS periodicity,
+it was observed that UTRs are only slightly less structured than CDS\cite{wan2014landscape}.  (TODO, other paper says more structured?)
+
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{yeast_cds_utr.png}
+    \caption{Yeast RNA structure differ in CDS and UTR. From Kertesz et. al\cite{kertesz2010genome}.}
+    \label{fig:yeast_cds_utr}
+    \centering
+\end{figure}
+
+
+\subsection*{Splicing}
+
+Wan et. al\cite{wan2014landscape} analyzed human lymphoblastoid cell lines from a parent-offspring trio by PARS (TODO review),
+and observed less structure at AG dinucleotide in the upstream exon donor site,
+and more structure at the first nucleotide in the downstream acceptor site, as shown in Fig \ref{fig:exon_exon_junction}.
+Potential role in efficient splicesome assembly.
+
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.4\textwidth]{exon_exon_junction.png}
+    \caption{RNA structure at exon-exon junction in human lymphoblastoid cell lines. From Wan et. al\cite{wan2014landscape}.}
+    \label{fig:exon_exon_junction}
+    \centering
+\end{figure}
+
+
+\subsection*{Translation}
+
+Kertesz et. al\cite{kertesz2010genome} reported a small but significant anti-correlation between PARS scores 10bp upstream
+of the start codon and ribosome density throughout the transcript.
+In addition, genes where 5'UTRs are less structured than the beginning of the coding region also show a tendency towards higher ribosome density.
+
+\subsection*{Localization}
+
+Kertesz et. al\cite{kertesz2010genome} discovered increased structure in coding region for genes
+whose encoded proteins localize to distinct cellular domains or function in specific metabolic pathways.
+On the other hand, ribosomal transcripts show less structure in UTR and CDS (Fig \ref{fig:yeast_localization}).
+
+
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.4\textwidth]{yeast_localization.png}
+    \caption{RNA structure in CDS and UTR affects localization in yeast. From Kertesz et. al\cite{kertesz2010genome}.}
+    \label{fig:yeast_localization}
+    \centering
+\end{figure}
+
+
+
+\subsection*{Stability}
+
+
+Kertesz et. al\cite{kertesz2010genome} discribed how RNA structure in UTR regulates gene expression during heat shock in order to conserve energy.
+Certain class of genes (e.g. ribosomal encoding ﻿RPL1A) with less UTR structure becomes unfolded with increased temperature,
+which allows degradation by exosome, thus tuning down translation.
+On the other hand, genes with more UTR structure like ﻿chaperones and unfolded response proteins (e.g. HAC1 and PTC2) remain stable and expressed (Fig \ref{fig:yeast_stability}).
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.6\textwidth]{yeast_stability.png}
+    \caption{Yeast gene expression regulation via RNA structure during heat shock. From Mortimer et. al\cite{mortimer2014insights}.}
+    \label{fig:yeast_stability}
+    \centering
+\end{figure}
+
 
 \section{High throughput probing of RNS secondary structure}
 
@@ -103,6 +174,9 @@ vast number of non coding RNAs (still being discovered)
 
 constran prediction using data
 
+whereas
+
+disease
 
 %relationship to gene regulation, splicing, polyA, half life, stability, translation (uORF)
 %cite papers
