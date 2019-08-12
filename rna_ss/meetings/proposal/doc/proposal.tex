@@ -45,17 +45,17 @@ Once believed to be an intermediate molecule that serves as messenger between DN
 RNA is now known to be involved in many aspects in gene regulation and expression.
 Unlike DNA which forms stable double helix, RNA predominantly stays single-stranded and folds onto itself by
 forming base pairs via hydrogen bonds, including Watson-Crick pair A-U, G-C and non-canonical pair A-U.
-Nearby paired and unpaired bases  \iffalse forms stems and loops, \fi further leads to the formation of
+Nearby paired and unpaired bases further assemble into
 hairpins, bulges, internal loops, Multi loops and pseudoknots.
 In addition, secondary structures within an RNA molecule can interact via non-covalent bond, to form tertiary structure.
 
 
-RNA secondary and tertiary structure play key roles in regulating both coding and nocoding transcripts,
-and affect all steps of gene regulation including transcription, splicing, polyadenylation, translation,
+RNA secondary and tertiary structure play key roles in regulating both coding and nocoding genes,
+affecting all steps including transcription, splicing, polyadenylation, translation,
 localization and stability\cite{wan2011understanding, mortimer2014insights, bevilacqua2016genome}.
 Over the past few years, combination of RNA structure probing and high throughput sequencing has enabled
-the identification? of genome-wide RNA structural at single nucleotide resolution in multiple organisms and cell types,
-which provides new insight into the relationship between RNA structure and its function.?
+the measurement of genome-wide RNA structural at single nucleotide resolution in multiple organisms and cell types,
+which provides new insight into the relationship between RNA structure and its function.
 
 \section{High throughput probing of RNS secondary structure}
 
@@ -68,7 +68,7 @@ Similarly, ﻿fragmentation sequencing (FragSeq)\cite{underwood2010fragseq} util
 After high throughput sequencing and read alignment to the genome or transcriptome,
 the locations of cleavage can be determined.
 In PARS, the ratio between V1 and S1 is calculated (PARS score),
-and in FragSeq, the ratio between ﻿RNase P1 treated and untreated control is calculated. (TODO more on sequencing and meaning of score)
+and in FragSeq, the ratio between ﻿RNase P1 treated and untreated control is calculated.
 
 
 ﻿Dimethyl sulfide (DMS) reacts with ﻿unpaired adenine (A) and cytosine (C),
@@ -81,15 +81,13 @@ In both cases, the modified nucleotides result in ﻿termination of reverse tran
 and can be detected via high throughput sequencing.
 The number of RT stops at each position is thus indicative of the relative accessibility of that nucleotide.
 
-In addition to measure the accessibility of a single nucleotide,
+In addition to measuring the accessibility of a single nucleotide,
 effort is underway to probe the actual base-pairing, either intramolecular, or intermolecular.
 Three methods have been proposed to use psoralens for cross-linking the duplex regions of RNA:
 psoralen analysis of RNA interactions and structures (PARIS)\cite{lu2018paris},
-sequencing of psoralen crosslinked, ligated, and selected hybrids (SPLASH)\cite{aw2016vivo},
+sequencing of psoralen crosslinked, ligated, and selected hybrids (SPLASH)\cite{aw2016vivo}, and
 ligation of interacting RNA and high-throughput sequencing (LIGR-seq)\cite{sharma2016global},
-Sequencing of the fragmented and ends-ligated reads provides information on direct base-pairing in the secondary structure,
-and \textit{trans} RNA-RNA interactions.
-TODO limitation
+Sequencing of the fragmented and ends-ligated reads provides information on direct base-pairing in secondary structure and \textit{trans} RNA-RNA interactions.
 
 
 \begin{figure}[h!]
@@ -104,21 +102,25 @@ TODO limitation
 
 Different probing methods have their own limitations.
 Enzymes are too big to ﻿permeate through cell membranes, thus can not be used \textit{in vivo}.
-Certain enzymes, e.g. ﻿RNase V1, requires $Mg^{2+}$ concentration much higher than
-in physiological condition to be active?, and $Mg^{2+}$ is known to promote RNA folding.
-On the other hand, although ﻿Dimethyl sulfide (DMS) works \textit{in vivo},
-it only detects unstructured A/C bases.
-TODO cross-link methods
+Certain enzymes requires non-physiological condition to be acitve,
+for example, ﻿RNase V1 needs much higher $Mg^{2+}$, while $Mg^{2+}$ is known to promote RNA folding.
+Chemicals such as ﻿Dimethyl sulfide (DMS) works \textit{in vivo},
+but it only detects unstructured A/C bases.
+Cross-link methods were proposed very recently, and more work needs to be done to fully understand
+ the bias and error involved in experimental protocol and read processing.
+For example, it has been hypothesized that perfectly ordinary duplexes such as those
+involving G-C base pairs might not be detectable due to the bias of cross-linking pyrimidines\cite{stefanov2018deciphering}.
 
-
-Furthermore?, although \textit{in vitro} data provides invaluable insight into the genome-wide organization of RNA structure,
-it has been demonstrated in various organisms that in vivo structure can differ significantly from in vitro.
-In a living cell environment, the presence of proteins,  ?ligand, salt, temperature?, all affects RNA structure,
+Furthermore, although \textit{in vitro} data provides invaluable insight into the genome-wide organization of RNA structure,
+it has been demonstrated in various organisms that \textit{in vivo} structure can differ significantly from \textit{in vitro}.
+In a living cell environment, the presence of proteins and ligands,
+concentration of salt, temperature and other factors defines a complex environment, which in turn affects RNA structure,
 and the precise reconstruction of these conditions in vitro is almost impossible.
 ﻿Rouskin et al.\cite{rouskin2014genome} studied yeast RNA structure and found that RNAs are less structured in vivo than in vitro.
-Moreover, they observed that structures unfold when $Mg^{2+}$ is lowered in vitro,
-and more structured regions emerge when cell is depleted of ATP in vivo.
-(which underscores the importance of in vivo probing that captures the specific physiological condition of the cell type of interest)
+Moreover, they observed that structures unfold when $Mg^{2+}$ is lowered \textit{in vitro},
+and more structured regions emerge when cell is depleted of ATP \textit{in vivo}.
+%(which underscores the importance of in vivo probing that captures the specific
+%physiological condition of the cell type of interest.
 
 
 
@@ -131,14 +133,14 @@ which uncovers new properties and relationship that was never discovered from pr
 \subsection*{Transcription}
 
 Kertesz et. al\cite{kertesz2010genome} performed in vitro profiling of ﻿the budding yeast
-(\textit{Saccharomyces cerevisiae}) RNA structure using PARS (TODO).
+(\textit{Saccharomyces cerevisiae}) RNA structure using PARS.
 Averaging PARS scores across more than $3000$ mRNAs revealed a unique pattern across the transcript (Fig \ref{fig:yeast_cds_utr}):
  the UTRs are less structured than the CDS, both start and stop codon are significantly more accessible,
 and the coding region exhibits a three nucleotide periodical pattern,
 where the first nucleotide is more accessible and the second one is less accessible.
 
 In contrary, although RNAs in human show a similar start/stop codon accessibility and CDS periodicity,
-it was observed that UTRs are only slightly less structured than CDS\cite{wan2014landscape}.  (TODO, other paper says more structured?)
+it was observed that UTRs are only slightly less structured than CDS\cite{wan2014landscape}.
 
 
 \begin{figure}[h!]
@@ -153,10 +155,10 @@ it was observed that UTRs are only slightly less structured than CDS\cite{wan201
 
 \subsection*{Splicing}
 
-Wan et. al\cite{wan2014landscape} analyzed human lymphoblastoid cell lines from a parent-offspring trio by PARS (TODO review),
+Wan et. al\cite{wan2014landscape} analyzed human lymphoblastoid cell lines from a parent-offspring trio by PARS,
 and observed less structure at AG dinucleotide in the upstream exon donor site,
 and more structure at the first nucleotide in the downstream acceptor site, as shown in Fig \ref{fig:exon_exon_junction}.
-Potential role in efficient splicesome assembly.
+This suggests a potential regulatory role of RNA structure in efficient splicesome assembly.
 
 
 \begin{figure}[h!]
@@ -238,8 +240,8 @@ Predicting RNA structure is similar in its nature to many applications in
 computer vision (CV) and natural language processing(NLP),
 where the input is a variable sized sequence,
 and the output is a sequence of the same size as the input.
-Here we review the recent breakthroughs in deep learning and discuss their application in genomics.
-TODO 2D MAP
+Here we review the recent breakthroughs in deep learning related to sequence modelling and discuss their application in genomics.
+(TODO 2D MAP)
 
 
 \subsection*{Recurrent neural network and LSTM}
@@ -259,10 +261,12 @@ thus renders it difficult to scale up to long input sequence lengths.
 
 Convolutional neural network (CNN) has been applied successfully in
 modelling transcription factor (TF) and RNA binding protein (RBP) binding\cite{alipanahi2015predicting, gandhi2018cdeepbind},
-alternative splicing\cite{bretschneider2018cossmo}, and genome accessibility\cite{kelley2016basset}.
+alternative splicing\cite{bretschneider2018cossmo}, alternative polyadenylation\cite{leung2018inference},
+and genome accessibility\cite{kelley2016basset}.
 One limitation of the classical CNN architecture is that the receptive field size grows linearly with the number of
-layers, so in order to construct a large receptive field for modelling long range dependencies,
-the network is typically very deep, but classical CNNs are known to be difficult to optimize as the number of layers grows.
+layers. In order to construct a large receptive field for modelling long range dependencies,
+the network is typically very deep, which does not work in practise,
+since classical CNNs are known to be difficult to optimize as the number of layers grows.
 
 Instead, researchers has proposed improved architectures to model long range dependencies
 while still addressing the computational time problem that is intrinsic to all recurrent neural networks, including LSTM.
@@ -294,7 +298,7 @@ Such dense connection not only alleviates the vanishing gradient problem, but al
 
 
 
-Attention mechanism (TODO ref) is another technique to model long range dependencies,
+Attention mechanism is another technique to model long range dependencies,
 without limitation by distances.
 Vaswani et. al\cite{vaswani2017attention} proposed the Transformer Network,
 which is solely based on attention mechanism to model global dependencies between input and output.
@@ -302,14 +306,14 @@ In each block, the network applies a self-attention mechanism
 which directly models relationships between all positions in the input.
 For each position, the attention scores for other positions are normalized,
 which are used as weights to combine input from all positions to construct a new representation of the current position.
-These networks are highly parameterizable, achieves ?? performance,
+These networks are highly parameterizable, achieves state-pf-the-art performance,
 and have the added benefit that mechanistic insight can be drawn from the attention weights. (TODO example)
 One drawback of these networks is that substantial memory is required for computing and storing the attention matrix.
-(TODO example, typical size)
+%(TODO example, typical size)
 
 
 
-TODO plots for NN
+%TODO plots for NN
 
 
 \section{Related work}
@@ -352,15 +356,24 @@ A computational model for in vivo RNA accessibility is beneficial in the followi
 In this thesis, we propose to work on the following directions:
 
 \begin{itemize}
-    \item Training deep learning models to predict in vivo accessibility from sequence, for multiple species and cell types.
+    \item Training deep learning models to predict in vivo RNA secondary structure from sequence, for multiple species and cell types.
         In vitro data can also be used to help with learning useful low level features.
+
+
     \item Finetuning of model on mutation dataset.
         Wan et. al\cite{wan2014landscape} identified '﻿riboSNitches' (mutations that affect structure)
         by performing PARS on ﻿lymphoblastoid cells of a family trio.
+        We can finetune the representation learned from other dataset to improve the model's sensitivity to single nucleotide mutations.
 
-    \item Comparing with dynamic programming models, to check
-    \item Applying the model to discover pathogenic mutations that are potentially causal for structural change. SUV
-    \item analyze feature map, cross-tissue, cross-species? conservation?
+    \item Combining with dynamic programming models to improve performance \textit{in vivo}.
+        We hypothesize that deep neural network trained on \textit{in vivo} RNA acessibility dataset is able to
+        learn cell type specific features that's not present in dynamic programming models.
+        There is potential that performance can be improved by combining the two types of models that capture complementary information.
+
+%    \item Applying the model to discover pathogenic mutations that are potentially causal for structural change.
+%        Disease mutation database such as Clinvar has
+%
+%    \item analyze feature map, cross-tissue, cross-species? conservation?
 
     \item Improving TF/RBP binding and splicing model using RNA secondary structure model.
 \end{itemize}
@@ -373,25 +386,25 @@ In this chapter, we present preliminary result on modeling yeast in vivo RNA sec
 \section{Training Dataset}
 
 To model in vivo RNA secondary structure, we compiled training data from \cite{rouskin2014genome}.
-In this study, yeast strain was treated with ﻿dimethyl sulphate (DMS), which reacts with ﻿unpaired adenine and cytosine bases.
+In this study, yeast strain was treated with ﻿dimethyl sulphate (DMS), which reacts with ﻿unpaired adenine (A) and cytosine (C) bases.
 The pool of modified RNAs were fragmented and sequenced.
-Since ﻿DMS modification blocks reverse transcription, ﻿
-number of reads (TODO stops?) at each position is indicative of relative accessibility of that site.
+Since ﻿DMS modification blocks reverse transcription (RT), ﻿
+number of reads with RT stop at each position is indicative of relative accessibility of that site.
 
 Raw count data was downloaded from GSE45803 (\verb|GSE45803_Feb13_VivoAllextra_1_15_PLUS.wig.gz| and \verb|GSE45803_Feb13_VivoAllextra_1_15_Minus.wig.gz|).
 The authors aligned 25nt of each read to a non-redundant set of RefSeq transcripts,
 where each gene is represented by its longest protein-coding transcript.
 Only uniquely mapped reads with less than 2 mismatches were retained,
-and the authors further filtered out aligned reads whose RT stop is not A/C.
+and the authors further filtered out aligned reads whose RT stop is not at adenine or cytosine.
 The count at each position represents the combined number of RT stops at that site, across $4$ biological replicates.
 
 To construct training dataset, Saccharomyces cerevisiae assembly R61 (secCer2) RefSeq gene annotation was used to extract mRNA sequences.
-For each transcript, we first extract the raw read count for all adenine (A) and cytosine (C) bases
+For each transcript, we first extract the raw read count for all adenine and cytosine bases
 (A/C positions with no RT stop coverage were set to a count of $0$),
 and applied ﻿$90\%$ Winsorization to remove outliers.
-Specifically, for each non-overlapping window of 100 A/C bases, values above the $95\%$ percentile was set to the $95\%$ percentile,
+Specifically, for each non-overlapping window of $100$ A/C bases, values above the $95\%$ percentile was set to the $95\%$ percentile,
 and values below the $5\%$ percentile was set to the $5\%$ percentile.
-Then, all values within this window were divided by the max, to obtain values between $0$ and $1$.
+Then, all values within this window were divided by the max, to obtain normalized values between $0$ and $1$.
 
 \section{Model architecture}
 
@@ -409,7 +422,8 @@ in which we've removed the pooling layers, to maintain the spatial resolution th
 \end{figure}
 
 As shown in Fig\ref{fig:dense_net}, to make inference on a stretch of RNA sequence of length $L$,
-we need to pad the sequence with $w$ bases on each side. (TODO explanation + how to calculate $w$)
+we need to pad the sequence with $w$ bases on each side, where $w$ is half of the receptive field size,
+as determined by all convolutional layers.
 Input consists of the one-hot encoded, padded sequence,
 where $A, C, G, U$ bases are encoded as $[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]$, respectively.
 The encoded input is then passed through multiple dense blocks,
@@ -418,7 +432,7 @@ where each block consists of four components:
 \begin{enumerate}
     \item Batch Normalization
     \item ReLu nonlinear activation
-    \item 1D Convolution
+    \item 1D dilated convolution
     \item Concatenation of the block input to the output of convolution
 \end{enumerate}
 
@@ -478,7 +492,7 @@ and then passed through a fully connected layer with sigmoid activation, along t
 \end{table}
 
 
-We use 5-fold cross validation, where the folds are splited by chromosomes, as shown in Table \ref{table:fold_chrom_split}.
+We use 5-fold cross validation, split by chromosomes, as shown in Table \ref{table:fold_chrom_split}.
 
 Normalized data points (between $0$ and $1$) are used as soft targets without being converted to binary labels,
 and models were trained using a masked cross-entropy loss, as described below.
@@ -488,7 +502,8 @@ thus should be excluded from the calculation of the loss and the gradient.
 This is achieve by first computing the per position cross-entropy loss between the prediction and the target,
 then multiply it with a binary mask with the same shape as the target array.
 Positions with G/T bases are being set to $0$ in the mask, while positions with A/C bases are $1$.
-The masked loss are then summed over positions, and minibatch dimension, to calculate the loss for the current minibatch and the gradient for back propagation.
+The masked loss are then summed over positions, and minibatch dimension,
+to calculate the loss for the current minibatch and the gradient for back propagation.
 
 Models were trained using fixed sequence length of $50$ (before padding, sequence length at inference time can be variable),
 minibatch size of $10$, Adam optimizer with learning rate $0.0001$ and momentum $0.9$.
@@ -547,7 +562,7 @@ In comparison, RNAfold (window size $50$ and span $50$) achieves a correlation o
 To evaluate whether the model generalizes to noncoding transcripts and different experimental protocol,
 we processed yeast data from the ModSeq paper\cite{talkish2014mod},
 where yeast was treated with DMS or no-DMS (as control),
-and the authors identified positions that are significantly modified between treated and control,
+from which the authors identified positions that are significantly modified between treated and control,
 in selected noncoding and rRNA transcripts.
 
 For each transcript, we use our models to predict on all A/C positions,
