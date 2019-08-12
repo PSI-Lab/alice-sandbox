@@ -319,8 +319,9 @@
       {\@author}\\
       \vfill
       \vfill
-      A thesis proposal submitted in conformity with the requirements\\
-      for the degree of {\@degree}\\
+%      A thesis proposal submitted in conformity with the requirements\\
+%      for the degree of {\@degree}\\
+      Thesis proposal for the degree of {\@degree}\\
       Graduate Department of {\@department}\\
       University of Toronto\\
       \vfill

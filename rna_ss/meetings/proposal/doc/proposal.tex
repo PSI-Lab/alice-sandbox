@@ -9,7 +9,7 @@
 \degree{Doctor of Philosophy}
 \department{Electrical Engineering}
 \gradyear{2019}
-\author{Jiexin Gao}
+\author{Jiexin (Alice) Gao}
 \title{Predicting in vivo RNA Secondary Structure}
 
 \setcounter{tocdepth}{2}
@@ -22,11 +22,11 @@
 
 \maketitle
 
-\begin{abstract}
-
-
-
-\end{abstract}
+%\begin{abstract}
+%
+%
+%
+%\end{abstract}
 
 \tableofcontents
 
@@ -37,7 +37,6 @@
 
 
 \chapter{Introduction}
-%\addcontentsline{toc}{chapter}{Introduction}
 
 
 
@@ -294,7 +293,6 @@ i.e. every layer receives as input concatenation of all previous layers, and pas
 Such dense connection not only alleviates the vanishing gradient problem, but also enables feature reuse which makes the network more parameter-efficient.
 
 
-%\subsection*{Transformer Network}
 
 Attention mechanism (TODO ref) is another technique to model long range dependencies,
 without limitation by distances.
@@ -308,12 +306,6 @@ These networks are highly parameterizable, achieves ?? performance,
 and have the added benefit that mechanistic insight can be drawn from the attention weights. (TODO example)
 One drawback of these networks is that substantial memory is required for computing and storing the attention matrix.
 (TODO example, typical size)
-
-
-%\subsection*{Application in genomics}
-%
-%david kelly\cite{kelley2016basset}
-%
 
 
 
@@ -341,92 +333,42 @@ In terms of prediction using RNA probing data,
 so far the only attempt was to use the measured accessibility to guide dynamic programming algorithm like ViennaRNA\cite{lorenz2011viennarna},
 by introducing extra penalty term when computing the free energy.
 
-(usefulness of the model)
-- predict on novel transcript, mutation
-- low abundance and repeated region
-- help with other prediction tasks
+A computational model for in vivo RNA accessibility is beneficial in the following aspects:
+
+\begin{itemize}
+    \item Certain transcripts are difficult to probe due to either low abundance or repeated regions,
+        a model can provide insight on these transcript using information learned from other transcripts in the same cell type.
+    \item Learning features that's specific to in vivo RNA structure can provide
+        insight on the performance gap between in vitro and in vivo prediction by state-of-the-art dynamic programming algorithms.
+    \item Structure change due to mutation can be predicted without the need to carry out experiments,
+        which makes it possible to design synthetic novel RNA sequence with certain structural properties.
+    \item Since RNA structure influences almost every step in gene regulation,
+        the features learned by such model will also be useful in modelling other cellular process.
+\end{itemize}
+
 
 \section{Proposed thesis work}
 
 In this thesis, we propose to work on the following directions:
 
 \begin{itemize}
-    \item Train deep learning models to predict in vivo accessibility from sequence, for multiple species and cell types
+    \item Training deep learning models to predict in vivo accessibility from sequence, for multiple species and cell types.
+        In vitro data can also be used to help with learning useful low level features.
+    \item Finetuning of model on mutation dataset.
+        Wan et. al\cite{wan2014landscape} identified '﻿riboSNitches' (mutations that affect structure)
+        by performing PARS on ﻿lymphoblastoid cells of a family trio.
+
+    \item Comparing with dynamic programming models, to check
+    \item Applying the model to discover pathogenic mutations that are potentially causal for structural change. SUV
     \item analyze feature map, cross-tissue, cross-species? conservation?
-    \item eval? disease? mutation?
-    \item Improve TF/RBP binding and splicing model using RNA secondary structure model
+
+    \item Improving TF/RBP binding and splicing model using RNA secondary structure model.
 \end{itemize}
 
-list of in vivo dataset
 
-list of validation data
+\chapter{Preliminary result}
 
-
-vast number of non coding RNAs (still being discovered)
-
-disease
-
-%relationship to gene regulation, splicing, polyA, half life, stability, translation (uORF)
-%cite papers
-%
-%ribosnitch
-%
-%RNA structure & disease
-%
-%RNA structure & interaction with protein
-%
-%secondary v.s. tertiary structure
-%
-%what determines RNA structure, focus on vivo
-%
-%review thermodynamic based models
-%
-%context-free-grammar based models
-%
-%conservation based models
-%
-%review DMfold-like models
-%
-%why do we need a computational model for in vivo folding?
-%
-%- prediction long RNA structure without the need to probe them (any limitation in probing long RNAs?)
-%
-%- predict structure of RNA with low abundance (hard to measure, need to do targetted sequencing)
-%
-%- predict structure of novel RNA, e.g. with mutation,
-%
-%- structure representation for transfer learning
-
-
-
-
-
-%review different experimental technique, comparison, pros v.s. cons
-%
-%vivo v.s. vitro
-%
-%enzymes v.s. chemicals
-%
-%
-%K562 and yeast DMS data\cite{rouskin2014genome}
-%
-%Mouse embryonic stem cell v6.5 icSHAPE data\cite{spitale2015structural}
-%
-%Yeast ModSeq validation data\cite{talkish2014mod}
-%
-%Hek293 and mouse validation data (different compartments)\cite{sun2019rna}
-
-
-
-%\section{Deep neural network}
-
-%sequence to sequence models, RNN, LSTM, transformer
-%
-%residual net, dense net
-%
-%cite spliceAI
-
-\chapter{Yeast Model}
+In this chapter, we present preliminary result on modeling yeast in vivo RNA secondary structure.
 
 \section{Training Dataset}
 
@@ -451,31 +393,13 @@ Specifically, for each non-overlapping window of 100 A/C bases, values above the
 and values below the $5\%$ percentile was set to the $5\%$ percentile.
 Then, all values within this window were divided by the max, to obtain values between $0$ and $1$.
 
-%To avoid inclusion of low quality data points in the training set, we filtered out transcripts whose A/C coverage is below $0.2$,
-%where A/C coverage is defined as
-
-%We used the poly-A selected yeast data to compile training dataset consists of mRNAs.
-
-%Alignments were performed with bowtie using the first 25 nt of each read
-%Reads were first aligned to the ribosomal RNA and the unaligned reads were then aligned to the genome
-%reads were filtered for unique map to the genome and no mismatches
-%reads were filtered for reverse transcriptase stops at As and Cs only
-%Genome_build: Saccharomyces cerevisiae assembly R61 (UCSC: sacCer2).
-%Supplementary_files_format_and_content: The position number directly indicates the DMS modified position starting at 1. Raw reads for each replicates were combined together in wiggle format. Separate files are provided for positive and negative strand maching reads.
-
-
-\section{Deep neural network}
+\section{Model architecture}
 
 
 We construct a deep neural network to predict reactivity at single base resolution from RNA sequence context.
 We use an architecture similar to DenseNet\cite{huang2017densely},
 in which we've removed the pooling layers, to maintain the spatial resolution throughout the depth of the neural network.
 
-%\begin{figure}[htbp]
-%  \centering
-%  \includesvg{plot/proposal_dense_net.svg}
-%  \caption{svg image}
-%\end{figure}
 
 \begin{figure}
 \includegraphics[width=\textwidth]{proposal_dense_net.png}
@@ -498,11 +422,6 @@ where each block consists of four components:
     \item Concatenation of the block input to the output of convolution
 \end{enumerate}
 
-%- {dilation: 1, filter_width: 16, num_filter: 128}
-%- {dilation: 2, filter_width: 16, num_filter: 128}
-%- {dilation: 4, filter_width: 16, num_filter: 256}
-%- {dilation: 8, filter_width: 16, num_filter: 256}
-%- {dilation: 16, filter_width: 16, num_filter: 512}
 
 \begin{table}[h!]
     \centering
@@ -536,11 +455,6 @@ and then passed through a fully connected layer with sigmoid activation, along t
 
 \section{Training}
 
-%- [chrM, chrVIII, chrII, chrXV]
-%- [chrI, chrV, chrXIII, chrIV]
-%- [chrVI, chrXI, chrXVI]
-%- [chrIII, chrX, chrXII]
-%- [chrIX, chrXIV, chrVII]
 
 \begin{table}[h!]
     \centering
@@ -603,15 +517,15 @@ Fig \ref{fig:yeast_cv_performance} shows the distribution of Spearman correlatio
 
 \subsection{Ribosomal RNA}
 
-Next we used our model to predict the reactivity for all A/C bases in yeast $18S$ and $15S$ ribosomal RNAs,
+Next we used our model to predict the reactivity for all A/C bases in yeast $18S$ and $25S$ ribosomal RNAs,
 both were never seen by the model (neither in the training nor validation set).
 
-Raw read count data for $18S$ and $15S$ was downloaded from GSE45803, and was processed similarly to the training dataset,
+Raw read count data for $18S$ and $25S$ was downloaded from GSE45803, and was processed similarly to the training dataset,
 since the experimental protocol was identical.
 
 Correlation between prediction and the normalized read count is shown in Fig\ref{fig:yeast_r18_performance} and Fig\ref{fig:yeast_r25_performance},
 where each data point is one A/C base in the corresponding transcript.
-In comparison, RNAfold (window size $50$ and span $50$) achieves a correlation of $0.3217$ and $0.4529$ for $18S$ and $15S$, respectively.
+In comparison, RNAfold (window size $50$ and span $50$) achieves a correlation of $0.3217$ and $0.4529$ for $18S$ and $25S$, respectively.
 
 \begin{figure}[h!]
 \includegraphics[width=\textwidth]{yeast_r18_performance.png}
@@ -648,27 +562,23 @@ We also compare the performance of our model to that of RNAfold, as shown in Fig
 \end{figure}
 
 
-\section{Future Work}
-
-\begin{itemize}
-  \item Improve training and generalization performance, by making use of the raw sequencing data, and biological replicates.
-  In additional to counts of RT stops, read coverage at each position can be used to infer the confidence of calling that position paired/unpaired.
-  Transcript can be reweighted during training, according to the agreement between different biological reps.
-
-  \item Multi-resolution learning.
-\end{itemize}
-
-
-%\chapter{Mouse Model}
+%\section{Future Work}
 %
+%\begin{itemize}
+%  \item Improve training and generalization performance, by making use of the raw sequencing data, and biological replicates.
+%  In additional to counts of RT stops, read coverage at each position can be used to infer the confidence of calling that position paired/unpaired.
+%  Transcript can be reweighted during training, according to the agreement between different biological reps.
 %
-%\chapter{Human Model}
+%  \item Multi-resolution learning.
+%\end{itemize}
 
-\chapter{Conclusion}
 
-one dataset that has multiple mods per sequence, so we can reconstruct colleciton of structures
 
-joint learning of accessibility and other data, e.g. chip-seq peaks
+%\chapter{Conclusion}
+%
+%one dataset that has multiple mods per sequence, so we can reconstruct colleciton of structures
+%
+%joint learning of accessibility and other data, e.g. chip-seq peaks
 
 
 \addcontentsline{toc}{chapter}{Bibliography}
