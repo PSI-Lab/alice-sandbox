@@ -49,7 +49,7 @@ def build_model(config):
                      kernel_initializer=initializers.he_uniform(seed=None),
                      kernel_regularizer=regularizers.l1_l2(l1=config['penalty_l1'],
                                                            l2=config['penalty_l2']))(hid)
-    output0 = Conv1D(3, 1, activation='sigmoid')(hid)
+    output0 = Conv1D(1, 1, activation='sigmoid')(hid)
 
     model = Model(inputs=input0, outputs=output0)
 

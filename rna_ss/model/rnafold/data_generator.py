@@ -74,7 +74,7 @@ class DataGenerator(keras.utils.Sequence):
         return x, y
 
     def get_data_single(self, itv):
-        seq = self.genome.dna(itv)
+        seq = self.genome.dna(itv.expand(self.context//2))
         seq = seq.upper().replace('A', '1').replace('C', '2').replace('G', '3').replace('T', '4').replace('N', '0')
         x = np.asarray(map(int, list(seq)))
         x = self.DNA_ENCODING[x.astype('int8')]
