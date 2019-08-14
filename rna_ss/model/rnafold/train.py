@@ -43,8 +43,8 @@ def main(config, validation_fold_idx):
     chroms_valid = chrom_folds[validation_fold_idx]
 
     print("Validation fold index: %d" % validation_fold_idx)
-    training_dataset = DataGenerator(chroms_train, config)
-    validation_dataset = DataGenerator(chroms_valid, config)
+    training_dataset = DataGenerator(config, chroms_train)
+    validation_dataset = DataGenerator(config, chroms_valid)
 
     sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
     kb.tensorflow_backend._get_available_gpus()
