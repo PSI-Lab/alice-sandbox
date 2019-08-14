@@ -78,7 +78,7 @@ class DataGenerator(keras.utils.Sequence):
         seq = seq.upper().replace('A', '1').replace('C', '2').replace('G', '3').replace('T', '4').replace('N', '0')
         x = np.asarray(map(int, list(seq)))
         x = self.DNA_ENCODING[x.astype('int8')]
-        y = self.genome.rnaplfold_unpair_prob(itv)[:, 0]
+        y = self.genome.rnaplfold_unpair_prob(itv)[:, :]  # second dimension is 1
         # replace nan with -1
         y[np.where(np.isnan(y))] = -1
         return x, y
