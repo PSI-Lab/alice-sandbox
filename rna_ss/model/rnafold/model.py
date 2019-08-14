@@ -1,0 +1,93 @@
+from keras.models import Model
+from keras.layers import Input, Bidirectional, Concatenate
+from keras.layers.core import Activation, Dense, Lambda
+from keras.layers.convolutional import Conv1D, Cropping1D, ZeroPadding1D
+from keras.layers.normalization import BatchNormalization
+from keras.layers.merge import add, multiply
+from keras import regularizers, initializers
+import keras.backend as kb
+from keras.losses import binary_crossentropy, mean_squared_error, categorical_crossentropy
+import tensorflow as tf
+from sklearn.metrics import roc_auc_score
+import numpy as np
+
+
+def resolve_contex_old(residual_conv, n_repeat_in_residual_unit):
+    n = 0
+    for layer_config in residual_conv:
+        n += (layer_config['filter_width'] - 1) * layer_config['dilation']
+    return n * n_repeat_in_residual_unit
+
+
+def resolve_contex(dense_conv):
+    n = 0
+    for layer_config in dense_conv:
+        n += (layer_config['filter_width'] - 1) * layer_config['dilation']
+    return n
+
+
+def build_model(config):
+    context = resolve_contex(config['dense_conv'])
+
+    input0 = Input(shape=(None, 4), name='input0')
+
+    conv = Lambda(lambda x: kb.identity(x))(input0)
+
+    for i, layer_config in enumerate(config['dense_conv']):
+        bn = BatchNormalization()(conv)
+        act = Activation('relu')(bn)
+        _conv = Conv1D(layer_config['num_filter'], layer_config['filter_width'],
+                       dilation_rate=layer_config['dilation'], padding='same',
+                       kernel_initializer=initializers.he_uniform(seed=None),
+                       kernel_regularizer=regularizers.l1_l2(l1=config['penalty_l1'],
+                                                             l2=config['penalty_l2']))(act)
+        conv = Concatenate(axis=-1)([conv, _conv])
+
+    hid = Cropping1D(context / 2)(conv)
+    for n_units in config['hid_units']:
+        hid = Conv1D(n_units, 1, activation='relu',
+                     kernel_initializer=initializers.he_uniform(seed=None),
+                     kernel_regularizer=regularizers.l1_l2(l1=config['penalty_l1'],
+                                                           l2=config['penalty_l2']))(hid)
+    output0 = Conv1D(3, 1, activation='sigmoid')(hid)
+
+    model = Model(inputs=input0, outputs=output0)
+
+    return model
+
+
+def custom_loss(y_true, y_pred, mask_val=-1):
+    # both are 3D array
+    # num_examples x length
+    # find which values in yTrue (target) are the mask value
+    is_mask = kb.equal(y_true, mask_val)  # true for all mask values
+    is_mask = kb.cast(is_mask, dtype=kb.floatx())
+    is_mask = 1 - is_mask  # now mask values are zero, and others are 1
+    # reweight to account for proportion of missing value
+    valid_entries = kb.sum(is_mask)
+    total_entries = kb.cast(kb.prod(kb.shape(is_mask)), dtype=kb.floatx())
+
+    # need to multiply by the mask before averaging over minibatch and length dimension
+
+    def _to_tensor(x, dtype):
+        """Convert the input `x` to a tensor of type `dtype`.
+        # Arguments
+            x: An object to be converted (numpy array, list, tensors).
+            dtype: The destination type.
+        # Returns
+            A tensor.
+        """
+        x = tf.convert_to_tensor(x)
+        if x.dtype != dtype:
+            x = tf.cast(x, dtype)
+        return x
+
+    def ce(output, target, mask):
+        # manual computation of crossentropy
+        epsilon = _to_tensor(10e-8, output.dtype.base_dtype)
+        output = tf.clip_by_value(output, epsilon, 1. - epsilon)
+        return - tf.reduce_mean(target * tf.log(output) * mask + (1-target) * tf.log(1-output) * mask)
+        # return - tf.reduce_sum(target * tf.log(output) * mask,
+        #                        reduction_indices=len(output.get_shape()) - 1)
+
+    return ce(y_pred, y_true, is_mask) * total_entries / valid_entries
