@@ -1,0 +1,45 @@
+import math
+import errno
+import logging
+import os
+import re
+import shutil
+import tempfile
+import itertools
+from collections import Iterable
+from past.builtins import basestring
+from subprocess import PIPE, Popen
+import multiprocessing as mp
+import numpy as np
+
+
+def get_pair_prob_arr(seq):
+    # for odd length sequence
+    # get array of pair probability for every position with the center position
+    assert len(seq) % 2 == 1
+
+    tmp_dir = tempfile.mkdtemp()
+    p = Popen(['RNAfold', '--MEA'],
+              cwd=tmp_dir, stdin=PIPE, stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    stdout, stderr = p.communicate(input=seq)
+    rc = p.returncode
+    if rc != 0:
+        msg = 'RNAplfold returned error code %d\nstdout:\n%s\nstderr:\n%s\n' % (
+            rc, stdout, stderr)
+        raise Exception(msg)
+    out_filename = os.path.join(tmp_dir, 'dot.ps')
+    with open(out_filename) as fp:
+        lines = fp.read().splitlines()
+    assert len(seq) % 2 == 1
+    position_of_interest = len(seq) // 2 + 1  # 1-based
+    vals = np.zeros(len(seq))
+    for line in lines:
+        if not line.endswith('ubox'):
+            continue
+        if not line.startswith(str(position_of_interest)):
+            continue
+        p1, p2, sqrt_prob, _ = line.split(' ')
+        assert int(p1) == position_of_interest
+        vals[int(p2) - 1] = float(sqrt_prob) ** 2
+    return vals.tolist()
+
