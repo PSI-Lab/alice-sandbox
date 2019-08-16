@@ -34,7 +34,7 @@ def get_pair_prob_arr(seq):
     position_of_interest = len(seq) // 2 + 1  # 1-based
     vals = np.zeros(len(seq))
     for line in lines:
-        if not line.endswith('ubox'):
+        if not line.endswith('ubox') or 'sqrt' in line:  # skip non data, or data header
             continue
         # if not line.startswith(str(position_of_interest)):
         #     continue
