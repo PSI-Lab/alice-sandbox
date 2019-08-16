@@ -7,7 +7,7 @@ from dgutils.pandas import Column, get_metadata, write_dataframe, add_column
 
 
 seq_len = 51
-num_seqs = 1000
+num_seqs = 100000
 seqs = []
 for _ in range(num_seqs):
     seq = ''.join(random.choice(list('ACGU')) for _ in range(seq_len))
