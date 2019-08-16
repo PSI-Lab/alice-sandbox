@@ -14,7 +14,7 @@ import numpy as np
 
 def build_model():
     input_org = Input(shape=(51, 4), name='input_org')
-    input_rev = Input(shape=(51, 4), name='input_rev')  # can also use rev comp <- dot product makes more sense
+    input_rev = Input(shape=(51, 4), name='input_rev')  # can also use rev comp
 
     # TODO tie weights for org and rev - maybe not!
     # TODO filter kernel size odd number!

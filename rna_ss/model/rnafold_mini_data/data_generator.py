@@ -32,9 +32,12 @@ class DataGenerator(keras.utils.Sequence):
         # add 1 dimension
         df = add_column(df, 'mid_point_pair_prob',
                         ['mid_point_pair_prob'], lambda x: np.asarray(x)[:, np.newaxis])
-        # add sequence rev comp
-        df = add_column(df, 'sequence_rev_comp', ['sequence'],
-                        lambda x: ''.join(map(lambda y: self.complement_mapping[y], x)[::-1]))
+        # add sequence rev
+        df = add_column(df, 'sequence_rev', ['sequence'],
+                        lambda x: x[::-1])
+        # # add sequence rev comp
+        # df = add_column(df, 'sequence_rev_comp', ['sequence'],
+        #                 lambda x: ''.join(map(lambda y: self.complement_mapping[y], x)[::-1]))
         return df
 
     def __len__(self):
@@ -70,7 +73,8 @@ class DataGenerator(keras.utils.Sequence):
         row = self.df.iloc[idx].copy()
         # x
         x1 = self._encode_seq(row['sequence'])
-        x2 = self._encode_seq(row['sequence_rev_comp'])
+        x2 = self._encode_seq(row['sequence_rev'])
+        # x2 = self._encode_seq(row['sequence_rev_comp'])
         # y
         y = row['mid_point_pair_prob']
         return x1, x2, y
