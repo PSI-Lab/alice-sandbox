@@ -42,7 +42,9 @@ def get_pair_prob_arr(seq):
         p1 = int(p1)
         p2 = int(p2)
         # assert int(p1) == position_of_interest
-        if p1 == position_of_interest or p2 == position_of_interest:
+        if p1 == position_of_interest:
             vals[p2 - 1] = float(sqrt_prob) ** 2
+        elif p2 == position_of_interest:
+            vals[p1 - 1] = float(sqrt_prob) ** 2
     return vals.tolist()
 
