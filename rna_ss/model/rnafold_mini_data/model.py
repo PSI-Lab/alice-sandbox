@@ -16,9 +16,12 @@ def build_model():
     input_org = Input(shape=(51, 4), name='input_org')
     input_rev = Input(shape=(51, 4), name='input_rev')  # can also use rev comp <- dot product makes more sense
 
+    # TODO tie weights for org and rev - maybe not!
+    # TODO filter kernel size odd number!
+
     conv_prods = []
     num_filters = [8, 16, 16, 32, 32]
-    kernel_sizes = [1, 2, 4, 8, 16]
+    kernel_sizes = [1, 3, 5, 9, 17]
     for num_filter, kernel_size in zip(num_filters, kernel_sizes):
         conv_or = Conv1D(filters=num_filter, kernel_size=kernel_size, padding='same', activation=None)(input_org)
         conv_rv = Conv1D(filters=num_filter, kernel_size=kernel_size, padding='same', activation=None)(input_rev)
