@@ -24,8 +24,13 @@ def build_model():
     conv_rv = input_rev
 
     for num_filter, kernel_size in zip(num_filters, kernel_sizes):
-        conv_or = Conv1D(filters=num_filter, kernel_size=kernel_size, padding='same', activation='relu')(conv_or)
-        conv_rv = Conv1D(filters=num_filter, kernel_size=kernel_size, padding='same', activation='relu')(conv_rv)
+        conv_or = BatchNormalization()(conv_or)
+        conv_or = Activation('relu')(conv_or)
+        conv_or = Conv1D(filters=num_filter, kernel_size=kernel_size, padding='same', activation=None)(conv_or)
+
+        conv_rv = BatchNormalization()(conv_rv)
+        conv_rv = Activation('relu')(conv_rv)
+        conv_rv = Conv1D(filters=num_filter, kernel_size=kernel_size, padding='same', activation=None)(conv_rv)
         conv_rv_mid = Cropping1D(25)(conv_rv)
 
         # TODO replace dot product
