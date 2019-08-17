@@ -39,7 +39,8 @@ def main(config):
     git_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip()
 
     # load data TODO hard-coded for now
-    df_metadata, df_intervals = read_dataframe('data/rand_seqs_100000.csv')
+    # df_metadata, df_intervals = read_dataframe('data/rand_seqs_100000.csv')
+    df_metadata, df_intervals = read_dataframe('data/rand_seqs_1000000.csv')
 
     n_train = int(len(df_intervals) * 0.8)
     df_training = df_intervals[:n_train]
