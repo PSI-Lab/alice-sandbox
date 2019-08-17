@@ -107,7 +107,7 @@ def main(config):
 
     # copy over the best model
     es_epoch = early_stopping_monitor.stopped_epoch
-    best_epoch = es_epoch - es_patience
+    best_epoch = es_epoch - es_patience + 1
     model_file_src = os.path.join(run_dir, 'checkpoint.{epoch:03d}.hdf5'.format(epoch=best_epoch))
     model_file_des = os.path.join(config['model_dir'], 'model.hdf5')
     shutil.copy(model_file_src, model_file_des)
