@@ -23,8 +23,10 @@ def build_model():
     num_filters = [8, 16, 16, 32, 32]
     kernel_sizes = [1, 3, 5, 9, 17]
     for num_filter, kernel_size in zip(num_filters, kernel_sizes):
-        conv_or = Conv1D(filters=num_filter, kernel_size=kernel_size, padding='same', activation=None)(input_org)
-        conv_rv = Conv1D(filters=num_filter, kernel_size=kernel_size, padding='same', activation=None)(input_rev)
+        # conv_or = Conv1D(filters=num_filter, kernel_size=kernel_size, padding='same', activation=None)(input_org)
+        # conv_rv = Conv1D(filters=num_filter, kernel_size=kernel_size, padding='same', activation=None)(input_rev)
+        conv_or = Conv1D(filters=num_filter, kernel_size=kernel_size, padding='same', activation='relu')(input_org)
+        conv_rv = Conv1D(filters=num_filter, kernel_size=kernel_size, padding='same', activation='relu')(input_rev)
         conv_rv_mid = Cropping1D(25)(conv_rv)
 
         # TODO replace dot product
