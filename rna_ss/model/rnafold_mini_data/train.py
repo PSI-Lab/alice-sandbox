@@ -127,8 +127,8 @@ def main(config):
     data_pred = []
     print("Making predictions on validation data...")
     for i, row in tqdm.tqdm(validation_dataset.df.iterrows(), total=len(validation_dataset.df)):
-        x1, x2, y = validation_dataset.get_data([i])
-        pred = model.predict([x1, x2])
+        x1, y = validation_dataset.get_data([i])
+        pred = model.predict(x1)
         row['pred'] = pred[0, :, 0].tolist()
         row['mid_point_pair_prob'] = row['mid_point_pair_prob'][:, 0].tolist()
         data_pred.append(row)
