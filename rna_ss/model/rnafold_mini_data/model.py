@@ -17,7 +17,7 @@ def build_model():
     input_rev = Input(shape=(51, 4), name='input_rev')  # can also use rev comp
 
     conv_prods = []
-    num_filters = [64, 64, 64, 64, 64]
+    num_filters = [256, 256, 256, 256, 256]
     kernel_sizes = [7, 3, 3, 5, 9]
 
     conv_or = input_org
