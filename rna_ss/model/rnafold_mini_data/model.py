@@ -17,13 +17,13 @@ def build_model():
     input_rev = Input(shape=(51, 4), name='input_rev')  # can also use rev comp
 
     conv_prods = []
-    num_filters = [256, 256, 256, 256, 256]
+    num_filters = [64, 64, 64, 64, 64]
     kernel_sizes = [7, 3, 3, 5, 9]
 
     # conv_or = input_org
     # conv_rv = input_rev
-    conv_or = Conv1D(256, 1)(input_org)
-    conv_rv = Conv1D(256, 1)(input_rev)
+    conv_or = Conv1D(64, 1)(input_org)
+    conv_rv = Conv1D(64, 1)(input_rev)
 
     for num_filter, kernel_size in zip(num_filters, kernel_sizes):
         _conv_or = BatchNormalization()(conv_or)
