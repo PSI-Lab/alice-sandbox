@@ -60,7 +60,8 @@ def build_model():
     # fully connected along feature dimension
     output = Conv1D(1, 1, padding='same', activation='sigmoid')(conv_prod_concat)
 
-    model = Model(input=[input_org, input_rev], output=output)
+    # model = Model(input=[input_org, input_rev], output=output)
+    model = Model(input=input_org, output=output)
 
     return model
 
