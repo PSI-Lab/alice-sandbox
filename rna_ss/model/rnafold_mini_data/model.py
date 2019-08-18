@@ -14,7 +14,10 @@ import numpy as np
 
 def build_model():
     input_org = Input(shape=(51, 4), name='input_org')
-    input_rev = Input(shape=(51, 4), name='input_rev')  # can also use rev comp
+
+    # input_rev = Input(shape=(51, 4), name='input_rev')  # can also use rev comp
+    reverse_layer = Lambda(lambda x: kb.reverse(x, axes=-2))
+    input_rev = reverse_layer(input_org)
 
     conv_prods = []
     num_filters = [64, 64, 64, 64, 64]
@@ -33,10 +36,10 @@ def build_model():
         conv_rv = Conv1D(filters=num_filter, kernel_size=kernel_size, padding='same', activation=None)(conv_rv)
         conv_rv_mid = Cropping1D(25)(conv_rv)
 
-        # transformation matrix - general
-        conv_or_transform = Conv1D(filters=64, kernel_size=1, activation=None)(conv_or)
-        conv_prod = Dot(axes=-1)([conv_or_transform, conv_rv_mid])
-        conv_prods.append(conv_prod)
+        # # transformation matrix - general
+        # conv_or_transform = Conv1D(filters=64, kernel_size=1, activation=None)(conv_or)
+        # conv_prod = Dot(axes=-1)([conv_or_transform, conv_rv_mid])
+        # conv_prods.append(conv_prod)
 
         # # replace dot product
         # # by tiling the rev
@@ -49,9 +52,9 @@ def build_model():
         # hid_fw_rd = Conv1D(filters=2, kernel_size=1, activation='tanh')(conv_fw_rd)
         # conv_prods.append(hid_fw_rd)
 
-        # # dot product
-        # conv_prod = Dot(axes=-1)([conv_or, conv_rv_mid])
-        # conv_prods.append(conv_prod)
+        # dot product
+        conv_prod = Dot(axes=-1)([conv_or, conv_rv_mid])
+        conv_prods.append(conv_prod)
     conv_prod_concat = Concatenate(axis=-1)(conv_prods)
 
     # fully connected along feature dimension
