@@ -42,7 +42,7 @@ def build_model():
         conv_fw_rd = Concatenate(axis=-1)([conv_or, conv_rd_mid_tiled])
         # TODO hard coded 2 filters
         # size=1, fully connected along all features at each position
-        hid_fw_rd = Conv1D(filters=2, kernel_size=1, activation='relu')(conv_fw_rd)
+        hid_fw_rd = Conv1D(filters=2, kernel_size=1, activation='tanh')(conv_fw_rd)
         conv_prods.append(hid_fw_rd)
 
         # conv_prod = Dot(axes=-1)([conv_or, conv_rv_mid])
