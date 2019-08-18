@@ -39,7 +39,7 @@ def build_model():
         # run a mini fully connected net
         conv_rd_mid_tiled = Lambda(kb.tile, arguments={'n': (-1, 51, 1)})(conv_rv_mid)
 
-        conv_fw_rd = Concatenate(axis=-2)([conv_or, conv_rd_mid_tiled])
+        conv_fw_rd = Concatenate(axis=-1)([conv_or, conv_rd_mid_tiled])
         # TODO hard coded 10 filters
         # size=1, fully connected along all features at each position
         hid_fw_rd = Conv1D(filters=10, kernel_size=1, activation='relu')(conv_fw_rd)
