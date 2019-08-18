@@ -33,13 +33,20 @@ def build_model():
         conv_rv = Conv1D(filters=num_filter, kernel_size=kernel_size, padding='same', activation=None)(conv_rv)
         conv_rv_mid = Cropping1D(25)(conv_rv)
 
-        # TODO replace dot product
+        # replace dot product
         # by tiling the rev
         # stack on org
         # run a mini fully connected net
+        conv_rd_mid_tiled = Lambda(kb.tile, arguments={'n': (-1, 51, 1)})(conv_rv_mid)
 
-        conv_prod = Dot(axes=-1)([conv_or, conv_rv_mid])
-        conv_prods.append(conv_prod)
+        conv_fw_rd = Concatenate(axis=-2)([conv_or, conv_rd_mid_tiled])
+        # TODO hard coded 10 filters
+        # size=1, fully connected along all features at each position
+        hid_fw_rd = Conv1D(filters=10, kernel_size=1, activation='relu')(conv_fw_rd)
+        conv_prods.append(hid_fw_rd)
+
+        # conv_prod = Dot(axes=-1)([conv_or, conv_rv_mid])
+        # conv_prods.append(conv_prod)
     conv_prod_concat = Concatenate(axis=-1)(conv_prods)
 
     # fully connected along feature dimension
