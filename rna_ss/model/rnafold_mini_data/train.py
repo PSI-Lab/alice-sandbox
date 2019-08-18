@@ -4,6 +4,7 @@ import os
 import gzip
 import csv
 import yaml
+import tqdm
 import shutil
 import argparse
 import subprocess
@@ -16,6 +17,7 @@ import pandas as pd
 from scipy.stats import pearsonr, spearmanr
 from keras import objectives
 import keras.backend as kb
+from keras.models import load_model
 from keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, CSVLogger, Callback
 from genome_kit import Interval
 from data_generator import DataGenerator
@@ -119,9 +121,12 @@ def main(config):
         yaml.dump(config, outfile)
 
     # make prediction on validation set
-    # TODO restore to the ES checkpoint
+    # restore to the ES checkpoint
+    print("Restoring model from epoch {}".format(best_epoch))
+    model = load_model(model_file_des)
     data_pred = []
-    for i, row in validation_dataset.df.iterrows():
+    print("Making predictions on validation data...")
+    for i, row in tqdm.tqdm(validation_dataset.df.iterrows(), total=len(validation_dataset.df)):
         x1, x2, y = validation_dataset.get_data([i])
         pred = model.predict([x1, x2])
         row['pred'] = pred[0, :, 0].tolist()
