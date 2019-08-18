@@ -37,7 +37,7 @@ def build_model():
         # by tiling the rev
         # stack on org
         # run a mini fully connected net
-        conv_rd_mid_tiled = Lambda(kb.tile, arguments={'n': (-1, 51, 1)})(conv_rv_mid)
+        conv_rd_mid_tiled = Lambda(kb.tile, arguments={'n': (1, 51, 1)})(conv_rv_mid)
 
         conv_fw_rd = Concatenate(axis=-1)([conv_or, conv_rd_mid_tiled])
         # TODO hard coded 10 filters
