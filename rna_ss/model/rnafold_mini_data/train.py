@@ -123,7 +123,7 @@ def main(config):
     # make prediction on validation set
     # restore to the ES checkpoint
     print("Restoring model from epoch {}".format(best_epoch))
-    model = load_model(model_file_des, custom_objects={'kb': kb})
+    model = load_model(model_file_des, custom_objects={'kb': kb, 'tf': tf})
     data_pred = []
     print("Making predictions on validation data...")
     for i, row in tqdm.tqdm(validation_dataset.df.iterrows(), total=len(validation_dataset.df)):
