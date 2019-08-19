@@ -1,5 +1,5 @@
 from keras.models import Model
-from keras.layers import Input, Bidirectional, Concatenate, Dot
+from keras.layers import Input, Bidirectional, Concatenate, Dot, LSTM
 from keras.layers.core import Activation, Dense, Lambda
 from keras.layers.convolutional import Conv1D, Cropping1D, ZeroPadding1D
 from keras.layers.normalization import BatchNormalization
@@ -57,8 +57,13 @@ def build_model():
         conv_prods.append(conv_prod)
     conv_prod_concat = Concatenate(axis=-1)(conv_prods)
 
-    # fully connected along feature dimension
-    output = Conv1D(1, 1, padding='same', activation='sigmoid')(conv_prod_concat)
+    # LSTM TODO hard-coded 10 hidden units
+    hid = Bidirectional(LSTM(10, activation='tanh', recurrent_activation='hard_sigmoid',
+                             return_sequences=True))(conv_prod_concat)
+    output = Conv1D(1, 1, padding='same', activation='sigmoid')(hid)
+
+    # # fully connected along feature dimension
+    # output = Conv1D(1, 1, padding='same', activation='sigmoid')(conv_prod_concat)
 
     # model = Model(input=[input_org, input_rev], output=output)
     model = Model(input=input_org, output=output)
