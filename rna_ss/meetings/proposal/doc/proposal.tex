@@ -57,7 +57,7 @@ Over the past few years, combination of RNA structure probing and high throughpu
 the measurement of genome-wide RNA structural at single nucleotide resolution in multiple organisms and cell types,
 which provides new insight into the relationship between RNA structure and its function.
 
-\section{High throughput probing of RNS secondary structure}
+\section{High throughput probing of RNA secondary structure}
 
 Two types of reagents are being used to probe RNA structures: enzymes and chemicals.
 These reagents cleave or modify RNA at specific bases and/or structured regions.
@@ -172,7 +172,7 @@ This suggests a potential regulatory role of RNA structure in efficient spliceso
 
 \subsection*{Polyadenylation}
 
-Ding et. al\cite{ding2014vivo} used Structure-Seq (TODO review) to study the genome-wide RNA structure of
+Ding et. al\cite{ding2014vivo} used Structure-Seq to study the genome-wide RNA structure of
 ﻿\textit{Arabidopsis thaliana} seedlings \textit{in vivo} and discovered a pattern around alternative polyadenylation sites across $5959$ mRNAs.
 As shown in Fig \ref{fig:poly_a}, region upstream of the site (-15nt to -2nt) is significantly more structured, as indicated by lower reactivity,
 and region downstream of the site (-1nt to +5nt) is significantly less structured, as indicated by higher reactivity.
@@ -241,7 +241,7 @@ computer vision (CV) and natural language processing(NLP),
 where the input is a variable sized sequence,
 and the output is a sequence of the same size as the input.
 Here we review the recent breakthroughs in deep learning related to sequence modelling and discuss their application in genomics.
-(TODO 2D MAP)
+%(TODO 2D MAP)
 
 
 \subsection*{Recurrent neural network and LSTM}
@@ -307,7 +307,8 @@ which directly models relationships between all positions in the input.
 For each position, the attention scores for other positions are normalized,
 which are used as weights to combine input from all positions to construct a new representation of the current position.
 These networks are highly parameterizable, achieves state-pf-the-art performance,
-and have the added benefit that mechanistic insight can be drawn from the attention weights. (TODO example)
+and have the added benefit that mechanistic insight can be drawn from the attention weights.
+%(TODO example)
 One drawback of these networks is that substantial memory is required for computing and storing the attention matrix.
 %(TODO example, typical size)
 
@@ -356,9 +357,11 @@ A computational model for in vivo RNA accessibility is beneficial in the followi
 In this thesis, we propose to work on the following directions:
 
 \begin{itemize}
+    \item Develop neural network architecture that incorporate the biological nature of RNA secondary structure.
+
     \item Training deep learning models to predict in vivo RNA secondary structure from sequence, for multiple species and cell types.
         In vitro data can also be used to help with learning useful low level features.
-
+%TODO trans-factor generalization
 
     \item Finetuning of model on mutation dataset.
         Wan et. al\cite{wan2014landscape} identified '﻿riboSNitches' (mutations that affect structure)
@@ -376,10 +379,195 @@ In this thesis, we propose to work on the following directions:
 %    \item analyze feature map, cross-tissue, cross-species? conservation?
 
     \item Improving TF/RBP binding and splicing model using RNA secondary structure model.
+        Binding affinity or splicing pattern in specific tissue or cell type might be affected
+        by the local RNA structure as a result of distal sequence factor which is not being captured by most models.
+        Using RNA structure prediction as input features, or model structure and binding/splicing jointly can potentially improve tissue or cell type specific models.
 \end{itemize}
 
 
-\chapter{Preliminary result}
+\chapter{Toy Example}
+
+An essential component of RNA secondary structure is base pairing.
+
+In this chapter, we explore neural network architectures suitable for modelling this fundamental
+building block of RNA secondary structure.
+
+\section{Training Dataset}
+
+We construct a toy dataset for the following task:
+
+Given a RNA sequence of length $2M + 1$: $x_1, x_2, \cdots, x_{2M+1}$,
+where $M$ is a positive integer (so the sequence length is an odd number),
+for each base $x_i$, predict the probability that it is
+paired with the middle base $x_M$ in the equilibrium ensemble.
+
+Such task is a simplified version of the more difficult one,
+where one needs to predict the pairing probability upper triangular matrix from the sequence.
+
+We used RNAfold from ViennaRNA package\cite{lorenz2011viennarna} to generate the dataset.
+$100000$ sequences of length $51$ were generated,
+where each base was sampled independently and uniformly from $\{A, C, G, U\}$.
+We ran RNAfold on each sequences, and extracted the $M^{th}$ row from the pairing probability
+matrix, corresponding to the middle
+position\footnote{To be precise, since RNAfold outputs the upper triangle matrix,
+we extracted the $M^{th}$ row and $M^{th}$ column in the upper triangle, then combined into an array of length $2M+1$}.
+
+\section{Model architecture}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{plot/pair_prob_nn_plot.png}
+    \caption{Neural network for base pair modelling.}
+    \label{fig:base_pair_nn}
+    \centering
+\end{figure}
+
+As shown in Fig \ref{fig:base_pair_nn}, in order to help the neural network capture base pair information,
+we run convolution layers in parallel, one set on the original sequence, and the other set on the reversed sequence.
+After each layer of convolution, the activation from thr reverse sequence is
+cropped to retain only the unit corresponding to the filter centered at the middle position,
+then a dot product is computed between this and the forward activation at all positions.
+Dot product is one way to measure similarity, and was also used in one variation of Attention-based Neural Machine Translation\cite{luong2015effective}.
+Finally, the dot product vectors from all layers are concatenated and passed
+through a fully connected layer (along the concatenated feature dimension) with sigmoid activation to predict the base pair probability.
+
+\section{Training}
+
+We used $80000$ sequences as training data and $20000$ for validation.
+For this toy dataset, we used $5$ layers of convolution, with $64$ filters in all layers,
+and filter widths $7, 3, 3, 5, 9$.
+
+
+\section{Result}
+
+\subsection{Validation data performance}
+
+We first evaluate our model's performance on validation set.
+We focus on $75406$ out of $20000$ validation sequences, where there
+is at least one positions with pair probability larger than $0.5$.
+We calculated top-$k$ accuracy for each sequence,
+where a sequence is considered being correctly predicted if the
+position with largest target value is in the top $k$ positions sorted by predictions.
+The result is listed in Table \ref{table:base_pair_validation_performance}.
+
+\begin{table}[h!]
+    \centering
+    \begin{tabular}{||c c||}
+        \hline
+        k & Accuracy \\ [0.5ex]
+        \hline\hline
+        1 & 0.66 \\
+        \hline
+        2 & 0.85 \\
+        \hline
+        3 & 0.92 \\
+        \hline
+        4 & 0.95 \\
+        \hline
+        5 & 0.97 \\
+        \hline
+    \end{tabular}
+    \caption{Validation set top-K accuracy.}
+    \label{table:base_pair_validation_performance}
+\end{table}
+
+
+%\subsection{Filter visualization}
+
+\subsection{Gradient ascent for output maximization}
+
+One benefit of having a differentiable model like NN is that we can answer interesting questions like:
+given my current input sequence, what (small) changes can I make to maximize the pair probability of a specific base?
+
+We illustrate this use case using one example sequence:
+
+\begin{verbatim}
+GAAUGGGUUAAAAGGGGGGCGCAUUGGUACCUGCUAUUAGGGAUCAAUCGG
+\end{verbatim}
+
+Our model predict the $44^{th}$ (0-based) base $C$ is the most
+likely one to be paired up with the $25^{th}$ center base $G$ with a probability of $0.8383031$.
+Right now, the $10^{th}$ base $A$ has only a probability of $3.9591327e-05$ to be paired with the center base,
+which is not surprising since $A$ and $G$ don't form pair in typical cases.
+
+% a little bit of noise needs to be added to the input to start GA
+
+In order to find small, local changes to be made on this sequence,
+we computed the gradient of the $10^{th}$ output node (a scalar) with respect to all the input nodes ($51 \times 4$ array).
+We ran $200$ gradient ascent iterations with step size $0.01$,
+in each step, after adding the gradient (times step size) onto the input,
+we re-normalize the input so the feature dimension sum up to 1.
+
+Fig \ref{fig:base_pair_ga_0}, \ref{fig:base_pair_ga_50}, \ref{fig:base_pair_ga_100} and \ref{fig:base_pair_ga_190}
+shows the gradient ascent progression.
+It can be observed that the $10^{th}$ base has been gradually mutated from $A$ to $C$, which is expected since $C$ pairs with $G$.
+Interestingly, a couple of other bases have also been mutated significantly, potentially to help with pairing the $10^{th}$ and $25^{th}$ bases.
+
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{plot/base_pair_ga_0.png}
+    \caption{Gradient ascent on input.}
+    \label{fig:base_pair_ga_0}
+    \centering
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{plot/base_pair_ga_50.png}
+    \caption{Gradient ascent on input.}
+    \label{fig:base_pair_ga_50}
+    \centering
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{plot/base_pair_ga_100.png}
+    \caption{Gradient ascent on input.}
+    \label{fig:base_pair_ga_100}
+    \centering
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{plot/base_pair_ga_190.png}
+    \caption{Gradient ascent on input.}
+    \label{fig:base_pair_ga_190}
+    \centering
+\end{figure}
+
+
+As a further validation, we used RNAfold to compute the minimum free energy structure for the original and mutated sequence.
+For the mutated sequence, we used the bases with maximum value at each position after gradient ascent:
+
+\begin{verbatim}
+position         0         10             25                      50
+                 |         |              |                       |
+original         GAAUGGGUUAAAAGGGGGGCGCAUUGGUACCUGCUAUUAGGGAUCAAUCG
+                 |||||||||..|||||.|||||.|||.|||||||||||||||||||||||
+mutated          GAAUGGGUUUCAAGGGCGGCGCCUUGAUACCUGCUAUUAGGGAUCAAUCG
+\end{verbatim}
+(included position and original sequence for comparison)
+
+
+RNAfold predicted structure for the original sequence is in Fig \ref{fig:base_pair_rnafold_structure}(a),
+and sequence for the mutated sequence is in Fig \ref{fig:base_pair_rnafold_structure}(b),
+both are consistent with out model prediction.
+
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.6\textwidth]{plot/base_pair_rnafold_structure.png}
+    \caption{Structure predicted by RNAfold.}
+    \label{fig:base_pair_rnafold_structure}
+    \centering
+\end{figure}
+
+
+%\section{Conclusion}
+
+
+\chapter{In vivo accessibility model}
 
 In this chapter, we present preliminary result on modeling yeast in vivo RNA secondary structure.
 
