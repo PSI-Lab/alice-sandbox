@@ -57,8 +57,8 @@ def build_model():
         conv_prods.append(conv_prod)
     conv_prod_concat = Concatenate(axis=-1)(conv_prods)
 
-    # LSTM TODO hard-coded 10 hidden units
-    hid = Bidirectional(LSTM(10, activation='tanh', recurrent_activation='hard_sigmoid',
+    # LSTM TODO hard-coded 100 hidden units
+    hid = Bidirectional(LSTM(100, activation='tanh', recurrent_activation='hard_sigmoid',
                              return_sequences=True))(conv_prod_concat)
     output = Conv1D(1, 1, padding='same', activation='sigmoid')(hid)
 
