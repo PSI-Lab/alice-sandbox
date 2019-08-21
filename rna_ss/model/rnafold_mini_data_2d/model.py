@@ -60,16 +60,19 @@ def build_model():
     stack_layer = Lambda(lambda x: kb.stack(x, axis=-1))
     conv_prod_concat = stack_layer(conv_prods)
 
-    # add 2D conv
-    nf_2d = [128, 128, 128]
-    nk_2d = [[2, 2], [4, 4], [8, 8]]
-    conv_2d = conv_prod_concat
-    for nf, nk in zip(nf_2d, nk_2d):
-        conv_2d = BatchNormalization()(conv_2d)
-        conv_2d = Activation('relu')(conv_2d)
-        conv_2d = Conv2D(filters=nf, kernel_size=nk, padding='same', activation=None)(conv_2d)
+    # # add 2D conv - TODO how do we guarantee symmetry of output?
+    # nf_2d = [128, 128, 128]
+    # nk_2d = [[2, 2], [4, 4], [8, 8]]
+    # conv_2d = conv_prod_concat
+    # for nf, nk in zip(nf_2d, nk_2d):
+    #     conv_2d = BatchNormalization()(conv_2d)
+    #     conv_2d = Activation('relu')(conv_2d)
+    #     conv_2d = Conv2D(filters=nf, kernel_size=nk, padding='same', activation=None)(conv_2d)
+    #
+    # output = Conv2D(1, [1, 1], activation='sigmoid')(conv_2d)
 
-    output = Conv2D(1, [1, 1], activation='sigmoid')(conv_2d)
+    hid = Conv2D(filters=10, kernel_size=[5, 5], padding='same', activation='relu')(conv_prod_concat)
+    output = Conv2D(filters=1, kernel_size=[2, 2], padding='same', activation='sigmoid')(hid)
 
     model = Model(input=input_org, output=output)
 
