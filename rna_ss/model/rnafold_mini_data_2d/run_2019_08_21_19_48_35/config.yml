@@ -1,0 +1,2 @@
+{batch_size: 100, es_patience: 10, git_hash: 82f11d3f7314001ddcdc45ac693febdb6aa80a11,
+  learning_rate: 0.001, model_dir: model/, num_batch_for_validation: 100, num_epoch: 200}
