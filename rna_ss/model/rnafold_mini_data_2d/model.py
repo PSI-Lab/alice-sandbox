@@ -71,8 +71,10 @@ def build_model():
     #
     # output = Conv2D(1, [1, 1], activation='sigmoid')(conv_2d)
 
-    hid = Conv2D(filters=10, kernel_size=[5, 5], padding='same', activation='relu')(conv_prod_concat)
-    output = Conv2D(filters=1, kernel_size=[2, 2], padding='same', activation='sigmoid')(hid)
+    hid = Conv2D(filters=10, kernel_size=[5, 5],
+                 padding='same', activation='relu')(conv_prod_concat)
+    output = Conv2D(filters=1, kernel_size=[2, 2], dilation_rate=2,
+                    padding='same', activation='sigmoid')(hid)
 
     model = Model(input=input_org, output=output)
 

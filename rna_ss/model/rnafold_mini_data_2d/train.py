@@ -44,8 +44,8 @@ def main(config):
     df_intervals = pd.read_pickle('data/rand_seqs_2d_100000.pkl.gz')
 
     n_train = int(len(df_intervals) * 0.8)
-    df_training = df_intervals[:n_train]
-    df_validation = df_intervals[n_train:]
+    df_training = df_intervals[:n_train].reset_index(drop=True)
+    df_validation = df_intervals[n_train:].reset_index(drop=True)
 
     print("Num sequences in training: %d" % len(df_training))
     print("Num sequences in validation: %d" % len(df_validation))
