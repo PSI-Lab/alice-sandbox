@@ -60,8 +60,16 @@ def build_model():
     stack_layer = Lambda(lambda x: kb.stack(x, axis=-1))
     conv_prod_concat = stack_layer(conv_prods)
 
-    # TODO add 2D conv
-    output = Conv2D(1, [1, 1], activation='sigmoid')(conv_prod_concat)
+    # add 2D conv
+    nf_2d = [128, 128, 128]
+    nk_2d = [[2, 2], [4, 4], [8, 8]]
+    conv_2d = conv_prod_concat
+    for nf, nk in zip(nf_2d, nk_2d):
+        conv_2d = BatchNormalization()(conv_2d)
+        conv_2d = Activation('relu')(conv_2d)
+        conv_2d = Conv2D(filters=nf, kernel_size=nk, padding='same', activation=None)(conv_2d)
+
+    output = Conv2D(1, [1, 1], activation='sigmoid')(conv_2d)
 
     model = Model(input=input_org, output=output)
 
