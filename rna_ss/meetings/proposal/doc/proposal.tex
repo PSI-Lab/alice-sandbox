@@ -41,21 +41,36 @@
 
 
 
-Once believed to be an intermediate molecule that serves as messenger between DNA and protein,
+Once believed to be an intermediate molecule that serves as a messenger between DNA and protein,
 RNA is now known to be involved in many aspects in gene regulation and expression.
-Unlike DNA which forms stable double helix, RNA predominantly stays single-stranded and folds onto itself by
-forming base pairs via hydrogen bonds, including Watson-Crick pair A-U, G-C and non-canonical pair A-U.
+Unlike DNA which forms stable double helix, RNA predominantly exists as single-stranded and folds onto itself by
+forming base pairs via hydrogen bonds, including Watson-Crick pairs A-U, G-C and non-canonical pairs such as A-U.
 Nearby paired and unpaired bases further assemble into
-hairpins, bulges, internal loops, Multi loops and pseudoknots.
+hairpins, bulges, internal loops, multi loops and pseudoknots, as shown in Fig \ref{fig:rna_structure_components}.
 In addition, secondary structures within an RNA molecule can interact via non-covalent bond, to form tertiary structure.
 
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.6\textwidth]{rna_structure_components.png}
+    \caption{RNA secondary structure components. Courtesy of https://x3dna.org/articles/exterior-loop-in-rna-secondary-structure.}
+    \label{fig:rna_structure_components}
+    \centering
+\end{figure}
 
-RNA secondary and tertiary structure play key roles in regulating both coding and nocoding genes,
+
+
+RNA secondary and tertiary structures play key roles in regulating both coding and nocoding genes,
 affecting all steps including transcription, splicing, polyadenylation, translation,
 localization and stability\cite{wan2011understanding, mortimer2014insights, bevilacqua2016genome}.
 Over the past few years, combination of RNA structure probing and high throughput sequencing has enabled
 the measurement of genome-wide RNA structural at single nucleotide resolution in multiple organisms and cell types,
 which provides new insight into the relationship between RNA structure and its function.
+
+% TODO review traditional way of resolving structure, RNAstrand database (used in SG paper from RNAfold)
+% TODO review free energy and dynamic programming (maybe in related work)
+% TODO review base pairing, show a plot of matrix, describe ensemble
+
+% TODO comparative sequence analysis
 
 \section{High throughput probing of RNA secondary structure}
 
@@ -86,8 +101,8 @@ effort is underway to probe the actual base-pairing, either intramolecular, or i
 Three methods have been proposed to use psoralens for cross-linking the duplex regions of RNA:
 psoralen analysis of RNA interactions and structures (PARIS)\cite{lu2018paris},
 sequencing of psoralen crosslinked, ligated, and selected hybrids (SPLASH)\cite{aw2016vivo}, and
-ligation of interacting RNA and high-throughput sequencing (LIGR-seq)\cite{sharma2016global},
-Sequencing of the fragmented and ends-ligated reads provides information on direct base-pairing in secondary structure and \textit{trans} RNA-RNA interactions.
+ligation of interacting RNA and high-throughput sequencing (LIGR-seq)\cite{sharma2016global}.
+In all three methods, sequencing of the fragmented and ends-ligated reads provides information on direct base-pairing in secondary structure and \textit{trans} RNA-RNA interactions.
 
 
 \begin{figure}[h!]
@@ -115,10 +130,12 @@ Furthermore, although \textit{in vitro} data provides invaluable insight into th
 it has been demonstrated in various organisms that \textit{in vivo} structure can differ significantly from \textit{in vitro}.
 In a living cell environment, the presence of proteins and ligands,
 concentration of salt, temperature and other factors defines a complex environment, which in turn affects RNA structure,
-and the precise reconstruction of these conditions in vitro is almost impossible.
-﻿Rouskin et al.\cite{rouskin2014genome} studied yeast RNA structure and found that RNAs are less structured in vivo than in vitro.
+and the precise reconstruction of these conditions \textit{in vitro} is almost impossible.
+﻿Rouskin et al.\cite{rouskin2014genome} studied yeast RNA structure and found that RNAs are
+less structured \textit{in vivo} than \textit{in vitro}.
 Moreover, they observed that structures unfold when $Mg^{2+}$ is lowered \textit{in vitro},
-and more structured regions emerge when cell is depleted of ATP \textit{in vivo}.
+and more structured regions emerge when cell is depleted of ATP \textit{in vivo},
+which highlights the effect of environment on RNA structure.
 %(which underscores the importance of in vivo probing that captures the specific
 %physiological condition of the cell type of interest.
 
@@ -176,7 +193,7 @@ Ding et. al\cite{ding2014vivo} used Structure-Seq to study the genome-wide RNA s
 ﻿\textit{Arabidopsis thaliana} seedlings \textit{in vivo} and discovered a pattern around alternative polyadenylation sites across $5959$ mRNAs.
 As shown in Fig \ref{fig:poly_a}, region upstream of the site (-15nt to -2nt) is significantly more structured, as indicated by lower reactivity,
 and region downstream of the site (-1nt to +5nt) is significantly less structured, as indicated by higher reactivity.
-This
+
 
 \begin{figure}[h!]
     \centering
@@ -194,7 +211,7 @@ This
 
 Kertesz et. al\cite{kertesz2010genome} reported a small but significant anti-correlation between PARS scores 10bp upstream
 of the start codon and ribosome density throughout the transcript.
-In addition, genes where 5'UTRs are less structured than the beginning of the coding region also show a tendency towards higher ribosome density.
+In addition, genes whose 5'UTRs are less structured than the beginning of the coding region also show a tendency towards higher ribosome density.
 
 \subsection*{Localization}
 
@@ -236,20 +253,20 @@ On the other hand, genes with more UTR structure like ﻿chaperones and unfolded
 
 \section{Deep neural network for sequence modelling}
 
-Predicting RNA structure is similar in its nature to many applications in
-computer vision (CV) and natural language processing(NLP),
-where the input is a variable sized sequence,
-and the output is a sequence of the same size as the input.
-Here we review the recent breakthroughs in deep learning related to sequence modelling and discuss their application in genomics.
-%(TODO 2D MAP)
+The task of predicting RNA secondary structure is similar to many applications in
+computer vision (CV) and natural language processing (NLP).
+The input is a variable sized sequence,
+and the output is a vector of the same length as the input (one dimensional output, e.g. accessibility of each base),
+or an array whose size is a deterministic function of the input length (two dimensional output, e.g. probability of all base pairs).
+Here we review the recent breakthroughs in deep learning related to sequence modeling and discuss their application in genomics.
 
 
 \subsection*{Recurrent neural network and LSTM}
 
-Recurrent neural networks(RNNs), especially long short-term memory (LSTM)\cite{hochreiter1997long},
-have been successfully applied to many sequence labelling tasks
-Although LSTM mitigates the vanishing and exploding gradient problem in the vanilla RNNs,
-and has the nice property of being able to model long range dependency of any distance (at least in theory),
+Recurrent neural networks (RNNs), especially long short-term memory (LSTM)\cite{hochreiter1997long},
+have been successfully applied to many sequence labelling tasks.
+Although LSTM mitigates the vanishing and exploding gradient problem of the vanilla RNNs,
+and is capable of modeling long range dependency in theory,
 in practise, it falls short due to the computational time,
 which scales linearly with the length of input for both training and inference,
 thus renders it difficult to scale up to long input sequence lengths.
@@ -259,7 +276,7 @@ thus renders it difficult to scale up to long input sequence lengths.
 %Instead, researchers has proposed other alternatives to model long range dependencies while addressing the
 %computational time problem that is intrinsic to all recurrent neural networks, including LSTM.
 
-Convolutional neural network (CNN) has been applied successfully in
+Convolutional neural network (CNNs) have been applied successfully in
 modelling transcription factor (TF) and RNA binding protein (RBP) binding\cite{alipanahi2015predicting, gandhi2018cdeepbind},
 alternative splicing\cite{bretschneider2018cossmo}, alternative polyadenylation\cite{leung2018inference},
 and genome accessibility\cite{kelley2016basset}.
@@ -268,12 +285,12 @@ layers. In order to construct a large receptive field for modelling long range d
 the network is typically very deep, which does not work in practise,
 since classical CNNs are known to be difficult to optimize as the number of layers grows.
 
-Instead, researchers has proposed improved architectures to model long range dependencies
+Instead, researchers have proposed improved architectures to model long range dependencies
 while still addressing the computational time problem that is intrinsic to all recurrent neural networks, including LSTM.
 
 Yu et. al\cite{yu2015multi} proposed a variation of the convolutional neural network (CNN),
-by introducing 'holes' in convolution filters, such that the receptive filed in a single layer is $n$ times of the original,
-where $n-1$ is the number of 'holes' between adjacent connections in the filter.
+by introducing dilation a.k.a. `holes' in convolution filters, such that the receptive filed in a single layer is $n$ times of the original,
+where $n-1$ is the number of `holes' between adjacent connections in the filter.
 Compared to non-dilated CNN with the same number of parameters,
 dilated CNN achieves exponential growth of the receptive filed,
 while maintaining the same resolution and coverage.
@@ -293,7 +310,7 @@ to mitigate the difficulty in training deep CNN.
 In order to improve information flow (in both forward and backward direction),
 shorter path between layers is necessary.
 This is achieved by connecting all pairs of layers,
-i.e. every layer receives as input concatenation of all previous layers, and passes its output to all subsequent layers.
+i.e. every layer receives as input the concatenation of all previous layers, and passes its output to all subsequent layers.
 Such dense connection not only alleviates the vanishing gradient problem, but also enables feature reuse which makes the network more parameter-efficient.
 
 
@@ -301,12 +318,12 @@ Such dense connection not only alleviates the vanishing gradient problem, but al
 Attention mechanism is another technique to model long range dependencies,
 without limitation by distances.
 Vaswani et. al\cite{vaswani2017attention} proposed the Transformer Network,
-which is solely based on attention mechanism to model global dependencies between input and output.
+which is solely based on attention mechanism to model global dependencies.
 In each block, the network applies a self-attention mechanism
 which directly models relationships between all positions in the input.
 For each position, the attention scores for other positions are normalized,
 which are used as weights to combine input from all positions to construct a new representation of the current position.
-These networks are highly parameterizable, achieves state-pf-the-art performance,
+These networks are highly parameterizable, achieve state-of-the-art performance,
 and have the added benefit that mechanistic insight can be drawn from the attention weights.
 %(TODO example)
 One drawback of these networks is that substantial memory is required for computing and storing the attention matrix.
@@ -323,24 +340,31 @@ Most state-of-the-art RNA structure prediction algorithms, such as ViennaRNA\cit
 are based on the fundamental property of base-pairing.
 Each type of base-pairing, as well as each type of local structure, has its own associated free energy that is measured experimentally.
 Total free energy is the sum of all local free energy, and can be minimized efficiently using dynamic programming.
+Although people have worked out a large set of local structure types and their associated formulation for free energy calculation,
+there is no guarantee that it's either accurate or complete.
+There has been effort to fine tune the free energy parameters by training on experimentally solved structures\cite{andronescu2007efficient},
+but it's still limited by the known set of local structure types.
+
 
 Researchers have also applied deep learning to predict RNA structure from sequence directly, as described in DMfold\cite{wang2019dmfold}.
 The authors trained a LSTM to classify each nucleotide in one of the seven categories,
 corresponding to each unique symbol in the dot-bracket notation.
 There are two potential limitations of this model.
 First, training and validation set were splited randomly, while the dataset only consists of a handful of RNA families,
-this means the tranining and validation set contain highly similar sequences,
+this means the training and validation set contain highly similar sequences,
 so the performance reported in the work does not necessarily reflect the generalization performance to unseen RNA sequences or families.
 Second, the output class labels are not guaranteed to be compatible throughout the sequence, in fact,
 the authors need to apply heuristics to post-process the neural network output into compatible labels.
 
 In terms of prediction using RNA probing data,
 so far the only attempt was to use the measured accessibility to guide dynamic programming algorithm like ViennaRNA\cite{lorenz2011viennarna},
-by introducing extra penalty term when computing the free energy.
+by introducing extra penalty terms when optimizing the total free energy.
 
 A computational model for in vivo RNA accessibility is beneficial in the following aspects:
 
 \begin{itemize}
+%    \item State-of-art thermodynamic models are based of free energy minimization,
+%    where the free energy were measured experimentally on specific types of sub structures.
     \item Certain transcripts are difficult to probe due to either low abundance or repeated regions,
         a model can provide insight on these transcript using information learned from other transcripts in the same cell type.
     \item Learning features that's specific to in vivo RNA structure can provide
@@ -354,24 +378,28 @@ A computational model for in vivo RNA accessibility is beneficial in the followi
 
 \section{Proposed thesis work}
 
-In this thesis, we propose to work on the following directions:
+In this thesis, we propose to work on the following aspects:
 
 \begin{itemize}
-    \item Develop neural network architecture that incorporate the biological nature of RNA secondary structure.
+    \item Develop neural network architecture that incorporates prior knowledge on the biological nature of RNA secondary structure.
+    We will explore various architectures and evaluate their potential in modeling the
+    fundamental building block of RNA secondary structure: base pairing.
+
 
     \item Training deep learning models to predict in vivo RNA secondary structure from sequence, for multiple species and cell types.
         In vitro data can also be used to help with learning useful low level features.
-%TODO trans-factor generalization
+
+    %TODO trans-factor generalization
 
     \item Finetuning of model on mutation dataset.
         Wan et. al\cite{wan2014landscape} identified '﻿riboSNitches' (mutations that affect structure)
         by performing PARS on ﻿lymphoblastoid cells of a family trio.
         We can finetune the representation learned from other dataset to improve the model's sensitivity to single nucleotide mutations.
 
-    \item Combining with dynamic programming models to improve performance \textit{in vivo}.
-        We hypothesize that deep neural network trained on \textit{in vivo} RNA acessibility dataset is able to
-        learn cell type specific features that's not present in dynamic programming models.
-        There is potential that performance can be improved by combining the two types of models that capture complementary information.
+%    \item Combining with dynamic programming models to improve performance \textit{in vivo}.
+%        We hypothesize that deep neural network trained on \textit{in vivo} RNA acessibility dataset is able to
+%        learn cell type specific features that's not present in dynamic programming models.
+%        There is potential that performance can be improved by combining the two types of models that capture complementary information.
 
 %    \item Applying the model to discover pathogenic mutations that are potentially causal for structural change.
 %        Disease mutation database such as Clinvar has
@@ -387,8 +415,7 @@ In this thesis, we propose to work on the following directions:
 
 \chapter{Toy Example}
 
-An essential component of RNA secondary structure is base pairing.
-
+A fundamental component of RNA secondary structure is base pairing.
 In this chapter, we explore neural network architectures suitable for modelling this fundamental
 building block of RNA secondary structure.
 
@@ -552,7 +579,7 @@ mutated          GAAUGGGUUUCAAGGGCGGCGCCUUGAUACCUGCUAUUAGGGAUCAAUCG
 
 RNAfold predicted structure for the original sequence is in Fig \ref{fig:base_pair_rnafold_structure}(a),
 and sequence for the mutated sequence is in Fig \ref{fig:base_pair_rnafold_structure}(b),
-both are consistent with out model prediction.
+both are consistent with our model prediction.
 
 
 \begin{figure}[h!]

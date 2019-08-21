@@ -1,0 +1,44 @@
+
+
+Low-throughput methods:
+
+Physical methods
+
+﻿Early experimental methods for RNA structure probing comprise physical methods
+such as X-ray crystallography and nuclear magnetic resonance spectroscopy (NMR)
+(Lengyel et al. 2014). Both methods take the RNA out of its cellular context,
+especially so X-ray crystallography, where the ability to crystallise implies
+the almost complete removal of the solvent. Even then, not all RNAs crystallise
+equally well (some not at all), so that database of RNA structures derived by
+X-ray crystallography has inherent biases. NMR imposes a considerable limitation
+on the length of the RNAs that can be investigated. Both in vitro methods are
+low-throughput in the sense that they typically investigate a single RNA at a time.
+Especially NMR requires considerable human expertise to design and interpret all
+experiments required to determine a RNA structure. Experiments for different RNAs
+are considered on a case by case basis. These general limitations none-withstanding,
+NMR and X-ray crystallography have generated a wealth of important insights on
+RNA structure properties in vitro. Discrepancies between the RNA structures derived
+from NMR and from X-ray crystallography experiments give an early indication that
+RNA structure features are fairly context- sensitive (Higgs 2000). Based on these
+early observations, differences between RNA structures in vitro and in vivo could thus be expected.
+
+
+﻿Enzymatic Methods
+
+﻿RNA structure features can also be probed using RNases. These ribonucleases correspond
+to naturally occurring proteins that cleave at specific paired (i.e. ﻿double-stranded (ds))
+or unpaired (i.e. single-stranded (ss)) nucleotides. Each type of RNase comes with distinct
+specificities (e.g. RNAse T1 (ssG), RNAse A (ssC/U), RNAse S1 (ssRNA) and RNase V1 (dsRNA)).
+Probing the same RNA with different RNases in separate experiments is a good way to independently
+assess complemen- tary RNA structure features (and to also estimate the corresponding false
+positive rates via consistency checks). The size of these proteins (> 10,000Da) (Ehresmann et al. 1987),
+however, prevents them from easily crossing cellular membranes and from resolving smaller RNA structure
+details, e.g. small bulges. Their use has thus been limited to in vitro studies so far
+(Ehresmann et al. 1987; Weeks 2010; Knapp 1989; Woese et al. 1980; Aultman and Chang 1982;
+Guerrier-Takada et al. 1983; Kertesz et al. 2010).
+
+
+
+
+﻿When the structure ofdouble-strandedDNAwas determined in 1953,RNAalso seemed likely to base pair, even though it is single stranded. In 1956, Rich &Davies (88) solved a fiber X- ray diffraction structure for double-stranded RNA comprising the abiological polymers poly(rA) and poly(rU) that was a right-handed double helix with base pairing and stacking akin to that of double-stranded DNA. Additional insights into RNA structure were obtained in the 1960s when researchers found that single-stranded RNAcould stack through local van der Waals’ interactions.
+
