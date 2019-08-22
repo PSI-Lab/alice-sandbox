@@ -24,8 +24,20 @@ class DataGenerator(keras.utils.Sequence):
 
     def __init__(self, df, batch_size):
         self.batch_size = batch_size
-        self.df = df
+        self.df = self._process_df(df)
         self.indexes = np.arange(len(self.df))
+
+    def _process_df(self, df):
+        # set lower triangular elements to -1
+
+        def _mask(x):
+            assert len(x.shape) == 2
+            assert x.shape[0] == x.shape[1]
+            x[np.tril_indices(x.shape[0])] = -1
+            return x
+
+        df = add_column(df, 'pair_matrix', ['pair_matrix'], _mask)
+        return df
 
     def __len__(self):
         """Denotes the number of batches per epoch"""
