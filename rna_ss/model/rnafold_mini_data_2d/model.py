@@ -42,13 +42,13 @@ def build_model():
         conv_or = BatchNormalization()(conv_or)
         conv_or = Activation('relu')(conv_or)
         conv_or = Conv1D(filters=num_filter, kernel_size=kernel_size, dilation_rate=dilation_size,
-                         kernel_regularizer=regularizers.l1_l2(l1=0.0000005, l2=0.0000005),
+                         kernel_regularizer=regularizers.l1_l2(l1=0.000001, l2=0.000001),
                          padding='same', activation=None)(conv_or)
 
         conv_rv = BatchNormalization()(conv_rv)
         conv_rv = Activation('relu')(conv_rv)
         conv_rv = Conv1D(filters=num_filter, kernel_size=kernel_size, dilation_rate=dilation_size,
-                         kernel_regularizer=regularizers.l1_l2(l1=0.0000005, l2=0.0000005),
+                         kernel_regularizer=regularizers.l1_l2(l1=0.000001, l2=0.000001),
                          padding='same', activation=None)(conv_rv)
         # conv_rv_mid = Cropping1D(25)(conv_rv)
 
@@ -87,7 +87,7 @@ def build_model():
     #
     # output = Conv2D(1, [1, 1], activation='sigmoid')(conv_2d)
 
-    hid = Conv2D(filters=10, kernel_size=[5, 5],
+    hid = Conv2D(filters=100, kernel_size=[5, 5],
                  kernel_regularizer=regularizers.l1_l2(l1=0.000001, l2=0.000001),
                  padding='same', activation='relu')(conv_prod_concat)
     output = Conv2D(filters=1, kernel_size=[2, 2], dilation_rate=2,
