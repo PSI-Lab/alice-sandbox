@@ -24,7 +24,7 @@ def build_model():
     # kernel_sizes = [7, 3, 3, 5, 9]
 
     num_filters = [64, 64, 64]
-    kernel_sizes = [7, 3, 3]
+    kernel_sizes = [7, 5, 5]
     dilation_sizes = [1, 2, 4]
 
     conv_or = input_org
