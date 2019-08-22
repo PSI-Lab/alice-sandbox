@@ -70,6 +70,9 @@ def build_model():
 
         # dot product
         conv_prod = Dot(axes=-1)([conv_or, conv_rv])  # 2D map
+        # select upper triangular part (lower will be all 0's)
+        upper_tri_layer = Lambda(lambda x: tf.matrix_band_part(input, 0, -1))
+        conv_prod = upper_tri_layer(conv_prod)
         conv_prods.append(conv_prod)
 
     # stack 2D feature maps
@@ -90,6 +93,7 @@ def build_model():
     hid = Conv2D(filters=200, kernel_size=[5, 5],
                  kernel_regularizer=regularizers.l1_l2(l1=0.000001, l2=0.000001),
                  padding='same', activation='relu')(conv_prod_concat)
+    # TODO mask lower triangular part after each layer?
     output = Conv2D(filters=1, kernel_size=[2, 2], dilation_rate=2,
                     padding='same', activation='sigmoid')(hid)
 
