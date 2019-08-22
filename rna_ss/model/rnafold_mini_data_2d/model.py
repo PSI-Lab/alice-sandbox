@@ -87,7 +87,7 @@ def build_model():
     #
     # output = Conv2D(1, [1, 1], activation='sigmoid')(conv_2d)
 
-    hid = Conv2D(filters=100, kernel_size=[5, 5],
+    hid = Conv2D(filters=200, kernel_size=[5, 5],
                  kernel_regularizer=regularizers.l1_l2(l1=0.000001, l2=0.000001),
                  padding='same', activation='relu')(conv_prod_concat)
     output = Conv2D(filters=1, kernel_size=[2, 2], dilation_rate=2,
