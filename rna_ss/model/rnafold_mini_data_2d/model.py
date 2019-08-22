@@ -98,6 +98,33 @@ def build_model():
     return model
 
 
+# FIXME is this working?
+def custom_loss(y_true, y_pred, mask_val=-1):  # mask val hard-coded for now
+    # both are 3D array
+    # num_examples x l1 x l2
+    # find which values in yTrue (target) are the mask value
+    is_mask = kb.equal(y_true, mask_val)  # true for all mask values
+    is_mask = kb.cast(is_mask, dtype=kb.floatx())
+    is_mask = 1 - is_mask  # now mask values are zero, and others are 1
+    # reweight to account for proportion of missing value
+    valid_entries = kb.cast(kb.sum(is_mask), dtype=kb.floatx())
+    # total_entries = kb.cast(kb.prod(kb.shape(is_mask)), dtype=kb.floatx())
+
+    def _loss(y_true, y_pred, is_mask):
+        epsilon = tf.convert_to_tensor(kb.epsilon(), y_pred.dtype.base_dtype)
+        y_pred = tf.clip_by_value(y_pred, epsilon, 1. - epsilon)
+        # return - tf.reduce_sum(tf.multiply(y_true * tf.log(y_pred), is_mask))
+        return - tf.reduce_sum(tf.multiply(y_true * tf.log(y_pred) + (1-y_true) * tf.log(1-y_pred), is_mask))
+
+    # loss = kb.binary_crossentropy(kb.flatten(y_true), kb.flatten(y_pred)) * kb.flatten(is_mask)
+    loss = _loss(y_true, y_pred, is_mask)
+    loss = loss / valid_entries
+
+    # loss = kb.mean(loss) * total_entries / valid_entries
+    return loss
+
+
+
 # def build_model():
 #     input_org = Input(shape=(51, 4), name='input_org')
 #     input_rev = Input(shape=(51, 4), name='input_rev')  # can also use rev comp

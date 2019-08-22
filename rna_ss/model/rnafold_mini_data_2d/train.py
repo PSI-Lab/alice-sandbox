@@ -22,7 +22,7 @@ from keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping, ReduceL
 from genome_kit import Interval
 from data_generator import DataGenerator
 from dgutils.pandas import Column, get_metadata, write_dataframe, add_column, read_dataframe
-from model import build_model
+from model import build_model, custom_loss
 # from config import config
 
 
@@ -63,7 +63,8 @@ def main(config):
 
     opt = keras.optimizers.Adam(lr=config['learning_rate'], beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0,
                                 amsgrad=False)  # TODO weight decay
-    model.compile(loss='binary_crossentropy',optimizer=opt)
+    # model.compile(loss='binary_crossentropy',optimizer=opt)
+    model.compile(loss=custom_loss, optimizer=opt)
 
     # callbacks
     tictoc = strftime("%Y_%m_%d_%H_%M_%S", gmtime())
