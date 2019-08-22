@@ -71,7 +71,7 @@ def build_model():
         # dot product
         conv_prod = Dot(axes=-1)([conv_or, conv_rv])  # 2D map
         # select upper triangular part (lower will be all 0's)
-        upper_tri_layer = Lambda(lambda x: tf.matrix_band_part(input, 0, -1))
+        upper_tri_layer = Lambda(lambda x: tf.matrix_band_part(x, 0, -1))
         conv_prod = upper_tri_layer(conv_prod)
         conv_prods.append(conv_prod)
 
