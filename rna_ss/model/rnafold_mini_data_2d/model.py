@@ -97,7 +97,7 @@ def build_model():
                  kernel_regularizer=regularizers.l1_l2(l1=L12_P, l2=L12_P),
                  padding='same', activation='relu')(conv_prod_concat)
     # TODO mask lower triangular part after each layer?
-    output = Conv2D(filters=1, kernel_size=[2, 2], dilation_rate=2,
+    output = Conv2D(filters=1, kernel_size=[1, 1], dilation_rate=2,
                     padding='same', activation='sigmoid')(hid)
 
     model = Model(input=input_org, output=output)
