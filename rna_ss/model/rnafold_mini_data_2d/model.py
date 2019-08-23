@@ -13,6 +13,8 @@ import numpy as np
 
 
 def build_model():
+    L12_P = 0.000005
+
     input_org = Input(shape=(50, 4), name='input_org')
 
     # input_rev = Input(shape=(51, 4), name='input_rev')  # can also use rev comp
@@ -42,13 +44,13 @@ def build_model():
         conv_or = BatchNormalization()(conv_or)
         conv_or = Activation('relu')(conv_or)
         conv_or = Conv1D(filters=num_filter, kernel_size=kernel_size, dilation_rate=dilation_size,
-                         kernel_regularizer=regularizers.l1_l2(l1=0.000001, l2=0.000001),
+                         kernel_regularizer=regularizers.l1_l2(l1=L12_P, l2=L12_P),
                          padding='same', activation=None)(conv_or)
 
         conv_rv = BatchNormalization()(conv_rv)
         conv_rv = Activation('relu')(conv_rv)
         conv_rv = Conv1D(filters=num_filter, kernel_size=kernel_size, dilation_rate=dilation_size,
-                         kernel_regularizer=regularizers.l1_l2(l1=0.000001, l2=0.000001),
+                         kernel_regularizer=regularizers.l1_l2(l1=L12_P, l2=L12_P),
                          padding='same', activation=None)(conv_rv)
         # conv_rv_mid = Cropping1D(25)(conv_rv)
 
@@ -90,8 +92,9 @@ def build_model():
     #
     # output = Conv2D(1, [1, 1], activation='sigmoid')(conv_2d)
 
+    # TODO wider filters, more layers?
     hid = Conv2D(filters=200, kernel_size=[5, 5],
-                 kernel_regularizer=regularizers.l1_l2(l1=0.000001, l2=0.000001),
+                 kernel_regularizer=regularizers.l1_l2(l1=L12_P, l2=L12_P),
                  padding='same', activation='relu')(conv_prod_concat)
     # TODO mask lower triangular part after each layer?
     output = Conv2D(filters=1, kernel_size=[2, 2], dilation_rate=2,
