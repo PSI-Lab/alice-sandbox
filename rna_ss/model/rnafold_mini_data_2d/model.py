@@ -93,7 +93,7 @@ def build_model():
     # output = Conv2D(1, [1, 1], activation='sigmoid')(conv_2d)
 
     # TODO wider filters, more layers?
-    hid = Conv2D(filters=200, kernel_size=[5, 5],
+    hid = Conv2D(filters=200, kernel_size=[8, 8],
                  kernel_regularizer=regularizers.l1_l2(l1=L12_P, l2=L12_P),
                  padding='same', activation='relu')(conv_prod_concat)
     # TODO mask lower triangular part after each layer?
