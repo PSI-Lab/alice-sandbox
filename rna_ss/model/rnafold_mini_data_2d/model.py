@@ -96,6 +96,9 @@ def build_model():
     hid = Conv2D(filters=200, kernel_size=[8, 8],
                  kernel_regularizer=regularizers.l1_l2(l1=L12_P, l2=L12_P),
                  padding='same', activation='relu')(conv_prod_concat)
+    hid = Conv2D(filters=50, kernel_size=[4, 4],
+                 kernel_regularizer=regularizers.l1_l2(l1=L12_P, l2=L12_P),
+                 padding='same', activation='relu')(hid)
     # TODO mask lower triangular part after each layer?
     output = Conv2D(filters=1, kernel_size=[1, 1], dilation_rate=2,
                     padding='same', activation='sigmoid')(hid)
