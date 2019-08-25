@@ -32,7 +32,7 @@ def build_model():
                       kernel_regularizer=regularizers.l1_l2(l1=L12_P, l2=L12_P))(conv)
         conv = MaxPooling2D(pool_size=pooling_size)(conv)
 
-    conv = Flatten(conv)
+    conv = Flatten()(conv)
     hid = Dense(units=20, activation='relu')(conv)
     hid = Dropout(0.5)(hid)
     output = Dense(units=1)(hid)
