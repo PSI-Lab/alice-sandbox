@@ -18,7 +18,7 @@ def build_model():
 
     input_node = Input(shape=(50, 50, 9), name='input')
 
-    num_filters = [64, 64, 64]
+    num_filters = [256, 256, 256]
     kernel_sizes = [[8, 8], [4, 4], [2, 2]]
     dilation_sizes = [1, 2, 2]
     pooling_sizes = [2, 2, 2]
