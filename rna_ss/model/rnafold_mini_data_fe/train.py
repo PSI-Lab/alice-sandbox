@@ -132,7 +132,7 @@ def main(config):
     for i, row in tqdm.tqdm(validation_dataset.df.iterrows(), total=len(validation_dataset.df)):
         x1, y = validation_dataset.get_data([i])
         pred = model.predict(x1)
-        row['pred'] = pred[0, :, :, 0]
+        row['pred'] = pred[0]
         # row['pair_matrix'] = row['pair_matrix']
         data_pred.append(row)
     data_pred = pd.DataFrame(data_pred)
