@@ -33,7 +33,8 @@ class DataGenerator(keras.utils.Sequence):
         def _mask(x):
             assert len(x.shape) == 2
             assert x.shape[0] == x.shape[1]
-            x[np.tril_indices(x.shape[0])] = -1
+            # x[np.tril_indices(x.shape[0])] = -1\
+            x[np.tril_indices(x.shape[0])] = 0
             return x
 
         df = add_column(df, 'pair_matrix', ['pair_matrix'], _mask)
@@ -65,7 +66,7 @@ class DataGenerator(keras.utils.Sequence):
     def _encode_seq(self, seq):
         seq = seq.upper().replace('A', '1').replace('C', '2').replace('G', '3').replace('T', '4').replace('U', '4').replace('N', '0')
         x = np.asarray(map(int, list(seq)))
-        x = self.DNA_ENCODING[x.astype('int8')]
+        # x = self.DNA_ENCODING[x.astype('int8')]
         return x
 
     def get_data_single(self, idx):
@@ -73,12 +74,11 @@ class DataGenerator(keras.utils.Sequence):
         # x
         seq = row['sequence']
         _x1 = self._encode_seq(seq)
-        len_seq = len(seq)
 
         def _mask(a):
             assert len(a.shape) == 2
             assert a.shape[0] == a.shape[1]
-            a[np.tril_indices(a.shape[0])] = -1
+            a[np.tril_indices(a.shape[0])] = 0
             return a
 
         # mask + 2D tile
@@ -92,7 +92,7 @@ class DataGenerator(keras.utils.Sequence):
         x2 = row['pair_matrix'][:, :, np.newaxis]
         x = np.concatenate([x1_row, x1_col, x2], axis=2)
         # y
-        y = np.asarray([row['fe']])
+        y = np.asarray([row['free_energy']])
         return x, y
 
     def get_data(self, indexes):
