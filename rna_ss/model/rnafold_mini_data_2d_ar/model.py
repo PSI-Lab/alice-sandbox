@@ -152,7 +152,7 @@ def build_model():
     conv_prod_concat = stack_layer(conv_prods)
 
     # add target label from previous time stamp
-    hid = Concatenate([conv_prod_concat, target_ar])
+    hid = Concatenate()([conv_prod_concat, target_ar])
 
     # triangular conv
     # 2x2 (5//2 =2)
