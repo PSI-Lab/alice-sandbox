@@ -64,7 +64,7 @@ class TriangularConvolution2D(Convolution2D):
                           dilation_rate=self.dilation_rate)
 
         if self.use_bias:
-            output = K.bias_add(
+            output = kb.bias_add(
                 output,
                 self.bias,
                 data_format=self.data_format)
