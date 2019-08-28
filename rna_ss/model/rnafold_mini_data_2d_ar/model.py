@@ -60,8 +60,8 @@ class TriangularConvolution2D(Convolution2D):
             The only important piece is: self.W * self.mask.
             Which multiplies the mask with the weights before calculating convolutions. '''
         output = kb.conv2d(x, self.weights[0] * self.mask, strides=(1, 1),
-                          padding=self.padding, data_format=self.data_format,
-                          dilation_rate=self.dilation_rate)
+                           padding=self.padding, data_format=self.data_format,
+                           dilation_rate=self.dilation_rate)
 
         if self.use_bias:
             output = kb.bias_add(
@@ -156,13 +156,13 @@ def build_model():
 
     # triangular conv
     # 2x2 (5//2 =2)
-    hid = TriangularConvolution2D(20, 5, 5, border_mode='same')(hid)
+    hid = TriangularConvolution2D(20, 5, 5, border_mode='same', activation='relu')(hid)
     # 4x4 (9//2 = 4)
-    hid = TriangularConvolution2D(20, 9, 9, border_mode='same')(hid)
+    hid = TriangularConvolution2D(20, 9, 9, border_mode='same', activation='relu')(hid)
     # 8x8 (17 //2 = 8)
-    hid = TriangularConvolution2D(20, 17, 17, border_mode='same')(hid)
+    hid = TriangularConvolution2D(20, 17, 17, border_mode='same', activation='relu')(hid)
     # output
-    output = TriangularConvolution2D(1, 17, 17, border_mode='same')(hid)
+    output = TriangularConvolution2D(1, 17, 17, border_mode='same', activation='sigmoid')(hid)
 
     model = Model(input=[input_org, target_ar], output=output)
 
