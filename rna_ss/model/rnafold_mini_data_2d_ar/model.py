@@ -74,6 +74,11 @@ class TriangularConvolution2D(Convolution2D):
 
         return output
 
+    def get_config(self):
+        config = {'mask': self.mask}
+        base_config = super(TriangularConvolution2D, self).get_config()
+        return dict(list(base_config.items()) + list(config.items()))
+
     # def get_config(self):
     #     # Add the mask type property to the config.
     #     return dict(

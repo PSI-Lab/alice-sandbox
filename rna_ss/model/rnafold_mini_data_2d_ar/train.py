@@ -22,7 +22,7 @@ from keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping, ReduceL
 from genome_kit import Interval
 from data_generator import DataGenerator
 from dgutils.pandas import Column, get_metadata, write_dataframe, add_column, read_dataframe
-from model import build_model, custom_loss
+from model import build_model, custom_loss, TriangularConvolution2D
 # from config import config
 
 
@@ -127,7 +127,8 @@ def main(config):
     # restore to the ES checkpoint
     print("Restoring model from epoch {}".format(best_epoch))
     model = load_model(model_file_des, custom_objects={'kb': kb, 'tf': tf,
-                                                       'custom_loss': custom_loss})
+                                                       'custom_loss': custom_loss,
+                                                       'TriangularConvolution2D': TriangularConvolution2D})
     data_pred = []
     print("Making predictions on validation data...")
     for i, row in tqdm.tqdm(validation_dataset.df.iterrows(), total=len(validation_dataset.df)):
