@@ -161,13 +161,13 @@ def build_model():
 
     # triangular conv
     # 2x2 (5//2 =2)
-    hid = TriangularConvolution2D(20, 5, 5, border_mode='same', activation='relu')(hid)
+    hid = TriangularConvolution2D(20, (5, 5), padding='same', activation='relu')(hid)
     # 4x4 (9//2 = 4)
-    hid = TriangularConvolution2D(20, 9, 9, border_mode='same', activation='relu')(hid)
+    hid = TriangularConvolution2D(20, (9, 9), padding='same', activation='relu')(hid)
     # 8x8 (17 //2 = 8)
-    hid = TriangularConvolution2D(20, 17, 17, border_mode='same', activation='relu')(hid)
+    hid = TriangularConvolution2D(20, (17, 17), padding='same', activation='relu')(hid)
     # output
-    output = TriangularConvolution2D(1, 17, 17, border_mode='same', activation='sigmoid')(hid)
+    output = TriangularConvolution2D(1, (17, 17), padding='same', activation='sigmoid')(hid)
 
     model = Model(input=[input_org, target_ar], output=output)
 
