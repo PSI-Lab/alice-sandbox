@@ -85,7 +85,7 @@ def build_model():
 
     input_org = Input(shape=(50, 4), name='input_org')
     # target from the previous 'time stamp'
-    target_ar = Input(shape=(50, 50), name='target_prev')
+    target_ar = Input(shape=(50, 50, 1), name='target_prev')
 
     # input_rev = Input(shape=(51, 4), name='input_rev')  # can also use rev comp
     reverse_layer = Lambda(lambda x: kb.reverse(x, axes=-2))
@@ -152,7 +152,7 @@ def build_model():
     conv_prod_concat = stack_layer(conv_prods)
 
     # add target label from previous time stamp
-    hid = Concatenate()([conv_prod_concat, target_ar])
+    hid = Concatenate(axis=-1)([conv_prod_concat, target_ar])
 
     # triangular conv
     # 2x2 (5//2 =2)
