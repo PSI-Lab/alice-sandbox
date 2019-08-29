@@ -13,3 +13,8 @@ e.g.
 python make_data.py --len 51 --num 100000
 ```
 
+```bash
+python make_data_fe.py --len 50 --num 1000000
+```
+
+

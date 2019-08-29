@@ -4,8 +4,8 @@ import argparse
 import random
 import cPickle as pickle
 import pandas as pd
-from utils import get_pair_prob_matrix
-from dgutils.pandas import Column, get_metadata, write_dataframe, add_column
+from utils import get_fe_struct
+from dgutils.pandas import Column, get_metadata, write_dataframe, add_columns
 
 
 def main(seq_len=50, num_seqs=100000):
@@ -16,8 +16,8 @@ def main(seq_len=50, num_seqs=100000):
     print("Running rnafold...")
     df = pd.DataFrame({'sequence': seqs})
     # add mid point pair arr
-    df = add_column(df, 'pair_matrix', ['sequence'], get_pair_prob_matrix)
-    df.to_pickle('data/rand_seqs_2d_{}.pkl.gz'.format(num_seqs), compression='gzip')
+    df = add_columns(df, ['pair_matrix', 'free_energy'], ['sequence'], get_fe_struct)
+    df.to_pickle('data/rand_seqs_fe_{}.pkl.gz'.format(num_seqs), compression='gzip')
 
 
 if __name__ == "__main__":
