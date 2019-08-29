@@ -93,8 +93,8 @@ def build_model():
     target_ar = Input(shape=(50, 50, 1), name='target_prev')
 
     # input_rev = Input(shape=(51, 4), name='input_rev')  # can also use rev comp
-    reverse_layer = Lambda(lambda x: kb.reverse(x, axes=-2))
-    input_rev = reverse_layer(input_org)
+    # reverse_layer = Lambda(lambda x: kb.reverse(x, axes=-2))
+    # input_rev = reverse_layer(input_org)
 
     conv_prods = []
     # num_filters = [64, 64, 64, 64, 64]
@@ -113,7 +113,8 @@ def build_model():
     dilation_sizes = [1, 2, 2, 4, 4]
 
     conv_or = input_org
-    conv_rv = input_rev
+    # conv_rv = input_rev   # TODO does it make sense to reverse it for 2d map?
+    conv_rv = input_org
 
     for num_filter, kernel_size, dilation_size in zip(num_filters, kernel_sizes, dilation_sizes):
         conv_or = BatchNormalization()(conv_or)
@@ -165,10 +166,10 @@ def build_model():
     # 4x4 (9//2 = 4)
     hid = TriangularConvolution2D(20, (9, 9), padding='same', activation='relu')(hid)
     # 8x8 (17 //2 = 8)
-    hid = TriangularConvolution2D(20, (17, 17), dilation_rate=2,
+    hid = TriangularConvolution2D(20, (17, 17),
                                   padding='same', activation='relu')(hid)
     # output
-    output = TriangularConvolution2D(1, (17, 17), dilation_rate=2,
+    output = TriangularConvolution2D(1, (17, 17),
                                      padding='same', activation='sigmoid')(hid)
 
     model = Model(input=[input_org, target_ar], output=output)
