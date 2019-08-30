@@ -124,8 +124,6 @@ def build_model():
     x2_2 = Lambda(lambda x: kb.tile(x, [1, 50, 1, 1]))(x2)
     input_nt_stack = concatenate([x1_2, x2_2], axis=-1)
 
-    conv_prods.append(input_nt_stack)
-
     for num_filter, kernel_size, dilation_size in zip(num_filters, kernel_sizes, dilation_sizes):
         conv_or = BatchNormalization()(conv_or)
         conv_or = Activation('relu')(conv_or)
@@ -165,7 +163,10 @@ def build_model():
 
     # stack 2D feature maps
     stack_layer = Lambda(lambda x: kb.stack(x, axis=-1))
-    conv_prod_concat = stack_layer(conv_prods)  # TODO which dimension is this operating on?
+    conv_prod_concat = stack_layer(conv_prods)  # we're doing this to merge multiple (?, 50, 50) layers to (?, 50, 50, K)
+
+    # add input nt stack
+    conv_prod_concat = concatenate([conv_prod_concat, input_nt_stack], axis=-1)
 
     # add target label from previous time stamp
     hid = Concatenate(axis=-1)([conv_prod_concat, target_ar])
