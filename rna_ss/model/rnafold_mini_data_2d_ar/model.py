@@ -3,7 +3,7 @@ from keras.layers import Input, Bidirectional, Concatenate, Dot, LSTM, Convoluti
 from keras.layers.core import Activation, Dense, Lambda
 from keras.layers.convolutional import Conv1D, Cropping1D, ZeroPadding1D, Conv2D
 from keras.layers.normalization import BatchNormalization
-from keras.layers.merge import add, multiply
+from keras.layers.merge import add, multiply, concatenate
 from keras import regularizers, initializers
 import keras.backend as kb
 from keras.losses import binary_crossentropy, mean_squared_error, categorical_crossentropy
@@ -116,6 +116,16 @@ def build_model():
     # conv_rv = input_rev   # TODO does it make sense to reverse it for 2d map?
     conv_rv = input_org
 
+    # stacking single nucleotide
+    # -1 is feature dim (d=4), -2 is length
+    x1 = Lambda(lambda x: kb.expand_dims(x, axis=-2))(input_org)
+    x2 = Lambda(lambda x: kb.expand_dims(x, axis=-3))(input_org)
+    x1_2 = Lambda(lambda x: kb.tile(x, [1, 1, 50, 1]))(x1)
+    x2_2 = Lambda(lambda x: kb.tile(x, [1, 50, 1, 1]))(x2)
+    input_nt_stack = concatenate([x1_2, x2_2], axis=-1)
+
+    conv_prods.append(input_nt_stack)
+
     for num_filter, kernel_size, dilation_size in zip(num_filters, kernel_sizes, dilation_sizes):
         conv_or = BatchNormalization()(conv_or)
         conv_or = Activation('relu')(conv_or)
@@ -155,7 +165,7 @@ def build_model():
 
     # stack 2D feature maps
     stack_layer = Lambda(lambda x: kb.stack(x, axis=-1))
-    conv_prod_concat = stack_layer(conv_prods)
+    conv_prod_concat = stack_layer(conv_prods)  # TODO which dimension is this operating on?
 
     # add target label from previous time stamp
     hid = Concatenate(axis=-1)([conv_prod_concat, target_ar])
