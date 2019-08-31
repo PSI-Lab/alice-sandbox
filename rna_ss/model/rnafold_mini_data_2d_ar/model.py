@@ -98,6 +98,7 @@ def build_model():
     dilation_sizes = [1, 2, 2, 4, 4]
 
     conv_or = input_org
+    conv_rv = input_org
 
     def repeat_1(x):
         xr = kb.tile(kb.expand_dims(x, axis=-2), [1, 1, kb.shape(x)[1], 1])
