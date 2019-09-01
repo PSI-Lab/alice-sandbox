@@ -5,7 +5,7 @@ import pandas as pd
 import tempfile
 
 
-def db_to_mat(seq, db_notation):
+def db_to_mat(seq, db_notation, upper_triangular=True):
     assert len(seq) == len(db_notation)
     db_file = tempfile.NamedTemporaryFile()
     out_file = tempfile.NamedTemporaryFile()
@@ -30,6 +30,12 @@ def db_to_mat(seq, db_notation):
         idx_i = row['idx_i']
         idx_j = row['idx_j'] - 1
         if idx_j != -1:
-            vals[idx_i, idx_j] = 1
-            vals[idx_j, idx_i] = 1
+            if upper_triangular:
+                # only set upper triangular entry
+                i = min(idx_i, idx_j)
+                j = max(idx_i, idx_j)
+                vals[i, j] = 1
+            else:
+                vals[idx_i, idx_j] = 1
+                vals[idx_j, idx_i] = 1
     return vals

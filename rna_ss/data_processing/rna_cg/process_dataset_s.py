@@ -28,7 +28,7 @@ for lines in file_gen(input_file):
     seq = lines[1]
     db_notation = lines[2]
     assert all([x in list('ACGUacgu') for x in seq])
-    arr = db_to_mat(seq, db_notation)
+    arr = db_to_mat(seq, db_notation, upper_triangular=True)
     assert arr.shape[0] == len(seq)
     assert arr.shape[1] == len(seq)
 
