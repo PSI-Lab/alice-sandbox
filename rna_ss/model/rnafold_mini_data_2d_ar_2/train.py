@@ -137,10 +137,9 @@ def main(config):
     data_pred = []
     print("Making predictions on validation data...")
     for i, row in tqdm.tqdm(validation_dataset.df.iterrows(), total=len(validation_dataset.df)):
-        x1, y = validation_dataset.get_data([i])
+        x1, y = validation_dataset.get_data([i], len(row['seq']))
         pred = model.predict(x1)
         row['pred'] = pred[0, :, :, 0]
-        # row['pair_matrix'] = row['pair_matrix']
         data_pred.append(row)
     data_pred = pd.DataFrame(data_pred)
     if not os.path.isdir('prediction'):
