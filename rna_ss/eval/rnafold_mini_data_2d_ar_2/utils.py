@@ -224,7 +224,7 @@ class Predictor(object):
         y = np.tile(DataEncoder.y_init(L), [n_sample, 1, 1, 1])
 
         for n in range(start_offset, L):
-            print(n)
+            # print(n)
             tmp = self.model.predict([x, y])
             for idx_sample in range(n_sample):
                 pred = tmp[idx_sample, :, :, 0]
