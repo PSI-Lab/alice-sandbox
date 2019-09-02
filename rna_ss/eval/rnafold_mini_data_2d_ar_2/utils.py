@@ -142,6 +142,74 @@ def upper_band_index(l, n):
     return np.where(a == 1)
 
 
+def arr2db(arr):
+    # TODO debug this code!!
+    assert len(arr.shape) == 2
+    assert arr.shape[0] == arr.shape[1]
+    assert np.all((arr == 0) | (arr == 1))
+    assert np.max(np.sum(arr, axis=0)) <= 1
+    idx_pairs = np.where(arr == 1)
+    idx_pairs = zip(idx_pairs[0], idx_pairs[1])
+
+    db_str = ['.' for _ in range(len(arr))]
+    for _i, _j in idx_pairs:
+        i = min(_i, _j)
+        j = max(_i, _j)
+        db_str[i] = '('
+        db_str[j] = ')'
+    return ''.join(db_str)
+
+
+class EvalMetric(object):
+
+    @staticmethod
+    def _check_arr(arr):
+        assert len(arr.shape) == 2
+        assert arr.shape[0] == arr.shape[1]
+        assert np.all((arr == 0) | (arr == 1))
+        assert np.max(np.sum(arr, axis=0)) <= 1
+
+    @staticmethod
+    def sensitivity(_pred, _target):
+        # numerator: number of correct predicted base pairs
+        # denominator: number of true base pairs
+        assert _pred.shape[0] == _target.shape[0]
+        n = _pred.shape[0]
+        # set lower triangular to be all 0's
+        pred = _pred.copy()
+        target = _target.copy()
+        pred[np.tril_indices(n)] = 0
+        target[np.tril_indices(n)] = 0
+        # checks
+        EvalMetric._check_arr(pred)
+        EvalMetric._check_arr(target)
+        # metric
+        idx_true_base_pair = np.where(target == 1)
+        return float(np.sum(pred[idx_true_base_pair]))/np.sum(target)
+
+    @staticmethod
+    def ppv(_pred, _target):
+        # numerator: number of correct predicted base pairs
+        # denominator: number of predicted base pairs
+        assert _pred.shape[0] == _target.shape[0]
+        n = _pred.shape[0]
+        # set lower triangular to be all 0's
+        pred = _pred.copy()
+        target = _target.copy()
+        pred[np.tril_indices(n)] = 0
+        target[np.tril_indices(n)] = 0
+        # checks
+        EvalMetric._check_arr(pred)
+        EvalMetric._check_arr(target)
+        # metric
+        idx_predicted_base_pair = np.where(pred == 1)
+        return float(np.sum(target[idx_predicted_base_pair])/np.sum(pred))
+
+    @staticmethod
+    def f_measure(sensitivity, ppv):
+        return (2 * sensitivity * ppv)/(sensitivity + ppv)
+
+
 class Predictor(object):
 
     def __init__(self, model_file):
