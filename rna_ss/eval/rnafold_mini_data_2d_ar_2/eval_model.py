@@ -2,7 +2,7 @@ import yaml
 import argparse
 import numpy as np
 import pandas as pd
-from dgutils.pandas as add_columns
+from dgutils.pandas import add_columns
 from utils import Predictor, arr2db, EvalMetric
 
 
