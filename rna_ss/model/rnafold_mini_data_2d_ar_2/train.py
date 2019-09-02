@@ -20,7 +20,7 @@ import keras.backend as kb
 from keras.models import load_model
 from keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, CSVLogger, Callback
 from genome_kit import Interval
-from data_generator import DataGenerator
+from data_generator import DataGeneratorFixedLen, DataGeneratorVarLen
 from dgutils.pandas import Column, get_metadata, write_dataframe, add_column, read_dataframe
 from model import build_model, custom_loss, TriangularConvolution2D
 # from config import config
@@ -41,7 +41,10 @@ def main(config):
     git_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip()
 
     # load data TODO hard-coded for now
-    df_intervals = pd.read_pickle('data/rand_seqs_fe_200_50000.pkl.gz')
+    # # random seq
+    # df_intervals = pd.read_pickle('data/rand_seqs_fe_200_50000.pkl.gz')
+    # CG dataset
+    df_intervals = pd.read_pickle('data/s_processed.pkl')
 
     n_train = int(len(df_intervals) * 0.8)
     df_training = df_intervals[:n_train].reset_index(drop=True)
@@ -50,8 +53,10 @@ def main(config):
     print("Num sequences in training: %d" % len(df_training))
     print("Num sequences in validation: %d" % len(df_validation))
 
-    training_dataset = DataGenerator(df_training, config['batch_size'])
-    validation_dataset = DataGenerator(df_validation, config['batch_size'])
+    # training_dataset = DataGeneratorFixedLen(df_training, config['batch_size'])
+    # validation_dataset = DataGeneratorFixedLen(df_validation, config['batch_size'])
+    training_dataset = DataGeneratorVarLen(df_training, config['batch_size'])
+    validation_dataset = DataGeneratorVarLen(df_validation, config['batch_size'])
 
     sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
     kb.tensorflow_backend._get_available_gpus()
