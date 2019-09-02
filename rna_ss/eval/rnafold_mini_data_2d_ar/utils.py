@@ -175,10 +175,13 @@ class Predictor(object):
                     assert row_sum <= 1
                     assert col_sum <= 1
                     total_sum = row_sum + col_sum
-                    already_paired.append(total_sum)
+                    if total_sum > 0:   # i and j cannot be paired, if at least one is paired with another position
+                        already_paired.append(idx_in_band)
                 already_paired = np.asarray(already_paired)
                 # setting those positions who has a already-paired base to 0
-                vals_sampled[np.where(already_paired)] = 0
+                # vals_sampled[np.where(already_paired)] = 0
+                if len(already_paired) > 0:
+                    vals_sampled[already_paired] = 0
 
                 # update y on n-th upper triangular band
                 _y = y[idx_sample, :, :, 0]
