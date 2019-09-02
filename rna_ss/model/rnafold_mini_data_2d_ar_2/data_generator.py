@@ -89,11 +89,13 @@ class DataGeneratorVarLen(keras.utils.Sequence):
         y = []
         for idx in indexes:
             _x1, _y = self.get_data_single(idx)
+            print _x1.shape, _y.shape, max_len
             # pad to max length
             _x1 = np.pad(_x1, ((0, max_len - _x1.shape[0]), (0, 0)),
                          'constant', constant_values=(0, 0))
+            print _x1.shape
             _y = np.pad(_y, ((0, max_len - _y.shape[0]), (0, max_len - _y.shape[1]), (0, 0)),
-                        'constant', constant_values=(-1, -1, 0))
+                        'constant', constant_values=-1)  # only specify one value since it has to be the same if padding multiple axes
             x1.append(_x1)
             y.append(_y)
         x1 = np.asarray(x1)
