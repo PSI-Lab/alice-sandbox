@@ -167,7 +167,7 @@ class Predictor(object):
                 vals_sampled = (vals > threshold).astype(np.float32)
 
                 # take into account that only a single 1 can show up in all rows/columns
-                _y_old = y[0, :, :, 0]
+                _y_old = y[idx_sample, :, :, 0]
                 # FIXME slow + naive method
                 already_paired = []
                 for idx_in_band, (row_idx, col_idx) in enumerate(zip(range(0, L - n), range(n, L))):
