@@ -19,47 +19,34 @@ import uuid
 
 def get_fe_struct(seq):
     # get MFE structure in binary matrix, and the free energy
-    tmp_dir = tempfile.mkdtemp()
-    file_prefix = uuid.uuid4()
-    # input_file = os.path.join(tmp_dir, '{}.input'.format(file_prefix))
-    # output_file = os.path.join(tmp_dir, '{}.output'.format(file_prefix))
     input_file = tempfile.NamedTemporaryFile().name
-    output_file = tempfile.NamedTemporaryFile().name
-    # print(output_file.name)
+    ss_file = tempfile.NamedTemporaryFile().name
+    ct_file = tempfile.NamedTemporaryFile().name
     with open(input_file, 'w') as f:
         f.write('>seq\n' + seq)
-    # p = Popen(['RNAfold', '-p', '<', input_file,  '|', 'b2ct', '>', output_file],
-    #           cwd=tmp_dir, stdin=PIPE, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-    # stdout, stderr = p.communicate()
-    # p = Popen(['b2ct'],
-    #           cwd=tmp_dir, stdin=PIPE, stdout=PIPE, stderr=PIPE, universal_newlines=True)
 
-    # p = Popen(['b2ct',  '>', output_file.name],
-    #           cwd=tmp_dir, stdin=PIPE, stdout=PIPE, stderr=PIPE, universal_newlines=True)
-    # stdout, stderr = p.communicate('RNAfold -p < {}'.format(input_file))
-    # rc = p.returncode
-    # if rc != 0:
-    #     msg = 'RNAplfold returned error code %d\nstdout:\n%s\nstderr:\n%s\n' % (
-    #         rc, stdout, stderr)
-    #     raise Exception(msg)
+    cmd1 = 'RNAfold -p < {} > {}'.format(input_file, ss_file)
+    cmd2 = 'b2ct < {} > {}'.format(ss_file, ct_file)
+    os.system(cmd1)
+    os.system(cmd2)
 
-    cmd = 'RNAfold -p < {} | b2ct > {}'.format(input_file, output_file)
-    # print(cmd)
-    os.system(cmd)
+    # find MFE probability
+    with open(ss_file, 'r') as fp:
+        tmp = fp.read()
+        match = re.match(string=tmp.replace('\n', ''),
+                         pattern=r'.*frequency of mfe structure in ensemble (.*); ensemble diversity (.*)')
+        mfe_freq = float(match.group(1).strip())
+        ens_div = float(match.group(2).strip())
 
     # load header
-    with open(output_file, 'r') as fp:
+    with open(ct_file, 'r') as fp:
         tmp = fp.read()
-        # print(tmp)
         lines = tmp.splitlines()
-    # lines = stdout.splitlines()
-    # print(stdout)
-    # print(lines)
     seq_len = int(re.match(string=lines[0], pattern=r'\s+(\d+)\s+ENERGY =(.*)seq').group(1))
     fe = float(re.match(string=lines[0], pattern=r'\s+(\d+)\s+ENERGY =(.*)seq').group(2).strip())
     assert len(seq) == seq_len
     # load data
-    df = pd.read_csv(output_file, skiprows=1, header=None,
+    df = pd.read_csv(ct_file, skiprows=1, header=None,
                      names=['i1', 'base', 'idx_i', 'i2', 'idx_j', 'i3'], sep=r"\s*")
     assert ''.join(df['base'].tolist()) == seq
     # matrix
@@ -70,7 +57,7 @@ def get_fe_struct(seq):
         if idx_j != -1:
             vals[idx_i, idx_j] = 1
             vals[idx_j, idx_i] = 1
-    return vals, fe
+    return vals, fe, mfe_freq, ens_div
 
 
 def get_pair_prob_matrix(seq):
@@ -135,3 +122,9 @@ def get_pair_prob_arr(seq):
             vals[p1 - 1] = float(sqrt_prob) ** 2
     return vals.tolist()
 
+
+def one_idx(arr):
+    assert len(arr.shape) == 2
+    assert arr.shape[0] == arr.shape[1]
+    assert np.all((arr == 0) | (arr == 1))
+    return np.where(arr == 1)

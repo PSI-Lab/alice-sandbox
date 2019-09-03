@@ -16,8 +16,9 @@ def main(seq_len=50, num_seqs=100000):
     print("Running rnafold...")
     df = pd.DataFrame({'sequence': seqs})
     # add mid point pair arr
-    df = add_columns(df, ['pair_matrix', 'free_energy'], ['sequence'], get_fe_struct)
-    df.to_pickle('data/rand_seqs_fe_{}.pkl.gz'.format(num_seqs), compression='gzip')
+    df = add_columns(df, ['pair_matrix', 'free_energy', 'mfe_frequency', 'ensemble_diversity'],
+                     ['sequence'], get_fe_struct)
+    df.to_pickle('data/rand_seqs_fe_{}_{}.pkl.gz'.format(seq_len, num_seqs), compression='gzip')
 
 
 if __name__ == "__main__":
