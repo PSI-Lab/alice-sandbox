@@ -85,90 +85,6 @@ class TriangularConvolution2D(Convolution2D):
     #         list(super(TriangularConvolution2D, self).get_config().items()))
 
 
-# def build_model():
-#     L12_P = 0.000005
-#
-#     input_org = Input(shape=(None, 4), name='input_org')
-#     # target from the previous 'time stamp'
-#     target_ar = Input(shape=(None, None, 1), name='target_prev')
-#
-#     conv_prods = []
-#     num_filters = [256, 256, 256, 256, 256]
-#     kernel_sizes = [7, 5, 5, 5, 5]
-#     dilation_sizes = [1, 2, 2, 4, 4]
-#
-#     conv_or = input_org
-#     conv_rv = input_org
-#
-#     def repeat_1(x):
-#         xr = kb.tile(kb.expand_dims(x, axis=-2), [1, 1, kb.shape(x)[1], 1])
-#         return xr
-#
-#     def repeat_2(x):
-#         xr = kb.tile(kb.expand_dims(x, axis=-3), [1, kb.shape(x)[1], 1, 1])
-#         return xr
-#
-#     # stacking single nucleotide
-#     # -1 is feature dim (d=4), -2 is length
-#     x1_2 = Lambda(repeat_1)(input_org)
-#     x2_2 = Lambda(repeat_2)(input_org)
-#     input_nt_stack = concatenate([x1_2, x2_2], axis=-1)
-#
-#     for num_filter, kernel_size, dilation_size in zip(num_filters, kernel_sizes, dilation_sizes):
-#         conv_or = BatchNormalization()(conv_or)
-#         conv_or = Activation('relu')(conv_or)
-#         conv_or = Conv1D(filters=num_filter, kernel_size=kernel_size, dilation_rate=dilation_size,
-#                          kernel_regularizer=regularizers.l1_l2(l1=L12_P, l2=L12_P),
-#                          padding='same', activation=None)(conv_or)
-#
-#         conv_rv = BatchNormalization()(conv_rv)
-#         conv_rv = Activation('relu')(conv_rv)
-#         conv_rv = Conv1D(filters=num_filter, kernel_size=kernel_size, dilation_rate=dilation_size,
-#                          kernel_regularizer=regularizers.l1_l2(l1=L12_P, l2=L12_P),
-#                          padding='same', activation=None)(conv_rv)
-#
-#         # dot product
-#         conv_prod = Dot(axes=-1)([conv_or, conv_rv])  # 2D map
-#         # select upper triangular part (lower will be all 0's)
-#         upper_tri_layer = Lambda(lambda x: tf.matrix_band_part(x, 0, -1))
-#         conv_prod = upper_tri_layer(conv_prod)
-#         conv_prods.append(conv_prod)
-#
-#     # stack 2D feature maps
-#     stack_layer = Lambda(lambda x: kb.stack(x, axis=-1))
-#     # we're doing this to merge multiple (?, L, L) layers to (?, L, L, K)
-#     conv_prod_concat = stack_layer(conv_prods)
-#
-#     # add input nt stack
-#     conv_prod_concat = concatenate([conv_prod_concat, input_nt_stack], axis=-1)
-#
-#     # add target label from previous time stamp
-#     # hid = Concatenate(axis=-1)([conv_prod_concat, target_ar])
-#
-#     hid = Conv2D(20, (3, 3), padding='same', activation='relu')(conv_prod_concat)
-#     hid = Conv2D(20, (6, 6), padding='same', activation='relu')(hid)
-#     hid = Conv2D(20, (6, 6), dilation_rate=2,
-#                  padding='same', activation='relu')(hid)
-#     hid = Conv2D(20, (9, 9), dilation_rate=2,
-#                  padding='same', activation='relu')(hid)
-#     hid = Conv2D(20, (17, 17), dilation_rate=4,
-#                  padding='same', activation='relu')(hid)
-#     hid = Conv2D(20, (17, 17), dilation_rate=4,
-#                  padding='same', activation='relu')(hid)
-#
-#     # triangular conv
-#     hid = Concatenate(axis=-1)([hid, target_ar])
-#     hid = TriangularConvolution2D(20, (9, 9),
-#                                   padding='same', activation='relu')(hid)
-#     # output
-#     output = Conv2D(1, (1, 1),
-#                     padding='same', activation='sigmoid')(hid)
-#
-#     model = Model(input=[input_org, target_ar], output=output)
-#
-#     return model
-
-
 def build_model():
     L12_P = 0.000005
 
@@ -220,29 +136,113 @@ def build_model():
 
     # stack 2D feature maps
     stack_layer = Lambda(lambda x: kb.stack(x, axis=-1))
-    conv_prod_concat = stack_layer(conv_prods)  # we're doing this to merge multiple (?, 50, 50) layers to (?, 50, 50, K)
+    # we're doing this to merge multiple (?, L, L) layers to (?, L, L, K)
+    conv_prod_concat = stack_layer(conv_prods)
 
     # add input nt stack
     conv_prod_concat = concatenate([conv_prod_concat, input_nt_stack], axis=-1)
 
     # add target label from previous time stamp
-    hid = Concatenate(axis=-1)([conv_prod_concat, target_ar])
+    # hid = Concatenate(axis=-1)([conv_prod_concat, target_ar])
+
+    hid = Conv2D(20, (3, 3), padding='same', activation='relu')(conv_prod_concat)
+    hid = Conv2D(20, (6, 6), padding='same', activation='relu')(hid)
+    hid = Conv2D(20, (6, 6), dilation_rate=2,
+                 padding='same', activation='relu')(hid)
+    hid = Conv2D(20, (9, 9), dilation_rate=2,
+                 padding='same', activation='relu')(hid)
+    hid = Conv2D(20, (17, 17), dilation_rate=4,
+                 padding='same', activation='relu')(hid)
+    hid = Conv2D(20, (17, 17), dilation_rate=4,
+                 padding='same', activation='relu')(hid)
 
     # triangular conv
-    # 2x2 (5//2 =2)
-    hid = TriangularConvolution2D(20, (5, 5), padding='same', activation='relu')(hid)
-    # 4x4 (9//2 = 4)
-    hid = TriangularConvolution2D(20, (9, 9), padding='same', activation='relu')(hid)
-    # 8x8 (17 //2 = 8)
-    hid = TriangularConvolution2D(20, (17, 17),
+    hid = Concatenate(axis=-1)([hid, target_ar])
+    hid = TriangularConvolution2D(20, (9, 9),
                                   padding='same', activation='relu')(hid)
     # output
-    output = TriangularConvolution2D(1, (17, 17),
-                                     padding='same', activation='sigmoid')(hid)
+    output = Conv2D(1, (1, 1),
+                    padding='same', activation='sigmoid')(hid)
 
     model = Model(input=[input_org, target_ar], output=output)
 
     return model
+
+
+# def build_model():
+#     L12_P = 0.000005
+#
+#     input_org = Input(shape=(None, 4), name='input_org')
+#     # target from the previous 'time stamp'
+#     target_ar = Input(shape=(None, None, 1), name='target_prev')
+#
+#     conv_prods = []
+#     num_filters = [256, 256, 256, 256, 256]
+#     kernel_sizes = [7, 5, 5, 5, 5]
+#     dilation_sizes = [1, 2, 2, 4, 4]
+#
+#     conv_or = input_org
+#     conv_rv = input_org
+#
+#     def repeat_1(x):
+#         xr = kb.tile(kb.expand_dims(x, axis=-2), [1, 1, kb.shape(x)[1], 1])
+#         return xr
+#
+#     def repeat_2(x):
+#         xr = kb.tile(kb.expand_dims(x, axis=-3), [1, kb.shape(x)[1], 1, 1])
+#         return xr
+#
+#     # stacking single nucleotide
+#     # -1 is feature dim (d=4), -2 is length
+#     x1_2 = Lambda(repeat_1)(input_org)
+#     x2_2 = Lambda(repeat_2)(input_org)
+#     input_nt_stack = concatenate([x1_2, x2_2], axis=-1)
+#
+#     for num_filter, kernel_size, dilation_size in zip(num_filters, kernel_sizes, dilation_sizes):
+#         conv_or = BatchNormalization()(conv_or)
+#         conv_or = Activation('relu')(conv_or)
+#         conv_or = Conv1D(filters=num_filter, kernel_size=kernel_size, dilation_rate=dilation_size,
+#                          kernel_regularizer=regularizers.l1_l2(l1=L12_P, l2=L12_P),
+#                          padding='same', activation=None)(conv_or)
+#
+#         conv_rv = BatchNormalization()(conv_rv)
+#         conv_rv = Activation('relu')(conv_rv)
+#         conv_rv = Conv1D(filters=num_filter, kernel_size=kernel_size, dilation_rate=dilation_size,
+#                          kernel_regularizer=regularizers.l1_l2(l1=L12_P, l2=L12_P),
+#                          padding='same', activation=None)(conv_rv)
+#
+#         # dot product
+#         conv_prod = Dot(axes=-1)([conv_or, conv_rv])  # 2D map
+#         # select upper triangular part (lower will be all 0's)
+#         upper_tri_layer = Lambda(lambda x: tf.matrix_band_part(x, 0, -1))
+#         conv_prod = upper_tri_layer(conv_prod)
+#         conv_prods.append(conv_prod)
+#
+#     # stack 2D feature maps
+#     stack_layer = Lambda(lambda x: kb.stack(x, axis=-1))
+#     conv_prod_concat = stack_layer(conv_prods)  # we're doing this to merge multiple (?, 50, 50) layers to (?, 50, 50, K)
+#
+#     # add input nt stack
+#     conv_prod_concat = concatenate([conv_prod_concat, input_nt_stack], axis=-1)
+#
+#     # add target label from previous time stamp
+#     hid = Concatenate(axis=-1)([conv_prod_concat, target_ar])
+#
+#     # triangular conv
+#     # 2x2 (5//2 =2)
+#     hid = TriangularConvolution2D(20, (5, 5), padding='same', activation='relu')(hid)
+#     # 4x4 (9//2 = 4)
+#     hid = TriangularConvolution2D(20, (9, 9), padding='same', activation='relu')(hid)
+#     # 8x8 (17 //2 = 8)
+#     hid = TriangularConvolution2D(20, (17, 17),
+#                                   padding='same', activation='relu')(hid)
+#     # output
+#     output = TriangularConvolution2D(1, (17, 17),
+#                                      padding='same', activation='sigmoid')(hid)
+#
+#     model = Model(input=[input_org, target_ar], output=output)
+#
+#     return model
 
 
 # FIXME is this working?

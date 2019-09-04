@@ -43,8 +43,10 @@ def main(config):
     # load data TODO hard-coded for now
     # # random seq
     # df_intervals = pd.read_pickle('data/rand_seqs_fe_200_50000.pkl.gz')
-    # CG dataset
-    df_intervals = pd.read_pickle('data/s_processed.pkl')
+    # # CG dataset
+    # df_intervals = pd.read_pickle('data/s_processed.pkl')
+    # var length random seq dataset
+    df_intervals = pd.read_pickle('data/rand_seqs_var_len_10_100_100000.pkl.gz')
 
     n_train = int(len(df_intervals) * 0.8)
     df_training = df_intervals[:n_train].reset_index(drop=True)
