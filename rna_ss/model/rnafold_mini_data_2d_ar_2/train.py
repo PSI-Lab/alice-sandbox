@@ -37,7 +37,7 @@ class Histories(Callback):
         self.accuracies.append(logs.get('acc'))
 
 
-def main(config):
+def main(config, data_file):
     git_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip()
 
     # load data TODO hard-coded for now
@@ -45,8 +45,9 @@ def main(config):
     # df_intervals = pd.read_pickle('data/rand_seqs_fe_200_50000.pkl.gz')
     # # CG dataset
     # df_intervals = pd.read_pickle('data/s_processed.pkl')
-    # var length random seq dataset
-    df_intervals = pd.read_pickle('data/rand_seqs_var_len_10_100_100000.pkl.gz')
+    # # var length random seq dataset
+    # df_intervals = pd.read_pickle('data/rand_seqs_var_len_10_100_100000.pkl.gz')
+    df_intervals = pd.read_pickle(data_file)
 
     n_train = int(len(df_intervals) * 0.8)
     df_training = df_intervals[:n_train].reset_index(drop=True)
@@ -152,6 +153,7 @@ def main(config):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, help='path to config file')
+    parser.add_argument('--data', type=str, help='training dataset')
     # parser.add_argument('--fold', type=int, help='validation fold ID')
     args = parser.parse_args()
 
@@ -160,4 +162,4 @@ if __name__ == "__main__":
 
     # fold_idx = int(sys.argv[1])
     # assert 0 <= args.fold < len(config['chrom_folds'])
-    main(config)
+    main(config, args.data)
