@@ -11,14 +11,20 @@ from dgutils.pandas import Column, get_metadata, write_dataframe, add_columns, a
 
 def main(minlen=10, maxlen=100, num_seqs=100000):
     data = []
-    while len(data) < num_seqs:
-        if len(data) % int(num_seqs//100) == 0:
+    for k in range(num_seqs):
+        if k % int(num_seqs//100) == 0:
             print("Generated {} data points".format(len(data)))
-        seq = ''.join(random.choice(list('ACGU')) for _ in range(random.randint(minlen, maxlen)))
-        pair_matrix, free_energy, mfe_frequency, ensemble_diversity = get_fe_struct(seq)
-        # sample if mfe_frequency < 0.2
-        if mfe_frequency < 0.2 and mfe_frequency < np.random.uniform(0, 1):
-            continue  # skip this one
+
+        # pick a length
+        _len = random.randint(minlen, maxlen)
+        # keep generating until success
+        while True:
+            seq = ''.join(random.choice(list('ACGU')) for _ in range(_len))
+            pair_matrix, free_energy, mfe_frequency, ensemble_diversity = get_fe_struct(seq)
+            # sample if mfe_frequency < 0.2
+            if mfe_frequency >= 0.2 or (mfe_frequency < 0.2 and mfe_frequency > np.random.uniform(0, 1)):
+                break  # terminate
+            
         data.append({
             'seq': seq,
             'len': len(seq),
