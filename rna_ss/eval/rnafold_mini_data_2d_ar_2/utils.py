@@ -222,6 +222,8 @@ class Predictor(object):
         L = len(seq)
         x = np.tile(DataEncoder.encode_seqs([seq]), [n_sample, 1, 1])
         y = np.tile(DataEncoder.y_init(L), [n_sample, 1, 1, 1])
+        # log probabilities for sampled path
+        logps = [[] for _ in n_sample]
 
         for n in range(start_offset, L):
             # print(n)
@@ -253,9 +255,15 @@ class Predictor(object):
                 if len(already_paired) > 0:
                     vals_sampled[already_paired] = 0
 
+                # log probability, TODO avoid NaN
+                _lp = vals_sampled * np.log(vals) + (1 - vals_sampled) * np.log(1 - vals)
+                logps[idx_sample].extend(_lp.tolist())
+
                 # update y on n-th upper triangular band
                 _y = y[idx_sample, :, :, 0]
                 _y[n_th_band_idx] = vals_sampled
                 y[idx_sample, :, :, 0] = _y
 
-        return y
+        logps = [np.sum(x) for x in logps]
+
+        return y, logps
