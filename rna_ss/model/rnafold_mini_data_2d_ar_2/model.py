@@ -172,7 +172,8 @@ def build_model():
         mask_a = tf.matrix_band_part(ones, 0, -1)   # diagonal + upper = 1
         mask_b = tf.matrix_band_part(ones, 0, 0)  # diagonal = 1
         mask = mask_a - mask_b  # upper = 1
-        return x * tf.broadcast_to(mask, kb.shape(x))
+        # return x * tf.broadcast_to(mask, kb.shape(x))
+        return x * kb.tile(kb.expand_dims(kb.expand_dims(mask, -1), 0), [kb.shape(x)[0], 1, 1, 1])
 
     # fc for fe, re-use same hid
     hid_fe = Conv2D(1, (6, 6), padding='same', activation='relu')(hid)
