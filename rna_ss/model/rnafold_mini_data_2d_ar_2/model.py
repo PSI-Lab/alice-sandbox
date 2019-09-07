@@ -178,7 +178,7 @@ def build_model():
     hid_fe = Conv2D(10, (6, 6), padding='same', activation='relu')(hid)
     hid_fe_masked = Lambda(_mask_lower_tri)(hid_fe)
     # global pooling
-    output2 = GlobalAveragePooling2D(hid_fe_masked, name='fe')
+    output2 = GlobalAveragePooling2D(name='fe')(hid_fe_masked)
 
     model = Model(input=[input_org, target_ar], output=[output1, output2])
 
