@@ -20,7 +20,8 @@ import keras.backend as kb
 from keras.models import load_model
 from keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, CSVLogger, Callback
 from genome_kit import Interval
-from data_generator import DataGeneratorFixedLen, DataGeneratorVarLen
+# from data_generator import DataGeneratorFixedLen
+from data_generator import DataGeneratorVarLen
 from dgutils.pandas import Column, get_metadata, write_dataframe, add_column, read_dataframe
 from model import build_model, custom_loss, TriangularConvolution2D
 # from config import config
