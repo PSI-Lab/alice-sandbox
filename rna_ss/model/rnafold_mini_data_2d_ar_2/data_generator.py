@@ -43,6 +43,11 @@ class DataGeneratorVarLen(keras.utils.Sequence):
 
         df = add_column(df, 'pair_matrix', ['seq', 'one_idx'], _make_arr)
         df = add_column(df, 'pair_matrix', ['pair_matrix'], _mask)
+
+        # normalize free energy
+        # energy / sequence_length
+        df = add_column(df, 'fe', ['free_energy', 'len'], lambda x, y: x/float(y))
+
         return df
 
     def __len__(self):
@@ -170,16 +175,20 @@ class DataGeneratorFixedLen(keras.utils.Sequence):
         # x2 = self._encode_seq(row['sequence_rev_comp'])
         # y
         y = row['pair_matrix'][:, :, np.newaxis]
-        return x1, y
+        y2 = [row['fe']]  # make array
+        return x1, y, y2
 
     def get_data(self, indexes):
         x1 = []
         y = []
+        y2 = []
         for idx in indexes:
-            _x1, _y = self.get_data_single(idx)
+            _x1, _y, _y2 = self.get_data_single(idx)
             x1.append(_x1)
             y.append(_y)
+            y2.append(_y2)
         x1 = np.asarray(x1)
         y = np.asarray(y)
-        return [x1, y], y  # for autoregressive training
+        y2 = np.asarray(y2)
+        return [x1, y], [y, y2]
 

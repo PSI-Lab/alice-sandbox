@@ -1,5 +1,5 @@
 from keras.models import Model
-from keras.layers import Input, Bidirectional, Concatenate, Dot, LSTM, Convolution2D
+from keras.layers import Input, Bidirectional, Concatenate, Dot, LSTM, Convolution2D, GlobalAveragePooling2D
 from keras.layers.core import Activation, Dense, Lambda
 from keras.layers.convolutional import Conv1D, Cropping1D, ZeroPadding1D, Conv2D
 from keras.layers.normalization import BatchNormalization
@@ -49,7 +49,7 @@ class TriangularConvolution2D(Convolution2D):
         for i in range(filter_center, self.mask.shape[0]):
             self.mask[i, :(i - filter_center), :, :] = 0
 
-        # zero out the center weigths
+        # zero out the center weights
         self.mask[filter_center, filter_center, :, :] = 0
 
         # Convert the numpy mask into a tensor mask.
@@ -156,15 +156,31 @@ def build_model():
     hid = Conv2D(20, (17, 17), dilation_rate=4,
                  padding='same', activation='relu')(hid)
 
-    # triangular conv
+    # auto regressive output label
+    # triangular conv for ar label
     hid = Concatenate(axis=-1)([hid, target_ar])
-    hid = TriangularConvolution2D(20, (9, 9),
-                                  padding='same', activation='relu')(hid)
+    tri_conv = TriangularConvolution2D(20, (9, 9),
+                                       padding='same', activation='relu')(hid)
     # output
-    output = Conv2D(1, (1, 1),
-                    padding='same', activation='sigmoid')(hid)
+    output1 = Conv2D(1, (1, 1), padding='same',
+                     activation='sigmoid', name='ar_label')(tri_conv)
 
-    model = Model(input=[input_org, target_ar], output=output)
+    # normalized energy
+
+    def _mask_lower_tri(x):
+        ones = tf.ones(kb.shape(x)[1:3])
+        mask_a = tf.matrix_band_part(ones, 0, -1) # diagonal + upper = 1
+        mask_b = tf.matrix_band_part(ones, 0, 0)  # diagonal = 1
+        mask = mask_a - mask_b  # upper = 1
+        return x * tf.broadcast_to(mask, kb.shape(x))
+
+    # fc for fe, re-use same hid
+    hid_fe = Conv2D(10, (6, 6), padding='same', activation='relu')(hid)
+    hid_fe_masked = Lambda(_mask_lower_tri)(hid_fe)
+    # global pooling
+    output2 = GlobalAveragePooling2D(hid_fe_masked, name='fe')
+
+    model = Model(input=[input_org, target_ar], output=[output1, output2])
 
     return model
 

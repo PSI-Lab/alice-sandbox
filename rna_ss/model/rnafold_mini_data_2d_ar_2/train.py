@@ -72,7 +72,11 @@ def main(config, data_file):
     opt = keras.optimizers.Adam(lr=config['learning_rate'], beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0,
                                 amsgrad=False)  # TODO weight decay
     # model.compile(loss='binary_crossentropy',optimizer=opt)
-    model.compile(loss=custom_loss, optimizer=opt)
+    # model.compile(loss=custom_loss,
+    #               optimizer=opt)
+    model.compile(loss={'ar_label': custom_loss, 'fe': 'mean_squared_error'},
+                  optimizer=opt)
+    # TODO loss weighting
 
     # callbacks
     tictoc = strftime("%Y_%m_%d_%H_%M_%S", gmtime())
@@ -141,8 +145,9 @@ def main(config, data_file):
     print("Making predictions on validation data...")
     for i, row in tqdm.tqdm(validation_dataset.df.iterrows(), total=len(validation_dataset.df)):
         x1, y = validation_dataset.get_data([i], len(row['seq']))
-        pred = model.predict(x1)
+        pred, fe = model.predict(x1)
         row['pred'] = pred[0, :, :, 0]
+        row['pfe'] = fe[0]
         data_pred.append(row)
     data_pred = pd.DataFrame(data_pred)
     if not os.path.isdir('prediction'):
