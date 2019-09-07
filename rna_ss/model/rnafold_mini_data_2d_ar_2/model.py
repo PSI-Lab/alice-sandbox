@@ -169,13 +169,13 @@ def build_model():
 
     def _mask_lower_tri(x):
         ones = tf.ones(kb.shape(x)[1:3])
-        mask_a = tf.matrix_band_part(ones, 0, -1) # diagonal + upper = 1
+        mask_a = tf.matrix_band_part(ones, 0, -1)   # diagonal + upper = 1
         mask_b = tf.matrix_band_part(ones, 0, 0)  # diagonal = 1
         mask = mask_a - mask_b  # upper = 1
         return x * tf.broadcast_to(mask, kb.shape(x))
 
     # fc for fe, re-use same hid
-    hid_fe = Conv2D(10, (6, 6), padding='same', activation='relu')(hid)
+    hid_fe = Conv2D(1, (6, 6), padding='same', activation='relu')(hid)
     hid_fe_masked = Lambda(_mask_lower_tri)(hid_fe)
     # global pooling
     output2 = GlobalAveragePooling2D(name='fe')(hid_fe_masked)
