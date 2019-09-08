@@ -167,17 +167,26 @@ def build_model():
 
     # normalized energy
 
-    def _mask_lower_tri(x):
+    def _mask_lower_tri_and_padding(x, y):
         ones = tf.ones(kb.shape(x)[1:3])
         mask_a = tf.matrix_band_part(ones, 0, -1)   # diagonal + upper = 1
         mask_b = tf.matrix_band_part(ones, 0, 0)  # diagonal = 1
-        mask = mask_a - mask_b  # upper = 1
-        # return x * tf.broadcast_to(mask, kb.shape(x))
-        return x * kb.tile(kb.expand_dims(kb.expand_dims(mask, -1), 0), [kb.shape(x)[0], 1, 1, 1])
+        tri_mask = mask_a - mask_b  # upper = 1
+        # broadcast
+        tri_mask = kb.tile(kb.expand_dims(kb.expand_dims(tri_mask, -1), 0), [kb.shape(x)[0], 1, 1, 1])
+
+        pad_mask = kb.equal(y, -1)
+        pad_mask = kb.cast(pad_mask, dtype=kb.floatx())
+        pad_mask = 1 - pad_mask  # now mask values are zero, and others are 1
+
+        # element wise multiply the two masks
+        mask = tri_mask * pad_mask
+
+        return x * mask
 
     # fc for fe, re-use same hid
     hid_fe = Conv2D(1, (6, 6), padding='same', activation='relu')(hid)
-    hid_fe_masked = Lambda(_mask_lower_tri)(hid_fe)
+    hid_fe_masked = Lambda(_mask_lower_tri_and_padding)([hid_fe, target_ar])
     # global pooling
     output2 = GlobalAveragePooling2D(name='fe')(hid_fe_masked)
 
