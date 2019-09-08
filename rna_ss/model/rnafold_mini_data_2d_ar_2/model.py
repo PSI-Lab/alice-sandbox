@@ -186,7 +186,7 @@ def build_model():
 
     # fc for fe, re-use same hid
     hid_fe = Conv2D(1, (6, 6), padding='same', activation='relu')(hid)
-    hid_fe_masked = Lambda(_mask_lower_tri_and_padding)([hid_fe, target_ar])
+    hid_fe_masked = Lambda(_mask_lower_tri_and_padding)(hid_fe, target_ar)
     # global pooling
     output2 = GlobalAveragePooling2D(name='fe')(hid_fe_masked)
 
