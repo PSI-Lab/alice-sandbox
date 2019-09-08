@@ -9,7 +9,7 @@ from utils import Predictor, arr2db, EvalMetric
 def process_row(seq, one_idx, n_sample, model):
     target = np.zeros((len(seq), len(seq)))
     target[one_idx] = 1
-    pred, logp = model.predict_one_step_ar(seq=seq, n_sample=n_sample, start_offset=2)  # hard-coded offset for now
+    pred, logp, fe = model.predict_one_step_ar(seq=seq, n_sample=n_sample, start_offset=2)  # hard-coded offset for now
 
     data_pred = []   # index of the sampled 1's
     data_sensitivity = []
@@ -27,7 +27,7 @@ def process_row(seq, one_idx, n_sample, model):
         data_sensitivity.append(sensitivity)
         data_ppv.append(ppv)
         data_f.append(f_measure)
-    return data_pred, data_sensitivity, data_ppv, data_f, logp
+    return data_pred, data_sensitivity, data_ppv, data_f, logp, fe
 
 
 def main(model_file, dataset_file, n_sample, output):
@@ -35,7 +35,7 @@ def main(model_file, dataset_file, n_sample, output):
     # TODO make sure dataset has unified format
     df = pd.read_pickle(dataset_file)
 
-    df = add_columns(df, ['pred_idx', 'sensitivity', 'ppv', 'f_measure', 'logp'], ['seq', 'one_idx'],
+    df = add_columns(df, ['pred_idx', 'sensitivity', 'ppv', 'f_measure', 'logp', 'fe'], ['seq', 'one_idx'],
                      lambda x, y: process_row(x, y, n_sample, model))
 
     df.to_pickle(output)

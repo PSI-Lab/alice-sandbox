@@ -227,7 +227,7 @@ class Predictor(object):
 
         for n in range(start_offset, L):
             # print(n)
-            tmp = self.model.predict([x, y])
+            tmp, _ = self.model.predict([x, y])
             for idx_sample in range(n_sample):
                 pred = tmp[idx_sample, :, :, 0]
                 # sample n-th upper triangular band
@@ -265,6 +265,11 @@ class Predictor(object):
                 _y[n_th_band_idx] = vals_sampled
                 y[idx_sample, :, :, 0] = _y
 
+        # after all sampling steps, run one more prediction using final y, to get predicted normalized energy
+        _, fe = self.model.predict([x, y])
+        assert len(fe.shape) == 2
+        assert fe.shape[1] == 1
+
         logps = [np.sum(x) for x in logps]
 
-        return y, logps
+        return y, logps, fe[:, 0]
