@@ -145,15 +145,15 @@ def build_model():
     # add target label from previous time stamp
     # hid = Concatenate(axis=-1)([conv_prod_concat, target_ar])
 
-    hid = Conv2D(20, (3, 3), padding='same', activation='relu')(conv_prod_concat)
-    hid = Conv2D(20, (6, 6), padding='same', activation='relu')(hid)
-    hid = Conv2D(20, (6, 6), dilation_rate=2,
+    hid = Conv2D(50, (3, 3), padding='same', activation='relu')(conv_prod_concat)
+    hid = Conv2D(50, (6, 6), padding='same', activation='relu')(hid)
+    hid = Conv2D(50, (6, 6), dilation_rate=2,
                  padding='same', activation='relu')(hid)
-    hid = Conv2D(20, (9, 9), dilation_rate=2,
+    hid = Conv2D(50, (9, 9), dilation_rate=2,
                  padding='same', activation='relu')(hid)
-    hid = Conv2D(20, (17, 17), dilation_rate=4,
+    hid = Conv2D(50, (17, 17), dilation_rate=4,
                  padding='same', activation='relu')(hid)
-    hid = Conv2D(20, (17, 17), dilation_rate=4,
+    hid = Conv2D(50, (17, 17), dilation_rate=4,
                  padding='same', activation='relu')(hid)
 
     # auto regressive output label
