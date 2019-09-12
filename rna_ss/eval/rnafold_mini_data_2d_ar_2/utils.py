@@ -148,6 +148,7 @@ def arr2db(arr):
     assert arr.shape[0] == arr.shape[1]
     assert np.all((arr == 0) | (arr == 1))
     assert np.max(np.sum(arr, axis=0)) <= 1
+    assert np.max(np.sum(arr, axis=1)) <= 1
     idx_pairs = np.where(arr == 1)
     idx_pairs = zip(idx_pairs[0], idx_pairs[1])
 
@@ -158,6 +159,11 @@ def arr2db(arr):
         db_str[i] = '('
         db_str[j] = ')'
     return ''.join(db_str)
+
+
+def forna_url(seq, struct):
+    url = "http://nibiru.tbi.univie.ac.at/forna/forna.html?id=url/name&sequence={}&structure={}".format(seq, struct)
+    return url
 
 
 class EvalMetric(object):
@@ -240,15 +246,31 @@ class Predictor(object):
                 _y_old = y[idx_sample, :, :, 0]
                 # FIXME slow + naive method
                 already_paired = []
-                for idx_in_band, (row_idx, col_idx) in enumerate(zip(range(0, L - n), range(n, L))):
-                    row_sum = np.sum(_y_old[row_idx, row_idx + 1:col_idx])  # not including the current position
-                    col_sum = np.sum(_y_old[row_idx + 1:col_idx, col_idx])  # not including the current position
-                    assert row_sum <= 1
-                    assert col_sum <= 1
-                    total_sum = row_sum + col_sum
-                    # already_paired.append(total_sum)
+                # for idx_in_band, (row_idx, col_idx) in enumerate(zip(range(0, L - n), range(n, L))):
+                #     row_sum = np.sum(_y_old[row_idx, row_idx + 1:col_idx])  # not including the current position
+                #     col_sum = np.sum(_y_old[row_idx + 1:col_idx, col_idx])  # not including the current position
+                #     assert row_sum <= 1
+                #     assert col_sum <= 1
+                #     total_sum = row_sum + col_sum
+                #     # already_paired.append(total_sum)
+                #     if total_sum > 0:   # i and j cannot be paired, if at least one is paired with another position
+                #         already_paired.append(idx_in_band)
+
+                # for position i, need to consider both row i and col i
+                # similarly, for position j, need to consider both col j and row j
+                for idx_in_band, (i, j) in enumerate(zip(range(0, L - n), range(n, L))):
+                    i_row_sum = np.sum(_y_old[i, :])
+                    j_col_sum = np.sum(_y_old[:, j])
+                    i_col_sum = np.sum(_y_old[:, i])
+                    j_row_sum = np.sum(_y_old[j, :])
+                    assert i_row_sum <= 1
+                    assert j_col_sum <= 1
+                    assert i_col_sum <= 1
+                    assert j_row_sum <= 1
+                    total_sum = i_row_sum + j_col_sum + i_col_sum + j_row_sum
                     if total_sum > 0:   # i and j cannot be paired, if at least one is paired with another position
                         already_paired.append(idx_in_band)
+
                 # already_paired = np.asarray(already_paired)
                 # setting those positions who has a already-paired base to 0
                 # vals_sampled[np.where(already_paired)] = 0
