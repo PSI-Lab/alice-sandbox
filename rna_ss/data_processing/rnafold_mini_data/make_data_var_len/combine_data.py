@@ -13,6 +13,6 @@ for file in os.listdir(in_dir):
         df = pd.read_pickle(x)
         dfs.append(df)
 
-df = pd.concat(dfs)
+df = pd.concat(dfs, ignore_index=True)
 
 df.to_pickle(out_file)
