@@ -15,10 +15,10 @@ setup: FORCE
 
 FORCE: ;
 
-tmp_output/data_%.pkl.gz:
+tmp_output/data_%.pkl.gz: make_data_var_len.py
 	python make_data_var_len.py --minlen $(MINLEN) --maxlen $(MAXLEN) --num $(BATCHSIZE) --out tmp_output/data_$*.pkl.gz
 
-data/rand_seqs_var_len_sample_mfe_$(MINLEN)_$(MAXLEN)_$(NUM).pkl.gz: $(VARS)
+data/rand_seqs_var_len_sample_mfe_$(MINLEN)_$(MAXLEN)_$(NUM).pkl.gz: $(VARS) combine_data.py
 	python combine_data.py data/rand_seqs_var_len_sample_mfe_$(MINLEN)_$(MAXLEN)_$(NUM).pkl.gz tmp_output
 
 all: data/rand_seqs_var_len_sample_mfe_$(MINLEN)_$(MAXLEN)_$(NUM).pkl.gz
