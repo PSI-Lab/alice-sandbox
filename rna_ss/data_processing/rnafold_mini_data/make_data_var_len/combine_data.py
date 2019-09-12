@@ -9,7 +9,7 @@ in_dir = sys.argv[2]
 dfs = []
 for file in os.listdir(in_dir):
     if file.endswith(".pkl.gz"):
-        x = os.path.join("/mydir", file)
+        x = os.path.join(in_dir, file)
         df = pd.read_pickle(x)
         dfs.append(df)
 
