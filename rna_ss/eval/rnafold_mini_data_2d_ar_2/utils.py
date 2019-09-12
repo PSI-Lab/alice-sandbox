@@ -174,6 +174,7 @@ class EvalMetric(object):
         assert arr.shape[0] == arr.shape[1]
         assert np.all((arr == 0) | (arr == 1))
         assert np.max(np.sum(arr, axis=0)) <= 1
+        assert np.max(np.sum(arr, axis=1)) <= 1
 
     @staticmethod
     def sensitivity(_pred, _target):
@@ -259,14 +260,15 @@ class Predictor(object):
                 # for position i, need to consider both row i and col i
                 # similarly, for position j, need to consider both col j and row j
                 for idx_in_band, (i, j) in enumerate(zip(range(0, L - n), range(n, L))):
-                    i_row_sum = np.sum(_y_old[i, :])
-                    j_col_sum = np.sum(_y_old[:, j])
-                    i_col_sum = np.sum(_y_old[:, i])
-                    j_row_sum = np.sum(_y_old[j, :])
-                    assert i_row_sum <= 1
-                    assert j_col_sum <= 1
-                    assert i_col_sum <= 1
-                    assert j_row_sum <= 1
+                    # lower triangular are all -1's don't sum over them!
+                    i_row_sum = np.sum(_y_old[i, i+1:])
+                    j_col_sum = np.sum(_y_old[:j, j])
+                    i_col_sum = np.sum(_y_old[:i, i])
+                    j_row_sum = np.sum(_y_old[j, j+1:])
+                    assert 0 <= i_row_sum <= 1
+                    assert 0 <= j_col_sum <= 1
+                    assert 0 <= i_col_sum <= 1
+                    assert 0 <= j_row_sum <= 1
                     total_sum = i_row_sum + j_col_sum + i_col_sum + j_row_sum
                     if total_sum > 0:   # i and j cannot be paired, if at least one is paired with another position
                         already_paired.append(idx_in_band)
