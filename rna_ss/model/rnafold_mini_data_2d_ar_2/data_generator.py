@@ -27,8 +27,7 @@ class DataGeneratorVarLen(keras.utils.Sequence):
         self.df = self._process_df(df)  # process sparse array
         self.indexes = np.arange(len(self.df))
 
-    def _process_df(self, df):
-        # set lower triangular elements to -1
+    def _make_pair_arr(self, seq, one_idx):
 
         def _make_arr(seq, one_idx):
             target = np.zeros((len(seq), len(seq)))
@@ -41,8 +40,26 @@ class DataGeneratorVarLen(keras.utils.Sequence):
             x[np.tril_indices(x.shape[0])] = -1
             return x
 
-        df = add_column(df, 'pair_matrix', ['seq', 'one_idx'], _make_arr)
-        df = add_column(df, 'pair_matrix', ['pair_matrix'], _mask)
+        pair_matrix = _make_arr(seq, one_idx)
+        pair_matrix = _mask(pair_matrix)
+        return pair_matrix
+
+    def _process_df(self, df):
+        # # set lower triangular elements to -1
+        #
+        # def _make_arr(seq, one_idx):
+        #     target = np.zeros((len(seq), len(seq)))
+        #     target[one_idx] = 1
+        #     return target
+        #
+        # def _mask(x):
+        #     assert len(x.shape) == 2
+        #     assert x.shape[0] == x.shape[1]
+        #     x[np.tril_indices(x.shape[0])] = -1
+        #     return x
+        #
+        # df = add_column(df, 'pair_matrix', ['seq', 'one_idx'], _make_arr)
+        # df = add_column(df, 'pair_matrix', ['pair_matrix'], _mask)
 
         # normalize free energy
         # energy / sequence_length
@@ -86,7 +103,9 @@ class DataGeneratorVarLen(keras.utils.Sequence):
         # x
         x1 = self._encode_seq(row['seq'])
         # y
-        y = row['pair_matrix'][:, :, np.newaxis]
+        # y = row['pair_matrix'][:, :, np.newaxis]
+        y = self._make_pair_arr(row['seq'], row['one_idx'])
+        y = y[:, :, np.newaxis]
         y2 = [row['fe']]
         return x1, y, y2
 
