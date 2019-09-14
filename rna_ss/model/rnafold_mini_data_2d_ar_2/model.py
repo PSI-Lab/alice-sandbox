@@ -158,8 +158,8 @@ def build_model():
 
     # auto regressive output label
     # triangular conv for ar label
-    hid = Concatenate(axis=-1)([hid, target_ar])
-    tri_conv = TriangularConvolution2D(20, (9, 9),
+    hid = Concatenate(axis=-1, name='final_hidden')([hid, target_ar])
+    tri_conv = TriangularConvolution2D(20, (9, 9), name='tri_conv',
                                        padding='same', activation='relu')(hid)
     # output
     output1 = Conv2D(1, (1, 1), padding='same',
