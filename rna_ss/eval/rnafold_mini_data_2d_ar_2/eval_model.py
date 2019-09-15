@@ -41,7 +41,7 @@ def main(model_file, dataset_file, n_sample, output):
     df = pd.read_pickle(dataset_file)
 
     df = add_columns(df, ['pred_idx', 'sensitivity', 'ppv', 'f_measure', 'logp', 'fe'], ['seq', 'one_idx'],
-                     lambda x, y: process_row(x, y, n_sample, model), pbar=False)
+                     lambda x, y: process_row(x, y, n_sample, model), pbar=True)
 
     df.to_pickle(output)
 

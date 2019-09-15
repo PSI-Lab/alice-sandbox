@@ -349,76 +349,76 @@ class PredictorSPlitModel(object):
         return y, logps, fe[:, 0]
 
 
-class Predictor(object):
-
-    def __init__(self, model_file):
-        self.model = load_model(model_file, custom_objects={'kb': kb, 'tf': tf,
-                                                            'custom_loss': custom_loss,
-                                                            'TriangularConvolution2D': TriangularConvolution2D})
-
-    def predict_one_step_ar(self, seq, n_sample=1, start_offset=1, p_clip=1e-7):
-        # (start_offset-1) determines the minimal size of a loop
-        L = len(seq)
-        x = np.tile(DataEncoder.encode_seqs([seq]), [n_sample, 1, 1])
-        y = np.tile(DataEncoder.y_init(L), [n_sample, 1, 1, 1])
-        # log probabilities for sampled path
-        logps = [[] for _ in range(n_sample)]
-
-        for n in range(start_offset, L):
-            # print(n)
-            tmp, _ = self.model.predict([x, y])
-            for idx_sample in range(n_sample):
-                pred = tmp[idx_sample, :, :, 0]
-                # sample n-th upper triangular band
-                n_th_band_idx = upper_band_index(L, n)
-                vals = pred[n_th_band_idx]
-                threshold = np.random.uniform(0, 1, size=vals.shape)
-                vals_sampled = (vals > threshold).astype(np.float32)
-
-                # take into account that only a single 1 can show up in all rows/columns
-                _y_old = y[idx_sample, :, :, 0]
-                # FIXME slow + naive method
-                already_paired = []
-
-                # for position i, need to consider both row i and col i
-                # similarly, for position j, need to consider both col j and row j
-                for idx_in_band, (i, j) in enumerate(zip(range(0, L - n), range(n, L))):
-                    # lower triangular are all -1's don't sum over them!
-                    i_row_sum = np.sum(_y_old[i, i+1:])
-                    j_col_sum = np.sum(_y_old[:j, j])
-                    i_col_sum = np.sum(_y_old[:i, i])
-                    j_row_sum = np.sum(_y_old[j, j+1:])
-                    assert 0 <= i_row_sum <= 1
-                    assert 0 <= j_col_sum <= 1
-                    assert 0 <= i_col_sum <= 1
-                    assert 0 <= j_row_sum <= 1
-                    total_sum = i_row_sum + j_col_sum + i_col_sum + j_row_sum
-                    if total_sum > 0:   # i and j cannot be paired, if at least one is paired with another position
-                        already_paired.append(idx_in_band)
-
-                # already_paired = np.asarray(already_paired)
-                # setting those positions who has a already-paired base to 0
-                # vals_sampled[np.where(already_paired)] = 0
-                if len(already_paired) > 0:
-                    vals_sampled[already_paired] = 0
-                    # for those positions, set probability for y=1 to 0
-                    vals[already_paired] = 0
-
-                # log probability
-                _vals = np.clip(vals, p_clip, 1-p_clip)
-                _lp = vals_sampled * np.log(_vals) + (1 - vals_sampled) * np.log(1 - _vals)
-                logps[idx_sample].extend(_lp.tolist())
-
-                # update y on n-th upper triangular band
-                _y = y[idx_sample, :, :, 0]
-                _y[n_th_band_idx] = vals_sampled
-                y[idx_sample, :, :, 0] = _y
-
-        # after all sampling steps, run one more prediction using final y, to get predicted normalized energy
-        _, fe = self.model.predict([x, y])
-        assert len(fe.shape) == 2
-        assert fe.shape[1] == 1
-
-        logps = [np.sum(x) for x in logps]
-
-        return y, logps, fe[:, 0]
+# class Predictor(object):
+#
+#     def __init__(self, model_file):
+#         self.model = load_model(model_file, custom_objects={'kb': kb, 'tf': tf,
+#                                                             'custom_loss': custom_loss,
+#                                                             'TriangularConvolution2D': TriangularConvolution2D})
+#
+#     def predict_one_step_ar(self, seq, n_sample=1, start_offset=1, p_clip=1e-7):
+#         # (start_offset-1) determines the minimal size of a loop
+#         L = len(seq)
+#         x = np.tile(DataEncoder.encode_seqs([seq]), [n_sample, 1, 1])
+#         y = np.tile(DataEncoder.y_init(L), [n_sample, 1, 1, 1])
+#         # log probabilities for sampled path
+#         logps = [[] for _ in range(n_sample)]
+#
+#         for n in range(start_offset, L):
+#             # print(n)
+#             tmp, _ = self.model.predict([x, y])
+#             for idx_sample in range(n_sample):
+#                 pred = tmp[idx_sample, :, :, 0]
+#                 # sample n-th upper triangular band
+#                 n_th_band_idx = upper_band_index(L, n)
+#                 vals = pred[n_th_band_idx]
+#                 threshold = np.random.uniform(0, 1, size=vals.shape)
+#                 vals_sampled = (vals > threshold).astype(np.float32)
+#
+#                 # take into account that only a single 1 can show up in all rows/columns
+#                 _y_old = y[idx_sample, :, :, 0]
+#                 # FIXME slow + naive method
+#                 already_paired = []
+#
+#                 # for position i, need to consider both row i and col i
+#                 # similarly, for position j, need to consider both col j and row j
+#                 for idx_in_band, (i, j) in enumerate(zip(range(0, L - n), range(n, L))):
+#                     # lower triangular are all -1's don't sum over them!
+#                     i_row_sum = np.sum(_y_old[i, i+1:])
+#                     j_col_sum = np.sum(_y_old[:j, j])
+#                     i_col_sum = np.sum(_y_old[:i, i])
+#                     j_row_sum = np.sum(_y_old[j, j+1:])
+#                     assert 0 <= i_row_sum <= 1
+#                     assert 0 <= j_col_sum <= 1
+#                     assert 0 <= i_col_sum <= 1
+#                     assert 0 <= j_row_sum <= 1
+#                     total_sum = i_row_sum + j_col_sum + i_col_sum + j_row_sum
+#                     if total_sum > 0:   # i and j cannot be paired, if at least one is paired with another position
+#                         already_paired.append(idx_in_band)
+#
+#                 # already_paired = np.asarray(already_paired)
+#                 # setting those positions who has a already-paired base to 0
+#                 # vals_sampled[np.where(already_paired)] = 0
+#                 if len(already_paired) > 0:
+#                     vals_sampled[already_paired] = 0
+#                     # for those positions, set probability for y=1 to 0
+#                     vals[already_paired] = 0
+#
+#                 # log probability
+#                 _vals = np.clip(vals, p_clip, 1-p_clip)
+#                 _lp = vals_sampled * np.log(_vals) + (1 - vals_sampled) * np.log(1 - _vals)
+#                 logps[idx_sample].extend(_lp.tolist())
+#
+#                 # update y on n-th upper triangular band
+#                 _y = y[idx_sample, :, :, 0]
+#                 _y[n_th_band_idx] = vals_sampled
+#                 y[idx_sample, :, :, 0] = _y
+#
+#         # after all sampling steps, run one more prediction using final y, to get predicted normalized energy
+#         _, fe = self.model.predict([x, y])
+#         assert len(fe.shape) == 2
+#         assert fe.shape[1] == 1
+#
+#         logps = [np.sum(x) for x in logps]
+#
+#         return y, logps, fe[:, 0]
