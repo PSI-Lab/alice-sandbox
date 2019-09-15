@@ -1,6 +1,7 @@
 import keras.backend as kb
 import tensorflow as tf
 import logging
+import tqdm
 import numpy as np
 from keras.layers import Convolution2D, Input
 from keras.models import load_model, Model
@@ -280,9 +281,11 @@ class PredictorSPlitModel(object):
 
         # get representation
         # note that we can't use this fe, since it's on fake sequence
+        logging.info("{}\nmodel_repr".format(seq))
         z_repr_single, _ = self.model_repr.predict([x_single, y_single])
         z_repr = np.tile(z_repr_single, [n_sample, 1, 1, 1])
-        for n in range(start_offset, L):
+        logging.info("model_ar")
+        for n in tqdm.tqdm(range(start_offset, L)):
             tmp = self.model_ar.predict([z_repr, y])
 
             for idx_sample in range(n_sample):
@@ -336,6 +339,7 @@ class PredictorSPlitModel(object):
         # for now if we want accurate fe, at the end of AR,
         # need to do another pass using the first model
         # after all sampling steps, run one more prediction using final y, to get predicted normalized energy
+        logging.info("model_ar (for fe)")
         _, fe = self.model_repr.predict([x, y])
         assert len(fe.shape) == 2
         assert fe.shape[1] == 1

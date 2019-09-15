@@ -4,6 +4,11 @@ import numpy as np
 import pandas as pd
 from dgutils.pandas import add_columns
 from utils import PredictorSPlitModel, arr2db, EvalMetric
+import logging
+
+
+logging.basicConfig()
+logging.getLogger().setLevel(logging.DEBUG)
 
 
 def process_row(seq, one_idx, n_sample, model):
@@ -36,7 +41,7 @@ def main(model_file, dataset_file, n_sample, output):
     df = pd.read_pickle(dataset_file)
 
     df = add_columns(df, ['pred_idx', 'sensitivity', 'ppv', 'f_measure', 'logp', 'fe'], ['seq', 'one_idx'],
-                     lambda x, y: process_row(x, y, n_sample, model))
+                     lambda x, y: process_row(x, y, n_sample, model), pbar=False)
 
     df.to_pickle(output)
 
