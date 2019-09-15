@@ -3,7 +3,7 @@ import argparse
 import numpy as np
 import pandas as pd
 from dgutils.pandas import add_columns
-from utils import Predictor, arr2db, EvalMetric
+from utils import PredictorSPlitModel, arr2db, EvalMetric
 
 
 def process_row(seq, one_idx, n_sample, model):
@@ -31,7 +31,7 @@ def process_row(seq, one_idx, n_sample, model):
 
 
 def main(model_file, dataset_file, n_sample, output):
-    model = Predictor(model_file)
+    model = PredictorSPlitModel(model_file)
     # TODO make sure dataset has unified format
     df = pd.read_pickle(dataset_file)
 
