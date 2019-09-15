@@ -283,7 +283,7 @@ class PredictorSPlitModel(object):
         z_repr_single, _ = self.model_repr.predict([x_single, y_single])
         z_repr = np.tile(z_repr_single, [n_sample, 1, 1, 1])
         for n in range(start_offset, L):
-            tmp, _ = self.model_ar.predict([z_repr, y])
+            tmp = self.model_ar.predict([z_repr, y])
 
             for idx_sample in range(n_sample):
                 pred = tmp[idx_sample, :, :, 0]
