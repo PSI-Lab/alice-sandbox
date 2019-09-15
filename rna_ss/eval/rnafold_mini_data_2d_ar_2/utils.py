@@ -236,22 +236,22 @@ class PredictorSPlitModel(object):
             logging.warning("Model missing names layers, will try to infer (unreliable!).")
             is_named_layer = False
         # find layers
-        layer_input_org = next(l for l in model.model.layers if l.name == 'input_org')
-        layer_target_prev = next(l for l in model.model.layers if l.name == 'target_prev')
-        layer_ar_label = next(l for l in model.model.layers if l.name == 'ar_label')
-        layer_fe = next(l for l in model.model.layers if l.name == 'fe')
+        layer_input_org = next(l for l in model.layers if l.name == 'input_org')
+        layer_target_prev = next(l for l in model.layers if l.name == 'target_prev')
+        layer_ar_label = next(l for l in model.layers if l.name == 'ar_label')
+        layer_fe = next(l for l in model.layers if l.name == 'fe')
         if is_named_layer:
-            layer_final_hidden = next(l for l in model.model.layers if l.name == 'final_hidden')
-            layer_concat = next(l for l in model.model.layers if l.name == 'concat_hid_target_prev')
-            layer_tri_conv = next(l for l in model.model.layers if l.name == 'tri_conv')
-            layer_conv_fe = next(l for l in model.model.layers if l.name == 'conv_fe')
-            layer_mask_fe = next(l for l in model.model.layers if l.name == 'mask_fe')
+            layer_final_hidden = next(l for l in model.layers if l.name == 'final_hidden')
+            layer_concat = next(l for l in model.layers if l.name == 'concat_hid_target_prev')
+            layer_tri_conv = next(l for l in model.layers if l.name == 'tri_conv')
+            layer_conv_fe = next(l for l in model.layers if l.name == 'conv_fe')
+            layer_mask_fe = next(l for l in model.layers if l.name == 'mask_fe')
         else:
-            layer_final_hidden = next(l for l in model.model.layers if l.name == 'conv2d_6')
-            layer_concat = next(l for l in model.model.layers if l.name == 'concatenate_3')
-            layer_tri_conv = next(l for l in model.model.layers if l.name == 'triangular_convolution2d_1')
-            layer_conv_fe = next(l for l in model.model.layers if l.name == 'conv2d_7')
-            layer_mask_fe = next(l for l in model.model.layers if l.name == 'lambda_9')
+            layer_final_hidden = next(l for l in model.layers if l.name == 'conv2d_6')
+            layer_concat = next(l for l in model.layers if l.name == 'concatenate_3')
+            layer_tri_conv = next(l for l in model.layers if l.name == 'triangular_convolution2d_1')
+            layer_conv_fe = next(l for l in model.layers if l.name == 'conv2d_7')
+            layer_mask_fe = next(l for l in model.layers if l.name == 'lambda_9')
 
         # first model
         model1 = Model(input=[layer_input_org.input, layer_target_prev.input],
