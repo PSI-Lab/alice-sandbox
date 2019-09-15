@@ -154,11 +154,12 @@ def build_model():
     hid = Conv2D(50, (17, 17), dilation_rate=4,
                  padding='same', activation='relu')(hid)
     hid = Conv2D(50, (17, 17), dilation_rate=4,
-                 padding='same', activation='relu')(hid)
+                 padding='same', activation='relu',
+                 name='final_hidden')(hid)
 
     # auto regressive output label
     # triangular conv for ar label
-    hid = Concatenate(axis=-1, name='final_hidden')([hid, target_ar])
+    hid = Concatenate(axis=-1, name='concat_hid_target_prev')([hid, target_ar])
     tri_conv = TriangularConvolution2D(20, (9, 9), name='tri_conv',
                                        padding='same', activation='relu')(hid)
     # output
@@ -186,8 +187,8 @@ def build_model():
         return x * mask
 
     # fc for fe, re-use same hid
-    hid_fe = Conv2D(1, (6, 6), padding='same')(hid)
-    hid_fe_masked = Lambda(_mask_lower_tri_and_padding)([hid_fe, target_ar])
+    hid_fe = Conv2D(1, (6, 6), padding='same', name='conv_fe')(hid)
+    hid_fe_masked = Lambda(_mask_lower_tri_and_padding, name='mask_fe')([hid_fe, target_ar])
     # global pooling
     output2 = GlobalAveragePooling2D(name='fe')(hid_fe_masked)
 
