@@ -1,8 +1,9 @@
 import keras.backend as kb
 import tensorflow as tf
+import logging
 import numpy as np
-from keras.layers import Convolution2D
-from keras.models import load_model
+from keras.layers import Convolution2D, Input
+from keras.models import load_model, Model
 
 
 def custom_loss(y_true, y_pred, mask_val=-1):  # mask val hard-coded for now
@@ -217,6 +218,133 @@ class EvalMetric(object):
         return (2 * sensitivity * ppv)/(sensitivity + ppv)
 
 
+class PredictorSPlitModel(object):
+    # split model into two parts
+    # the first part is the 'representation', which only needs to be run once
+    # second part is autoregressive, need to be run L-1 times
+
+    def __init__(self, model_file):
+        _model = load_model(model_file, custom_objects={'kb': kb, 'tf': tf,
+                                                        'custom_loss': custom_loss,
+                                                        'TriangularConvolution2D': TriangularConvolution2D})
+        self.model_repr, self.model_ar = self.split_model(_model)
+
+    def split_model(self, model):
+        # check whether this trained model has named layers, if not print a warning
+        is_named_layer = True
+        if not any([l.name == 'concat_hid_target_prev' for l in model.layers]):
+            logging.warning("Model missing names layers, will try to infer (unreliable!).")
+            is_named_layer = False
+        # find layers
+        layer_input_org = next(l for l in model.model.layers if l.name == 'input_org')
+        layer_target_prev = next(l for l in model.model.layers if l.name == 'target_prev')
+        layer_ar_label = next(l for l in model.model.layers if l.name == 'ar_label')
+        layer_fe = next(l for l in model.model.layers if l.name == 'fe')
+        if is_named_layer:
+            layer_final_hidden = next(l for l in model.model.layers if l.name == 'final_hidden')
+            layer_concat = next(l for l in model.model.layers if l.name == 'concat_hid_target_prev')
+            layer_tri_conv = next(l for l in model.model.layers if l.name == 'tri_conv')
+            layer_conv_fe = next(l for l in model.model.layers if l.name == 'conv_fe')
+            layer_mask_fe = next(l for l in model.model.layers if l.name == 'mask_fe')
+        else:
+            layer_final_hidden = next(l for l in model.model.layers if l.name == 'conv2d_6')
+            layer_concat = next(l for l in model.model.layers if l.name == 'concatenate_3')
+            layer_tri_conv = next(l for l in model.model.layers if l.name == 'triangular_convolution2d_1')
+            layer_conv_fe = next(l for l in model.model.layers if l.name == 'conv2d_7')
+            layer_mask_fe = next(l for l in model.model.layers if l.name == 'lambda_9')
+
+        # first model
+        model1 = Model(input=[layer_input_org.input, layer_target_prev.input],
+                       output=[layer_final_hidden.output, layer_fe.output])
+        # TODO layer_fe should be connected to the second model
+        # in order to do so, we need extra named layers
+        # training code to be updated
+        # second model
+        new_input = Input(layer_final_hidden.input_shape[1:])
+        new_hid = layer_concat([new_input, layer_target_prev.input])
+        new_output = layer_tri_conv(new_hid)
+        new_output = layer_ar_label(new_output)
+        model2 = Model(input=[new_input, layer_target_prev.input],
+                       output=new_output)
+        return model1, model2
+
+    def predict_one_step_ar(self, seq, n_sample=1, start_offset=1, p_clip=1e-7):
+        L = len(seq)
+        # x = np.tile(DataEncoder.encode_seqs([seq]), [n_sample, 1, 1])
+        x_single = DataEncoder.encode_seqs([seq])
+        x = np.tile(x_single, [n_sample, 1, 1])
+        y_single = DataEncoder.y_init(L)
+        y = np.tile(y_single, [n_sample, 1, 1, 1])
+        # log probabilities for sampled path
+        logps = [[] for _ in range(n_sample)]
+
+        # get representation
+        # note that we can't use this fe, since it's on fake sequence
+        z_repr_single, _ = self.model_repr.predict([x_single, y_single])
+        z_repr = np.tile(z_repr_single, [n_sample, 1, 1, 1])
+        for n in range(start_offset, L):
+            tmp, _ = self.model_ar.predict([z_repr, y])
+
+            for idx_sample in range(n_sample):
+                pred = tmp[idx_sample, :, :, 0]
+                # sample n-th upper triangular band
+                n_th_band_idx = upper_band_index(L, n)
+                vals = pred[n_th_band_idx]
+                threshold = np.random.uniform(0, 1, size=vals.shape)
+                vals_sampled = (vals > threshold).astype(np.float32)
+
+                # take into account that only a single 1 can show up in all rows/columns
+                _y_old = y[idx_sample, :, :, 0]
+                # FIXME slow + naive method
+                already_paired = []
+
+                # for position i, need to consider both row i and col i
+                # similarly, for position j, need to consider both col j and row j
+                for idx_in_band, (i, j) in enumerate(zip(range(0, L - n), range(n, L))):
+                    # lower triangular are all -1's don't sum over them!
+                    i_row_sum = np.sum(_y_old[i, i + 1:])
+                    j_col_sum = np.sum(_y_old[:j, j])
+                    i_col_sum = np.sum(_y_old[:i, i])
+                    j_row_sum = np.sum(_y_old[j, j + 1:])
+                    assert 0 <= i_row_sum <= 1
+                    assert 0 <= j_col_sum <= 1
+                    assert 0 <= i_col_sum <= 1
+                    assert 0 <= j_row_sum <= 1
+                    total_sum = i_row_sum + j_col_sum + i_col_sum + j_row_sum
+                    if total_sum > 0:  # i and j cannot be paired, if at least one is paired with another position
+                        already_paired.append(idx_in_band)
+
+                # already_paired = np.asarray(already_paired)
+                # setting those positions who has a already-paired base to 0
+                # vals_sampled[np.where(already_paired)] = 0
+                if len(already_paired) > 0:
+                    vals_sampled[already_paired] = 0
+                    # for those positions, set probability for y=1 to 0
+                    vals[already_paired] = 0
+
+                # log probability
+                _vals = np.clip(vals, p_clip, 1 - p_clip)
+                _lp = vals_sampled * np.log(_vals) + (1 - vals_sampled) * np.log(1 - _vals)
+                logps[idx_sample].extend(_lp.tolist())
+
+                # update y on n-th upper triangular band
+                _y = y[idx_sample, :, :, 0]
+                _y[n_th_band_idx] = vals_sampled
+                y[idx_sample, :, :, 0] = _y
+
+        # TODO layer_fe should be connected to the second model
+        # for now if we want accurate fe, at the end of AR,
+        # need to do another pass using the first model
+        # after all sampling steps, run one more prediction using final y, to get predicted normalized energy
+        _, fe = self.model_repr.predict([x, y])
+        assert len(fe.shape) == 2
+        assert fe.shape[1] == 1
+
+        logps = [np.sum(x) for x in logps]
+
+        return y, logps, fe[:, 0]
+
+
 class Predictor(object):
 
     def __init__(self, model_file):
@@ -224,7 +352,7 @@ class Predictor(object):
                                                             'custom_loss': custom_loss,
                                                             'TriangularConvolution2D': TriangularConvolution2D})
 
-    def predict_one_step_ar(self, seq, n_sample=1, start_offset=1):
+    def predict_one_step_ar(self, seq, n_sample=1, start_offset=1, p_clip=1e-7):
         # (start_offset-1) determines the minimal size of a loop
         L = len(seq)
         x = np.tile(DataEncoder.encode_seqs([seq]), [n_sample, 1, 1])
@@ -247,15 +375,6 @@ class Predictor(object):
                 _y_old = y[idx_sample, :, :, 0]
                 # FIXME slow + naive method
                 already_paired = []
-                # for idx_in_band, (row_idx, col_idx) in enumerate(zip(range(0, L - n), range(n, L))):
-                #     row_sum = np.sum(_y_old[row_idx, row_idx + 1:col_idx])  # not including the current position
-                #     col_sum = np.sum(_y_old[row_idx + 1:col_idx, col_idx])  # not including the current position
-                #     assert row_sum <= 1
-                #     assert col_sum <= 1
-                #     total_sum = row_sum + col_sum
-                #     # already_paired.append(total_sum)
-                #     if total_sum > 0:   # i and j cannot be paired, if at least one is paired with another position
-                #         already_paired.append(idx_in_band)
 
                 # for position i, need to consider both row i and col i
                 # similarly, for position j, need to consider both col j and row j
@@ -278,9 +397,11 @@ class Predictor(object):
                 # vals_sampled[np.where(already_paired)] = 0
                 if len(already_paired) > 0:
                     vals_sampled[already_paired] = 0
+                    # for those positions, set probability for y=1 to 0
+                    vals[already_paired] = 0
 
                 # log probability
-                _vals = np.clip(vals, 1e-7, 1-1e-7)
+                _vals = np.clip(vals, p_clip, 1-p_clip)
                 _lp = vals_sampled * np.log(_vals) + (1 - vals_sampled) * np.log(1 - _vals)
                 logps[idx_sample].extend(_lp.tolist())
 
