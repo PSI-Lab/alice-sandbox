@@ -171,7 +171,7 @@ def forna_url(seq, struct):
     return url
 
 
-def rna_eval_fe(seq, struct):
+def rna_eval_fe(seq, struct, verbose=True):
     # use RNAeval from ViennaRNA package to compute FE
     # checks
     assert len(seq) == len(struct)
@@ -188,17 +188,19 @@ def rna_eval_fe(seq, struct):
         msg = 'RNAeval returned error code %d\nstdout:\n%s\nstderr:\n%s\n' % (
             rc, stdout, stderr)
         # raise Exception(msg)
-        logging.warning(msg)
+        if verbose:
+            logging.warning(msg)
         return np.nan
     # parse output
     lines = stdout.splitlines()
     assert len(lines) == 2
     try:
-        val = float(re.match(pattern=r".*\(-*(\d+\.\d+)\)$", string=lines[1]).group(1))
+        val = float(re.match(pattern=r".*\( *-*(\d+\.\d+)\)$", string=lines[1]).group(1))
     except AttributeError as e:
         # debug
-        print(lines)
-        raise
+        if verbose:
+            print(lines)
+        return np.nan
     return val
 
 
