@@ -2,6 +2,9 @@ import keras.backend as kb
 import tensorflow as tf
 import logging
 import tqdm
+import re
+import tempfile
+from subprocess import PIPE, Popen
 import numpy as np
 from keras.layers import Convolution2D, Input
 from keras.models import load_model, Model
@@ -166,6 +169,37 @@ def arr2db(arr):
 def forna_url(seq, struct):
     url = "http://nibiru.tbi.univie.ac.at/forna/forna.html?id=url/name&sequence={}&structure={}".format(seq, struct)
     return url
+
+
+def rna_eval_fe(seq, struct):
+    # use RNAeval from ViennaRNA package to compute FE
+    # checks
+    assert len(seq) == len(struct)
+    # # make input file
+    # seq_file = tempfile.NamedTemporaryFile().name
+    # with open(seq_file, 'w') as f:
+    #     f.write("{}\n{}".format(seq, struct))
+    # call RNAeval
+    p = Popen(['RNAeval'], stdin=PIPE,
+              stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    stdout, stderr = p.communicate(input="{}\n{}".format(seq, struct))
+    rc = p.returncode
+    if rc != 0:
+        msg = 'RNAeval returned error code %d\nstdout:\n%s\nstderr:\n%s\n' % (
+            rc, stdout, stderr)
+        # raise Exception(msg)
+        logging.warning(msg)
+        return np.nan
+    # parse output
+    lines = stdout.splitlines()
+    assert len(lines) == 2
+    try:
+        val = float(re.match(pattern=r".*\(-*(\d+\.\d+)\)$", string=lines[1]).group(1))
+    except AttributeError as e:
+        # debug
+        print(lines)
+        raise
+    return val
 
 
 class EvalMetric(object):
