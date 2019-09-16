@@ -50,7 +50,7 @@ def sample_structures(seq, n_samples):
             if idx_j != -1:
                 vals[idx_i, idx_j] = 1
                 vals[idx_j, idx_i] = 1
-        all_vals.append(np.where(vals == 1))
+        all_vals.append(vals)
     return all_vals
 
 
@@ -97,7 +97,7 @@ def get_fe_struct(seq):
     return vals, fe, mfe_freq, ens_div
 
 
-def process_row(seq, one_idx):
+def process_row_mfe(seq, one_idx):
     target = np.zeros((len(seq), len(seq)))
     target[one_idx] = 1
 
@@ -114,13 +114,41 @@ def process_row(seq, one_idx):
     return pred_idx, sensitivity, ppv, f_measure, fe, mfe_freq, ens_div
 
 
-def main(dataset_file, output):
+def process_row_sample_struct(seq, one_idx, n_sample):
+    target = np.zeros((len(seq), len(seq)))
+    target[one_idx] = 1
+
+    preds = sample_structures(seq, n_sample)
+
+    pred_idx = []
+    sensitivity = []
+    ppv = []
+    f_measure = []
+    for pred in preds:
+        # set lower triangular to 0
+        pred[np.tril_indices(pred.shape[0])] = 0
+        _sensitivity = EvalMetric.sensitivity(pred, target)
+        _ppv = EvalMetric.ppv(pred, target)
+        _f_measure = EvalMetric.f_measure(_sensitivity, _ppv)
+        _pred_idx = np.where(pred == 1)
+        pred_idx.append(_pred_idx)
+        sensitivity.append(_sensitivity)
+        ppv.append(_ppv)
+        f_measure.append(_f_measure)
+    return pred_idx, sensitivity, ppv, f_measure
+
+
+def main(dataset_file, output, n_sample):
     df = pd.read_pickle(dataset_file)
 
-    df = add_columns(df, ['pred_idx', 'sensitivity', 'ppv',
-                          'f_measure', 'fe', 'mfe_freq', 'ens_div'],
+    df = add_columns(df, ['mfe_pred_idx', 'mfe_sensitivity', 'mfe_ppv',
+                          'mfe_f_measure', 'mfe_fe', 'mfe_freq', 'ens_div'],
                      ['seq', 'one_idx'],
-                     lambda x, y: process_row(x, y))
+                     lambda x, y: process_row_mfe(x, y))
+
+    # sample structure
+    df = add_columns(df, ['pred_idx', 'sensitivity', 'ppv', 'f_measure'],
+                     ['seq', 'one_idx'], lambda x, y: process_row_sample_struct(x, y, n_sample))
 
     df.to_pickle(output)
 
@@ -129,6 +157,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, help='path to dataset file')
     parser.add_argument('--output', type=str, help='path to output file')
+    parser.add_argument('--samples', type=int, help='number of structures to sample')
     args = parser.parse_args()
 
-    main(args.dataset, args.output)
+    main(args.dataset, args.output, args.samples)
