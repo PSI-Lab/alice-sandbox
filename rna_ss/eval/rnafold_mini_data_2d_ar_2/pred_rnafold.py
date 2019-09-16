@@ -1,11 +1,57 @@
 import argparse
+from StringIO import StringIO
 import re
 import os
 import tempfile
+from subprocess import PIPE, Popen
 import numpy as np
 import pandas as pd
 from dgutils.pandas import add_columns
 from utils import EvalMetric
+
+
+def sample_structures(seq, n_samples):
+    p = Popen(['RNAsubopt',  '-p', str(n_samples)], stdin=PIPE,
+              stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    stdout, stderr = p.communicate(input=seq)
+    rc = p.returncode
+    if rc != 0:
+        msg = 'RNAeval returned error code %d\nstdout:\n%s\nstderr:\n%s\n' % (
+            rc, stdout, stderr)
+        raise Exception(msg)
+    # parse output
+    lines = stdout.splitlines()
+    assert len(lines) == n_samples + 1
+    lines = lines[1:]
+    # convert to idx array
+    all_vals = []
+    for s in lines:
+        assert len(s) == len(seq)
+        # convert to ct file (add a fake energy, otherwise b2ct won't run)
+        input_str = '>seq\n{}\n{} (-0.0)'.format(seq, s)
+        p = Popen(['b2ct'], stdin=PIPE,
+                  stdout=PIPE, stderr=PIPE, universal_newlines=True)
+        stdout, stderr = p.communicate(input=input_str)
+        rc = p.returncode
+        if rc != 0:
+            msg = 'b2ct returned error code %d\nstdout:\n%s\nstderr:\n%s\n' % (
+                rc, stdout, stderr)
+            raise Exception(msg)
+        # load data
+        df = pd.read_csv(StringIO(stdout), skiprows=1, header=None,
+                         names=['i1', 'base', 'idx_i', 'i2', 'idx_j', 'i3'],
+                         sep=r"\s*")
+        assert ''.join(df['base'].tolist()) == seq, ''.join(df['base'].tolist())
+        # matrix
+        vals = np.zeros((len(seq), len(seq)))
+        for _, row in df.iterrows():
+            idx_i = row['idx_i']
+            idx_j = row['idx_j'] - 1
+            if idx_j != -1:
+                vals[idx_i, idx_j] = 1
+                vals[idx_j, idx_i] = 1
+        all_vals.append(np.where(vals == 1))
+    return all_vals
 
 
 def get_fe_struct(seq):

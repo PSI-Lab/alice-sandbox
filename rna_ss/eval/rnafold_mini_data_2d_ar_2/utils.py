@@ -175,10 +175,6 @@ def rna_eval_fe(seq, struct, verbose=True):
     # use RNAeval from ViennaRNA package to compute FE
     # checks
     assert len(seq) == len(struct)
-    # # make input file
-    # seq_file = tempfile.NamedTemporaryFile().name
-    # with open(seq_file, 'w') as f:
-    #     f.write("{}\n{}".format(seq, struct))
     # call RNAeval
     p = Popen(['RNAeval'], stdin=PIPE,
               stdout=PIPE, stderr=PIPE, universal_newlines=True)
