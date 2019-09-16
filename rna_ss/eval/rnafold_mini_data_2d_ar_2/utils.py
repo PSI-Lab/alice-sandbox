@@ -195,7 +195,7 @@ def rna_eval_fe(seq, struct, verbose=True):
     lines = stdout.splitlines()
     assert len(lines) == 2
     try:
-        val = float(re.match(pattern=r".*\( *-*(\d+\.\d+)\)$", string=lines[1]).group(1))
+        val = float(re.match(pattern=r".*\( *(-*\d+\.\d+)\)$", string=lines[1]).group(1))
     except AttributeError as e:
         # debug
         if verbose:
