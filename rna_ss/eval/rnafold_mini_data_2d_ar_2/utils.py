@@ -335,7 +335,13 @@ class PredictorSPlitModel(object):
 
                 # for position i, need to consider both row i and col i
                 # similarly, for position j, need to consider both col j and row j
-                for idx_in_band, (i, j) in enumerate(zip(range(0, L - n), range(n, L))):
+                # note that positions within the 'band' can also share the same index (e.g. one's row idx can be another's col idx)
+                # so if one position is sampled to be 1, the other one cannot
+                # collect these idxes while going through the positions
+                new_sampled_idxes = set()
+                for idx_in_band, (i, j, v) in enumerate(zip(range(0, L - n), range(n, L), vals_sampled)):
+                    new_sampled_idxes.add(i)
+                    new_sampled_idxes.add(j)
                     # lower triangular are all -1's don't sum over them!
                     i_row_sum = np.sum(_y_old[i, i + 1:])
                     j_col_sum = np.sum(_y_old[:j, j])
@@ -346,7 +352,7 @@ class PredictorSPlitModel(object):
                     assert 0 <= i_col_sum <= 1
                     assert 0 <= j_row_sum <= 1
                     total_sum = i_row_sum + j_col_sum + i_col_sum + j_row_sum
-                    if total_sum > 0:  # i and j cannot be paired, if at least one is paired with another position
+                    if total_sum > 0 or i in new_sampled_idxes or j in new_sampled_idxes:  # i and j cannot be paired, if at least one is paired with another position
                         already_paired.append(idx_in_band)
 
                 # already_paired = np.asarray(already_paired)
