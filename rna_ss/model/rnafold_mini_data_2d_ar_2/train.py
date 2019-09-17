@@ -136,24 +136,24 @@ def main(config, data_file):
         config['git_hash'] = git_hash
         yaml.dump(config, outfile)
 
-    # make prediction on validation set
-    # restore to the ES checkpoint
-    print("Restoring model from epoch {}".format(best_epoch))
-    model = load_model(model_file_des, custom_objects={'kb': kb, 'tf': tf,
-                                                       'custom_loss': custom_loss,
-                                                       'TriangularConvolution2D': TriangularConvolution2D})
-    data_pred = []
-    print("Making predictions on validation data...")
-    for i, row in tqdm.tqdm(validation_dataset.df.iterrows(), total=len(validation_dataset.df)):
-        x1, y = validation_dataset.get_data([i], len(row['seq']))
-        pred, fe = model.predict(x1)
-        row['pred'] = pred[0, :, :, 0]
-        row['pfe'] = fe[0]
-        data_pred.append(row)
-    data_pred = pd.DataFrame(data_pred)
-    if not os.path.isdir('prediction'):
-        os.mkdir('prediction')
-    pd.to_pickle(data_pred, 'prediction/validation_data_prediction.pkl.gz', compression='gzip')
+    # # make prediction on validation set
+    # # restore to the ES checkpoint
+    # print("Restoring model from epoch {}".format(best_epoch))
+    # model = load_model(model_file_des, custom_objects={'kb': kb, 'tf': tf,
+    #                                                    'custom_loss': custom_loss,
+    #                                                    'TriangularConvolution2D': TriangularConvolution2D})
+    # data_pred = []
+    # print("Making predictions on validation data...")
+    # for i, row in tqdm.tqdm(validation_dataset.df.iterrows(), total=len(validation_dataset.df)):
+    #     x1, y = validation_dataset.get_data([i], len(row['seq']))
+    #     pred, fe = model.predict(x1)
+    #     row['pred'] = pred[0, :, :, 0]
+    #     row['pfe'] = fe[0]
+    #     data_pred.append(row)
+    # data_pred = pd.DataFrame(data_pred)
+    # if not os.path.isdir('prediction'):
+    #     os.mkdir('prediction')
+    # pd.to_pickle(data_pred, 'prediction/validation_data_prediction.pkl.gz', compression='gzip')
 
 
 if __name__ == "__main__":
