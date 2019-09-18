@@ -38,7 +38,7 @@ class Histories(Callback):
         self.accuracies.append(logs.get('acc'))
 
 
-def main(config, data_file):
+def main(config, data_file, output_dir):
     git_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip()
 
     # load data TODO hard-coded for now
@@ -125,13 +125,15 @@ def main(config, data_file):
     best_epoch = es_epoch - es_patience + 1
     print("ES epoch: {}, best epoch: {}".format(es_epoch, best_epoch))
     model_file_src = os.path.join(run_dir, 'checkpoint.{epoch:03d}.hdf5'.format(epoch=best_epoch))
-    model_file_des = os.path.join(config['model_dir'], 'model.hdf5')
-    if not os.path.isdir(config['model_dir']):
-        os.mkdir(config['model_dir'])
+
+    model_file_des = os.path.join(output_dir, 'model.hdf5')
+    if not os.path.isdir(output_dir):
+        os.mkdir(output_dir)
+
     shutil.copy(model_file_src, model_file_des)
     print("Model from epoch %d is saved at: %s" % (best_epoch, model_file_des))
     # also dump the config in that folder
-    with open(os.path.join(config['model_dir'], 'config.yml'), 'w') as outfile:
+    with open(os.path.join(output_dir, 'config.yml'), 'w') as outfile:
         config['run_dir'] = run_dir
         config['git_hash'] = git_hash
         yaml.dump(config, outfile)
@@ -160,6 +162,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, help='path to config file')
     parser.add_argument('--data', type=str, help='training dataset')
+    parser.add_argument('--output', type=str, help='output dir to save the best model')
     # parser.add_argument('--fold', type=int, help='validation fold ID')
     args = parser.parse_args()
 
@@ -168,4 +171,4 @@ if __name__ == "__main__":
 
     # fold_idx = int(sys.argv[1])
     # assert 0 <= args.fold < len(config['chrom_folds'])
-    main(config, args.data)
+    main(config, args.data, args.output)
