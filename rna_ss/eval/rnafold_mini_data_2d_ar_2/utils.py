@@ -312,7 +312,7 @@ class PredictorSPlitModel(object):
         logps = [[] for _ in range(n_sample)]
 
         # get representation
-        # note that we can't use this fe, since it's on fake sequence
+        # note that we can't use this fe, since it's on fake label
         logging.info("{}\nmodel_repr".format(seq))
         z_repr_single, _ = self.model_repr.predict([x_single, y_single])
         z_repr = np.tile(z_repr_single, [n_sample, 1, 1, 1])
@@ -328,19 +328,35 @@ class PredictorSPlitModel(object):
                 threshold = np.random.uniform(0, 1, size=vals.shape)
                 vals_sampled = (vals > threshold).astype(np.float32)
 
+                # create list of i-j pairs for positions in the slice
+                i_idxes = np.arange(0, L - n)
+                j_idxes = np.arange(n, L)
+
+                # process vals_sampled, update idx_hard_constraint
+                # this is necessary since:
+                # two positions in the slice: A & B,
+                # A's col idx == B's row idx
+                # if A and B are both sampled to be 1
+                # that violets the hard constraint
+                slice_one_row = i_idxes[np.where(vals_sampled == 1)]
+                slice_one_col = j_idxes[np.where(vals_sampled == 1)]
+                slice_one_dup = np.intersect1d(slice_one_row, slice_one_col)
+                # for each dup position, random select whether we want to set the one with row idx or col idx to 0
+                idx_hard_constraint_slice = []
+                for pos_dup in slice_one_dup:
+                    if np.random.rand() >= 0.5:
+                        idx_hard_constraint_slice.append(np.where(i_idxes == pos_dup)[0][0])
+                    else:
+                        idx_hard_constraint_slice.append(np.where(j_idxes == pos_dup)[0][0])
+                idx_hard_constraint_slice = np.asarray(idx_hard_constraint_slice, dtype=np.int)
+
                 # take into account that only a single 1 can show up in all rows/columns
                 _y_old = y[idx_sample, :, :, 0]
 
-                # set the currently sampled values in the slice, to compute row and column sum
-                _y_old[n_th_band_idx] = vals_sampled
                 # set lower triangular to 0
                 _y_old[np.tril_indices(_y_old.shape[0])] = 0
                 row_sum = np.sum(_y_old, axis=0)
                 col_sum = np.sum(_y_old, axis=1)
-
-                # create list of i-j pairs for positions in the slice
-                i_idxes = range(0, L - n)
-                j_idxes = range(n, L)
 
                 # index into the row/col sum, and compute total sum for i-row, i-col, j-row, j-col
                 total_sum = row_sum[i_idxes] + row_sum[j_idxes] + col_sum[i_idxes] + col_sum[j_idxes]
@@ -350,6 +366,9 @@ class PredictorSPlitModel(object):
                 idx_hard_constraint = np.where(total_sum > 0)
                 vals_sampled[idx_hard_constraint] = 0
                 vals[idx_hard_constraint] = 1
+                # also set those under hard constraint within the slice
+                vals_sampled[idx_hard_constraint_slice] = 0
+                vals[idx_hard_constraint_slice] = 1
 
                 # # FIXME slow + naive method
                 # already_paired = []
