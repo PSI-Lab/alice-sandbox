@@ -330,38 +330,59 @@ class PredictorSPlitModel(object):
 
                 # take into account that only a single 1 can show up in all rows/columns
                 _y_old = y[idx_sample, :, :, 0]
-                # FIXME slow + naive method
-                already_paired = []
 
-                # for position i, need to consider both row i and col i
-                # similarly, for position j, need to consider both col j and row j
-                # note that positions within the 'band' can also share the same index (e.g. one's row idx can be another's col idx)
-                # so if one position is sampled to be 1, the other one cannot
-                # collect these idxes while going through the positions
-                new_sampled_idxes = set()
-                for idx_in_band, (i, j, v) in enumerate(zip(range(0, L - n), range(n, L), vals_sampled)):
-                    new_sampled_idxes.add(i)
-                    new_sampled_idxes.add(j)
-                    # lower triangular are all -1's don't sum over them!
-                    i_row_sum = np.sum(_y_old[i, i + 1:])
-                    j_col_sum = np.sum(_y_old[:j, j])
-                    i_col_sum = np.sum(_y_old[:i, i])
-                    j_row_sum = np.sum(_y_old[j, j + 1:])
-                    assert 0 <= i_row_sum <= 1
-                    assert 0 <= j_col_sum <= 1
-                    assert 0 <= i_col_sum <= 1
-                    assert 0 <= j_row_sum <= 1
-                    total_sum = i_row_sum + j_col_sum + i_col_sum + j_row_sum
-                    if total_sum > 0 or i in new_sampled_idxes or j in new_sampled_idxes:  # i and j cannot be paired, if at least one is paired with another position
-                        already_paired.append(idx_in_band)
+                # set the currently sampled values in the slice, to compute row and column sum
+                _y_old[n_th_band_idx] = vals_sampled
+                # set lower triangular to 0
+                _y_old[np.tril_indices(_y_old.shape[0])] = 0
+                row_sum = np.sum(_y_old, axis=0)
+                col_sum = np.sum(_y_old, axis=1)
 
-                # already_paired = np.asarray(already_paired)
-                # setting those positions who has a already-paired base to 0
-                # vals_sampled[np.where(already_paired)] = 0
-                if len(already_paired) > 0:
-                    vals_sampled[already_paired] = 0
-                    # for those positions, set probability for y=1 to 0
-                    vals[already_paired] = 0
+                # create list of i-j pairs for positions in the slice
+                i_idxes = range(0, L - n)
+                j_idxes = range(n, L)
+
+                # index into the row/col sum, and compute total sum for i-row, i-col, j-row, j-col
+                total_sum = row_sum[i_idxes] + row_sum[j_idxes] + col_sum[i_idxes] + col_sum[j_idxes]
+
+                # set positions to 0
+                # set proability to 1
+                idx_hard_constraint = np.where(total_sum > 0)
+                vals_sampled[idx_hard_constraint] = 0
+                vals[idx_hard_constraint] = 1
+
+                # # FIXME slow + naive method
+                # already_paired = []
+                #
+                # # for position i, need to consider both row i and col i
+                # # similarly, for position j, need to consider both col j and row j
+                # # note that positions within the 'band' can also share the same index (e.g. one's row idx can be another's col idx)
+                # # so if one position is sampled to be 1, the other one cannot
+                # # collect these idxes while going through the positions
+                # new_sampled_idxes = set()
+                # for idx_in_band, (i, j, v) in enumerate(zip(range(0, L - n), range(n, L), vals_sampled)):
+                #     new_sampled_idxes.add(i)
+                #     new_sampled_idxes.add(j)
+                #     # lower triangular are all -1's don't sum over them!
+                #     i_row_sum = np.sum(_y_old[i, i + 1:])
+                #     j_col_sum = np.sum(_y_old[:j, j])
+                #     i_col_sum = np.sum(_y_old[:i, i])
+                #     j_row_sum = np.sum(_y_old[j, j + 1:])
+                #     assert 0 <= i_row_sum <= 1
+                #     assert 0 <= j_col_sum <= 1
+                #     assert 0 <= i_col_sum <= 1
+                #     assert 0 <= j_row_sum <= 1
+                #     total_sum = i_row_sum + j_col_sum + i_col_sum + j_row_sum
+                #     if total_sum > 0 or i in new_sampled_idxes or j in new_sampled_idxes:  # i and j cannot be paired, if at least one is paired with another position
+                #         already_paired.append(idx_in_band)
+                #
+                # # already_paired = np.asarray(already_paired)
+                # # setting those positions who has a already-paired base to 0
+                # # vals_sampled[np.where(already_paired)] = 0
+                # if len(already_paired) > 0:
+                #     vals_sampled[already_paired] = 0
+                #     # for those positions, set probability for y=1 to 0
+                #     vals[already_paired] = 0
 
                 # log probability
                 _vals = np.clip(vals, p_clip, 1 - p_clip)
