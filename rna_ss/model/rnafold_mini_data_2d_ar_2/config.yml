@@ -1,4 +1,4 @@
-batch_size: 50
+batch_size: 200
 learning_rate: 0.0001
 es_patience: 20
 num_batch_for_validation: 10

@@ -93,9 +93,13 @@ def build_model():
     target_ar = Input(shape=(None, None, 1), name='target_prev')
 
     conv_prods = []
-    num_filters = [256, 256, 256, 256, 256]
-    kernel_sizes = [7, 5, 5, 5, 5]
-    dilation_sizes = [1, 2, 2, 4, 4]
+    # num_filters = [256, 256, 256, 256, 256]
+    # kernel_sizes = [7, 5, 5, 5, 5]
+    # dilation_sizes = [1, 2, 2, 4, 4]
+
+    num_filters = [256, 256]
+    kernel_sizes = [7, 7]
+    dilation_sizes = [1, 2]
 
     conv_or = input_org
     conv_rv = input_org
@@ -145,17 +149,28 @@ def build_model():
     # add target label from previous time stamp
     # hid = Concatenate(axis=-1)([conv_prod_concat, target_ar])
 
-    hid = Conv2D(50, (3, 3), padding='same', activation='relu')(conv_prod_concat)
-    hid = Conv2D(50, (6, 6), padding='same', activation='relu')(hid)
-    hid = Conv2D(50, (6, 6), dilation_rate=2,
-                 padding='same', activation='relu')(hid)
-    hid = Conv2D(50, (9, 9), dilation_rate=2,
-                 padding='same', activation='relu')(hid)
-    hid = Conv2D(50, (17, 17), dilation_rate=4,
-                 padding='same', activation='relu')(hid)
-    hid = Conv2D(50, (17, 17), dilation_rate=4,
+    hid = Conv2D(50, (8, 8), padding='same', activation=None)(conv_prod_concat)
+    hid = BatchNormalization()(hid)
+    hid = Activation('relu')(hid)
+    hid = Conv2D(50, (16, 16), dilation_rate=2,
+                 padding='same', activation=None)(hid)
+    hid = BatchNormalization()(hid)
+    hid = Activation('relu')(hid)
+    hid = Conv2D(50, (32, 32), dilation_rate=4,
                  padding='same', activation='relu',
                  name='final_hidden')(hid)
+
+    # hid = Conv2D(50, (3, 3), padding='same', activation='relu')(conv_prod_concat)
+    # hid = Conv2D(50, (6, 6), padding='same', activation='relu')(hid)
+    # hid = Conv2D(50, (6, 6), dilation_rate=2,
+    #              padding='same', activation='relu')(hid)
+    # hid = Conv2D(50, (9, 9), dilation_rate=2,
+    #              padding='same', activation='relu')(hid)
+    # hid = Conv2D(50, (17, 17), dilation_rate=4,
+    #              padding='same', activation='relu')(hid)
+    # hid = Conv2D(50, (17, 17), dilation_rate=4,
+    #              padding='same', activation='relu',
+    #              name='final_hidden')(hid)
 
     # auto regressive output label
     # triangular conv for ar label
