@@ -222,7 +222,7 @@ def build_model():
     # prepare data for resnet
     hid = Conv2D(64, (1, 1))(conv_prod_concat)
 
-    for num_filter, kernel_size, dilation_size in zip(num_filters_1d, kernel_sizes_1d, dilation_sizes_1d):
+    for num_filter, kernel_size, dilation_size in zip(num_filters_2d, kernel_sizes_2d, dilation_sizes_2d):
         hid = residual_unit_2d(num_filter, kernel_size, dilation_size)(hid)
     # give the last layer a name
     hid._name = 'final_hidden'
