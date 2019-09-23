@@ -29,8 +29,9 @@
 \usepackage{bm}
 \usepackage{graphicx}
 \usepackage{verbatim}
+\usepackage{wrapfig}
 
-\title{RNA Secondary Structure Prediction using Deep Neural Network}
+\title{End-to-end RNA Secondary Structure Prediction using Deep Neural Network}
 
 % The \author macro works with any number of authors. There are two commands
 % used to separate the names and addresses of multiple authors: \And and \AND.
@@ -72,25 +73,63 @@
 
 \maketitle
 
-\begin{abstract}
-  TODO
-\end{abstract}
+%\begin{abstract}
+%  TODO
+%\end{abstract}
 
 
 \section{Introduction}
 
-\begin{itemize}
+Once believed to be an intermediate molecule that serves as a messenger between DNA and protein,
+RNA is now known to be involved in many aspects in gene regulation and expression.
+Unlike DNA which forms stable double helix (between two molecules), RNA is highly versatile
+and? a single RNA moldecule can fold onto itself by
+forming base pairs via hydrogen bonds, including Watson-Crick pairs A-U,
+G-C and non-canonical pairs such as G-U.
+These base pairs act as building blocks, from which local structure forms? global?
 
-    \item State-of-the-art methods based on dynamic programming.
-Basic building blocks are known local structure, with their associated free energy measured experimentally.
-Fixed energy parameters and hand-crafted rules.
+State-of-the-art RNA structure prediction algorithms,
+such as ViennaRNA\cite{lorenz2011viennarna} and Mfold\cite{zuker2003mfold},
+are based on the fundamental property of base-pairing.
+Each type of base-pairing, as well as each type of local structure,
+has its own associated free energy that is measured experimentally.
+Total free energy is assumed to be the sum of all local free energy,
+and can be minimized efficiently using dynamic programming.
+Although people have worked out a large set of local structure types and
+their associated formulation for free energy calculation,
+there is no guarantee that it's either accurate or complete.
+There has been effort to fine tune the free energy parameters by
+training on experimentally solved structures\cite{andronescu2007efficient},
+but it's still limited by the known set of local structure types.
 
-    \item Emerging new dataset calls for flexible, extensible,
-    end-to-end model that can be trained on new types of dataset (noisy, missing value).
+Moreover, over the last decade,
+combination of RNA structure probing and high throughput sequencing has enabled
+the measurement of genome-wide RNA structural at single nucleotide resolution in multiple organisms and cell types,
+which have only been combined? with dynamic programming using heuristics (ref?).
+Such data also exhibit a high level of noise and sometimes with missing data (ref, sequencing, DMS),
+which also calls for a new framework that can be trained end-to-end on different types of data.
 
-    \item TODO review other papers using NN and discuss what's lacking.
+TODO if we mention the above we'll need to talk about how to train on those data.
 
-\end{itemize}
+sequence alone
+
+one sequence, many structures
+
+\section{Related Work}
+
+
+%\begin{itemize}
+%
+%    \item State-of-the-art methods based on dynamic programming.
+%Basic building blocks are known local structure, with their associated free energy measured experimentally.
+%Fixed energy parameters and hand-crafted rules.
+%
+%    \item Emerging new dataset calls for flexible, extensible,
+%    end-to-end model that can be trained on new types of dataset (noisy, missing value).
+%
+%    \item TODO review other papers using NN and discuss what's lacking.
+%
+%\end{itemize}
 
 %notation: we use ??? to represent a binary upper triangular matrix of size LxL.
 
@@ -98,23 +137,28 @@ Fixed energy parameters and hand-crafted rules.
 
 \subsection{Problem Formulation}
 
-RNA secondary structure can be represented by a binary upper triangular matrix (excluding the diagonal).
+For a sequence of length $L$, it is possible? to take on a distribution of strutures?.
+A specific RNA secondary structure can be represented by an upper triangular matrix (excluding the diagonal)
+of size $L \times L$ with binary values, where a value of $0$ at $(i, j)$ represents
+base pairing between sequence position $i$ and $j$, and $1$ represents no base paring.
 
 As an example, a short RNA sequence GUUGUGAAAU of length $10$ (ID \verb|CRW_00083| TODO ref to database) takes a structure that
 consists of a stem and a loop, as seen in Fig \ref{fig:rna_ss_binary_mat}(a).
-This structure can be represented by the upper diagonal $10 \times 10$ matrix with all $0$'s,
-except for positions $y_{1, 10}, y_{2, 9}$ and $y_{3, 8}$, all having value $1$.
+This structure can be represented by the upper triangular $10 \times 10$ matrix with all $0$'s,
+except for positions $y_{1, 10}, y_{2, 9}$ and $y_{3, 8}$,all being $1$.
 This contiguous stretch of $1$'s corresponds to the stem formed by the three base pairs: G-U, U-A and U-A.
 (TODO define x and y first)
 (TODO cite FORNA)
 
-\begin{figure}[h!]
-    \centering
-    \includegraphics[width=0.5\textwidth]{plot/rna_ss_binary_mat.png}
-    \caption{TODO}
-    \label{fig:rna_ss_binary_mat}
-    \centering
-\end{figure}
+\begin{wrapfigure}{R}
+%    \begin{figure}[h]
+        \centering
+        \includegraphics[width=0.5\textwidth]{plot/rna_ss_binary_mat.png}
+        \caption{TODO}
+        \label{fig:rna_ss_binary_mat}
+        \centering
+%    \end{figure}
+\end{wrapfigure}
 
 We formulate the predictive task as a conditional generative process.
 Specifically, given an input sequence with arbitrary length $L$: $\bm{x} = x_1, x_2, \dots x_{L}$,
@@ -122,6 +166,7 @@ we want to predict a distribution of structures conditioned on the sequence $P(\
 
 %(TODO use the above notation).
 
+(move the following paragraph to the model section)
 We factorize the conditional distribution as follows:
 
 $$
@@ -156,8 +201,19 @@ where the last entry (in red TODO color plot) is generated conditioned on the in
 We propose an architecture that encourages learning
 basic rules of base pairing and local structures, to construct the global structure,
 without having hard-coded parameters,
-such that the entire model can be learned end-to-end from sequence to structure.
+such that the entire model can be trained end-to-end using only sequences and structures.
 The architecture consists of the following components:
+
+\begin{wrapfigure}{R}
+%    \begin{figure}[h]
+        \centering
+        \includegraphics[width=0.6\textwidth]{plot/nn_arch_1.pdf}
+        \caption{TODO}
+        \label{fig:nn_arch_1}
+        \centering
+%    \end{figure}
+\end{wrapfigure}
+
 
 %Incoporate biological knowledge.
 
@@ -193,6 +249,16 @@ Note that multiple outputs can be sampled in parallel at test time.
 %we construct 2D feature maps, each corresponds to a specific receptive window on 1D sequence.
 %
 %Entry (i, j) in each feature map is the output of
+
+\begin{wrapfigure}{R}
+%    \begin{figure}[h]
+        \centering
+        \includegraphics[width=0.4\textwidth]{plot/nn_arch_2.pdf}
+        \caption{TODO}
+        \label{fig:nn_arch_2}
+        \centering
+%    \end{figure}
+\end{wrapfigure}
 
 
 TODO plot for NN architecture
@@ -257,6 +323,8 @@ on the right we show the corresponding secondary structure rendered as a graph (
 \subsection{Run time comparison}
 
 \subsection{Performance comparison}
+
+cross validation & test set (real sequences)
 
 \subsection{Interesting cases}
 
