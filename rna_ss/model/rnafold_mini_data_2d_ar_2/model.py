@@ -139,24 +139,16 @@ def residual_unit_2d(l, w, ar, n_repeat_in_residual_unit=1, residual=True, gated
 
 
 def build_model():
-    L12_P = 0.000005
+    L12_P = 0.000001
 
     input_org = Input(shape=(None, 4), name='input_org')
     # target from the previous 'time stamp'
     target_ar = Input(shape=(None, None, 1), name='target_prev')
 
     conv_prods = []
-    # num_filters = [256, 256, 256, 256, 256]
-    # kernel_sizes = [7, 5, 5, 5, 5]
-    # dilation_sizes = [1, 2, 2, 4, 4]
-
-    # num_filters = [256, 256]
-    # kernel_sizes = [7, 7]
-    # dilation_sizes = [1, 2]
-
-    num_filters_1d = [256, 256, 256, 256, 256]
-    kernel_sizes_1d = [7, 7, 7, 7, 7]
-    dilation_sizes_1d = [1, 2, 2, 4, 4]
+    num_filters = [256, 256, 256, 256, 256]
+    kernel_sizes = [7, 5, 5, 5, 5]
+    dilation_sizes = [1, 2, 2, 4, 4]
 
     conv_or = input_org
     conv_rv = input_org
@@ -175,27 +167,18 @@ def build_model():
     x2_2 = Lambda(repeat_2)(input_org)
     input_nt_stack = concatenate([x1_2, x2_2], axis=-1)
 
-    # prepare data for resnet
-    conv_or = Conv1D(256, 1)(conv_or)
-    conv_rv = Conv1D(256, 1)(conv_rv)
+    for num_filter, kernel_size, dilation_size in zip(num_filters, kernel_sizes, dilation_sizes):
+        conv_or = BatchNormalization()(conv_or)
+        conv_or = Activation('relu')(conv_or)
+        conv_or = Conv1D(filters=num_filter, kernel_size=kernel_size, dilation_rate=dilation_size,
+                         kernel_regularizer=regularizers.l1_l2(l1=L12_P, l2=L12_P),
+                         padding='same', activation=None)(conv_or)
 
-    for num_filter, kernel_size, dilation_size in zip(num_filters_1d, kernel_sizes_1d, dilation_sizes_1d):
-        # conv_or = BatchNormalization()(conv_or)
-        # conv_or = Activation('relu')(conv_or)
-        # conv_or = Conv1D(filters=num_filter, kernel_size=kernel_size, dilation_rate=dilation_size,
-        #                  kernel_regularizer=regularizers.l1_l2(l1=L12_P, l2=L12_P),
-        #                  padding='same', activation=None)(conv_or)
-        #
-        # conv_rv = BatchNormalization()(conv_rv)
-        # conv_rv = Activation('relu')(conv_rv)
-        # conv_rv = Conv1D(filters=num_filter, kernel_size=kernel_size, dilation_rate=dilation_size,
-        #                  kernel_regularizer=regularizers.l1_l2(l1=L12_P, l2=L12_P),
-        #                  padding='same', activation=None)(conv_rv)
-
-        # TODO regularizer
-        # TODO how to make this layer with exahchagable-input?
-        conv_or = residual_unit_1d(num_filter, kernel_size, dilation_size)(conv_or)
-        conv_rv = residual_unit_1d(num_filter, kernel_size, dilation_size)(conv_rv)
+        conv_rv = BatchNormalization()(conv_rv)
+        conv_rv = Activation('relu')(conv_rv)
+        conv_rv = Conv1D(filters=num_filter, kernel_size=kernel_size, dilation_rate=dilation_size,
+                         kernel_regularizer=regularizers.l1_l2(l1=L12_P, l2=L12_P),
+                         padding='same', activation=None)(conv_rv)
 
         # dot product
         conv_prod = Dot(axes=-1)([conv_or, conv_rv])  # 2D map
@@ -215,40 +198,17 @@ def build_model():
     # add target label from previous time stamp
     # hid = Concatenate(axis=-1)([conv_prod_concat, target_ar])
 
-    num_filters_2d = [64, 64, 64, 64, 64, 64]
-    kernel_sizes_2d = [(5, 5), (7, 7), (7, 7), (9, 9), (9, 9), (17, 17)]
-    dilation_sizes_2d = [1, 2, 2, 4, 4, 8]
-
-    # prepare data for resnet
-    hid = Conv2D(64, (1, 1))(conv_prod_concat)
-
-    for num_filter, kernel_size, dilation_size in zip(num_filters_2d, kernel_sizes_2d, dilation_sizes_2d):
-        hid = residual_unit_2d(num_filter, kernel_size, dilation_size)(hid)
-    # give the last layer a name
-    hid._name = 'final_hidden'
-
-    # hid = Conv2D(50, (8, 8), padding='same', activation=None)(conv_prod_concat)
-    # hid = BatchNormalization()(hid)
-    # hid = Activation('relu')(hid)
-    # hid = Conv2D(50, (16, 16), dilation_rate=2,
-    #              padding='same', activation=None)(hid)
-    # hid = BatchNormalization()(hid)
-    # hid = Activation('relu')(hid)
-    # hid = Conv2D(50, (32, 32), dilation_rate=4,
-    #              padding='same', activation='relu',
-    #              name='final_hidden')(hid)
-
-    # hid = Conv2D(50, (3, 3), padding='same', activation='relu')(conv_prod_concat)
-    # hid = Conv2D(50, (6, 6), padding='same', activation='relu')(hid)
-    # hid = Conv2D(50, (6, 6), dilation_rate=2,
-    #              padding='same', activation='relu')(hid)
-    # hid = Conv2D(50, (9, 9), dilation_rate=2,
-    #              padding='same', activation='relu')(hid)
-    # hid = Conv2D(50, (17, 17), dilation_rate=4,
-    #              padding='same', activation='relu')(hid)
-    # hid = Conv2D(50, (17, 17), dilation_rate=4,
-    #              padding='same', activation='relu',
-    #              name='final_hidden')(hid)
+    hid = Conv2D(50, (3, 3), padding='same', activation='relu')(conv_prod_concat)
+    hid = Conv2D(50, (6, 6), padding='same', activation='relu')(hid)
+    hid = Conv2D(50, (6, 6), dilation_rate=2,
+                 padding='same', activation='relu')(hid)
+    hid = Conv2D(50, (9, 9), dilation_rate=2,
+                 padding='same', activation='relu')(hid)
+    hid = Conv2D(50, (17, 17), dilation_rate=4,
+                 padding='same', activation='relu')(hid)
+    hid = Conv2D(50, (17, 17), dilation_rate=4,
+                 padding='same', activation='relu',
+                 name='final_hidden')(hid)
 
     # auto regressive output label
     # triangular conv for ar label
@@ -288,6 +248,7 @@ def build_model():
     model = Model(input=[input_org, target_ar], output=[output1, output2])
 
     return model
+
 
 
 # def build_model():
