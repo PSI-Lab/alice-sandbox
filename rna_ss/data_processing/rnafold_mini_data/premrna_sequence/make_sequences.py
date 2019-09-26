@@ -20,6 +20,7 @@ def main(min_len, max_len, max_seq, out_file_prefix, n_parts):
             _s = seq[idx_start:idx_start+offset]
             _s = _s.upper()
             if 'N' in _s:
+                idx_start += offset
                 continue
             _s = _s.replace('T', 'U')
             seqs.append(_s)
