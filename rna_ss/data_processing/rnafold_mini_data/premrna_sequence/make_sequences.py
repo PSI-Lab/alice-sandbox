@@ -4,7 +4,7 @@ import random
 import argparse
 
 
-def main(min_len, max_len, out_file_prefix, n_parts):
+def main(min_len, max_len, max_seq, out_file_prefix, n_parts):
     random.seed(5555)
 
     genome = gk.Genome('gencode.v29')
@@ -23,6 +23,8 @@ def main(min_len, max_len, out_file_prefix, n_parts):
                 continue
             _s = _s.replace('T', 'U')
             seqs.append(_s)
+            if len(seqs) == max_seq:
+                break
             idx_start += offset
 
     print("Generated {} sequences".format(len(seqs)))
@@ -46,8 +48,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--minlen', type=int, default=10, help='min sequence length')
     parser.add_argument('--maxlen', type=int, default=100, help='max sequence length')
+    parser.add_argument('--maxseq', type=int, default=100000, help='max total number of sequences')
     parser.add_argument('--parts', type=int, default=100, help='number of output files')
     parser.add_argument('--out', type=str, help='output file_prefix')
     args = parser.parse_args()
-    main(args.minlen, args.maxlen, args.out, args.parts)
+    main(args.minlen, args.maxlen, args.maxseq, args.out, args.parts)
 
