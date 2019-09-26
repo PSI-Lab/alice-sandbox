@@ -24,9 +24,6 @@ def main(min_len, max_len, out_file_prefix, n_parts):
             _s = _s.replace('T', 'U')
             seqs.append(_s)
             idx_start += offset
-        # debug FIXME remove
-        print("debug")
-        break
 
     print("Generated {} sequences".format(len(seqs)))
     # TODO remove duplicates
@@ -42,6 +39,7 @@ def main(min_len, max_len, out_file_prefix, n_parts):
         df = pd.DataFrame({'sequence': seqs[part_start:part_end]})
         out_file_name = "{}_{}.csv".format(out_file_prefix, idx_part+1)
         df.to_csv(out_file_name, index=False)
+        print("Written to: {}".format(out_file_name))
 
 
 if __name__ == "__main__":
