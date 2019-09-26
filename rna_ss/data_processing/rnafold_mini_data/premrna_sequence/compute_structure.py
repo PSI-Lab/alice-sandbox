@@ -33,7 +33,7 @@ def main(infile, outfile):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--inf', type=int, default=10, help='input file')
+    parser.add_argument('--inf', type=str, default=10, help='input file')
     parser.add_argument('--out', type=str, help='output file')
     args = parser.parse_args()
     main(args.inf, args.out)
