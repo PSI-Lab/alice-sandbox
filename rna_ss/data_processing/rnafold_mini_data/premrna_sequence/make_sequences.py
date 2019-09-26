@@ -17,7 +17,12 @@ def main(min_len, max_len, out_file_prefix, n_parts):
         idx_start = 0
         while len(seq) - idx_start >= min_len:
             offset = random.randint(min_len, max_len)
-            seqs.append(seq[idx_start:idx_start+offset])
+            _s = seq[idx_start:idx_start+offset]
+            _s = _s.upper()
+            if 'N' in _s:
+                continue
+            _s = _s.replace('T', 'U')
+            seqs.append(_s)
             idx_start += offset
         # debug FIXME remove
         print("debug")
