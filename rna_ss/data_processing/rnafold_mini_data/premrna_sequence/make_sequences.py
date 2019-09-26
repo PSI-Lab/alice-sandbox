@@ -23,7 +23,10 @@ def main(min_len, max_len, max_seq, out_file_prefix, n_parts):
                 continue
             _s = _s.replace('T', 'U')
             seqs.append(_s)
-            if len(seqs) == max_seq:
+            _current_len = len(seqs)
+            if _current_len % 100 == 0:
+                print("generated {} sequences".format(_current_len))
+            if _current_len == max_seq:
                 break
             idx_start += offset
 
