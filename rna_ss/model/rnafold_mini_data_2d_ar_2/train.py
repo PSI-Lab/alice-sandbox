@@ -83,7 +83,7 @@ def main(config, data_file, output_dir):
     tictoc = strftime("%Y_%m_%d_%H_%M_%S", gmtime())
     log_dir = 'log_' + tictoc
     os.mkdir(log_dir)
-    tensorboard = TensorBoard(log_dir=log_dir)
+    # tensorboard = TensorBoard(log_dir=log_dir)
 
     run_dir = 'run_' + tictoc
     os.mkdir(run_dir)
@@ -97,7 +97,7 @@ def main(config, data_file, output_dir):
         #                      batch_size=config['num_batch_for_validation']),
         # ValidationSetMetrics(validation_dataset, os.path.join(run_dir, 'metric_validation.csv'),
         #                      batch_size=config['num_batch_for_validation']),
-        tensorboard,
+        # tensorboard,
         ReduceLROnPlateau(patience=5, cooldown=2, verbose=1),
         early_stopping_monitor,
         ModelCheckpoint(os.path.join(run_dir, 'checkpoint.{epoch:03d}.hdf5'),
@@ -111,6 +111,7 @@ def main(config, data_file, output_dir):
         config['git_hash'] = git_hash
         yaml.dump(config, outfile)
 
+    print("run_dir: {}".format(run_dir))
     model.fit_generator(generator=training_dataset,
                         validation_data=validation_dataset,
                         validation_steps=config['num_batch_for_validation'],
@@ -118,8 +119,9 @@ def main(config, data_file, output_dir):
                         shuffle=True,
                         epochs=config['num_epoch'],
                         use_multiprocessing=True,
-                        workers=2)
+                        workers=8)
 
+    print("run_dir: {}".format(run_dir))
     # copy over the best model
     es_epoch = early_stopping_monitor.stopped_epoch
     best_epoch = es_epoch - es_patience + 1
