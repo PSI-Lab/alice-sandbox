@@ -24,7 +24,7 @@ def main(min_len, max_len, max_seq, out_file_prefix, n_parts):
                 continue
             _s = _s.replace('T', 'U')
             seqs.append(_s)
-            if len(seqs) == max_seq:
+            if len(seqs) >= max_seq:
                 break
             idx_start += offset
 
