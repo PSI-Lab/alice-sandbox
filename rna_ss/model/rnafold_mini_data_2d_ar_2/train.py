@@ -111,6 +111,14 @@ def main(config, data_file, output_dir):
         config['git_hash'] = git_hash
         yaml.dump(config, outfile)
 
+    if not os.path.isdir(output_dir):
+        os.mkdir(output_dir)
+    # also dump the config with run_dir in output folder
+    with open(os.path.join(output_dir, 'config.yml'), 'w') as outfile:
+        config['run_dir'] = run_dir
+        config['git_hash'] = git_hash
+        yaml.dump(config, outfile)
+
     print("run_dir: {}".format(run_dir))
     model.fit_generator(generator=training_dataset,
                         validation_data=validation_dataset,
@@ -129,16 +137,14 @@ def main(config, data_file, output_dir):
     model_file_src = os.path.join(run_dir, 'checkpoint.{epoch:03d}.hdf5'.format(epoch=best_epoch))
 
     model_file_des = os.path.join(output_dir, 'model.hdf5')
-    if not os.path.isdir(output_dir):
-        os.mkdir(output_dir)
 
     shutil.copy(model_file_src, model_file_des)
     print("Model from epoch %d is saved at: %s" % (best_epoch, model_file_des))
-    # also dump the config in that folder
-    with open(os.path.join(output_dir, 'config.yml'), 'w') as outfile:
-        config['run_dir'] = run_dir
-        config['git_hash'] = git_hash
-        yaml.dump(config, outfile)
+    # # also dump the config in that folder
+    # with open(os.path.join(output_dir, 'config.yml'), 'w') as outfile:
+    #     config['run_dir'] = run_dir
+    #     config['git_hash'] = git_hash
+    #     yaml.dump(config, outfile)
 
     # # make prediction on validation set
     # # restore to the ES checkpoint
