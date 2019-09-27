@@ -16,7 +16,7 @@ python make_cmd.py 200 cmd/cmd.txt
 ```
 
 ``bash
-parallel --jobs 18 < cmd/cmd.txt
+parallel --jobs 16 < cmd/cmd.txt
 ```
 
 wait till the above to finish....
