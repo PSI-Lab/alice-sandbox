@@ -1,5 +1,6 @@
 import numpy as np
 import keras
+import itertools
 import gzip
 import datacorral as dc
 from genome_kit import Genome, GenomeTrack, Interval
@@ -25,7 +26,35 @@ class DataGeneratorVarLen(keras.utils.Sequence):
     def __init__(self, df, batch_size):
         self.batch_size = batch_size
         self.df = self._process_df(df)  # process sparse array
-        self.indexes = np.arange(len(self.df))
+        # self.indexes = np.arange(len(self.df))
+        self.index_groups = self._split_indexes(self.df)
+        self.indexes = self._combine_indexes(self.index_groups)
+
+    def _split_indexes(self, df, n_groups=20):
+        # split df indexes into a couple of groups
+        # such that indexes within the same group has sequences of similar lengths
+        # first figure out the min and max length for each group
+        min_len = df['len'].min()
+        max_len = df['len'].max()
+        assert max_len - min_len >= n_groups
+        split_len = np.linspace(min_len, max_len, n_groups+1, dtype=np.int)
+        # add 1 to last element (since we'll be doing [left, right))
+        split_len[-1] += 1
+        len_groups = [(split_len[i], split_len[i + 1]) for i in range(len(split_len) - 1)]
+        print("Length groups: {}".format(len_groups))
+        # collect indexes for each group
+        index_groups = []
+        for l1, l2 in len_groups:
+            _idxes = df.index[(df['len'] >= l1) & (df['len'] < l2)].tolist()
+            print("Length range [{}, {}), number of entries: {}".format(l1, l2, len(_idxes)))
+            index_groups.append(_idxes)
+        return index_groups
+
+    def _combine_indexes(self, index_groups):
+        # just concatenate
+        #  TODO we can also shuffle groups, although some batch will have non-ideal
+        # length combination, since group size is not garanteed to be integer multiple of batch_size
+        return list(itertools.chain.from_iterable(index_groups))
 
     def _make_pair_arr(self, seq, one_idx):
 
@@ -84,7 +113,13 @@ class DataGeneratorVarLen(keras.utils.Sequence):
 
     def on_epoch_end(self):
         """Updates indexes after each epoch"""
-        np.random.shuffle(self.indexes)
+        # np.random.shuffle(self.indexes)
+        # shuffle index within each group, and recombine
+        index_groups = []
+        for index_group in self.index_groups:
+            index_groups.append(np.random.shuffle(index_group))
+        self.index_groups = index_groups
+        self.indexes = self._combine_indexes(self.index_groups)
 
     def __data_generation(self, indexes, max_len):
         """Generates data containing batch_size samples"""
