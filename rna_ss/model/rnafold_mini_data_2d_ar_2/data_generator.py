@@ -23,12 +23,16 @@ class DataGeneratorVarLen(keras.utils.Sequence):
         'U': 'A',
     }
 
-    def __init__(self, df, batch_size):
+    def __init__(self, df, batch_size, length_grouping):
         self.batch_size = batch_size
         self.df = self._process_df(df)  # process sparse array
         # self.indexes = np.arange(len(self.df))
-        self.index_groups = self._split_indexes(self.df)
-        self.indexes = self._combine_indexes(self.index_groups)
+        self.length_grouping = length_grouping
+        if self.length_grouping:
+            self.index_groups = self._split_indexes(self.df)
+            self.indexes = self._combine_indexes(self.index_groups)
+        else:
+            self.indexes = np.arange(len(self.df))
 
     def _split_indexes(self, df, n_groups=20):
         # split df indexes into a couple of groups
@@ -114,12 +118,19 @@ class DataGeneratorVarLen(keras.utils.Sequence):
     def on_epoch_end(self):
         """Updates indexes after each epoch"""
         # np.random.shuffle(self.indexes)
-        # shuffle index within each group, and recombine
-        index_groups = []
-        for index_group in self.index_groups:
-            index_groups.append(np.random.shuffle(index_group))
-        self.index_groups = index_groups
-        self.indexes = self._combine_indexes(self.index_groups)
+        if self.length_grouping:
+            # shuffle index within each group, and recombine
+            # also shuffle group order
+            _index_groups = list(self.index_groups)  # make a copy
+            np.random.shuffle(_index_groups)
+            index_groups = []
+            for index_group in _index_groups:
+                np.random.shuffle(index_group)
+                index_groups.append(index_group)
+            self.index_groups = index_groups
+            self.indexes = self._combine_indexes(self.index_groups)
+        else:
+            np.random.shuffle(self.indexes)
 
     def __data_generation(self, indexes, max_len):
         """Generates data containing batch_size samples"""
