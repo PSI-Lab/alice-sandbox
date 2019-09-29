@@ -140,11 +140,14 @@ base pairing between sequence position $i$ and $j$, and $0$ represents no base p
 As an example, a short RNA sequence GUUGUGAAAU of length $10$ (Entry \verb|CRW_00083| from \cite{andronescu2008rna}) takes a structure that
 consists of a stem and a loop, as seen in Fig \ref{fig:rna_ss_binary_mat}(a), represented by an undirected graph.
 This structure can also be represented by the upper triangular $10 \times 10$ matrix with all $0$'s,
-except for positions $y_{1, 10}, y_{2, 9}$ and $y_{3, 8}$,all being $1$, as shown in Fig \ref{fig:rna_ss_binary_mat}(b).
+except for positions
+%$y_{1, 10}, y_{2, 9}$ and $y_{3, 8}$,
+$(1, 10), (2, 9)$ and $(3, 8)$,
+all being $1$, as shown in Fig \ref{fig:rna_ss_binary_mat}(b).
 This contiguous stretch of $1$'s along the diagonal corresponds to the stem formed by the three base pairs: G-U, U-A and U-A.
 In Fig \ref{fig:rna_ss_binary_mat}(c) we show the dot-bracket notation of this structure, where the three pairs
 of left-right brackets represent the stem.
-(TODO define x and y first)
+%(TODO define x and y first)
 
 
 \begin{wrapfigure}{R}
@@ -263,12 +266,11 @@ TODO talk about what's lacking in all above approaches.
 
 In this work, we propose a new framework (deep nn) that can be trained end-to-end on dataset with sequences and structures.
 The model is capable of generating a distribution of structures, conditioned on the input sequence.
-(maybe mention this after literature review?)
 
 We formulate the predictive task as a conditional generative process.
 Specifically, given an input sequence with arbitrary length $L$: $\bm{x} = x_1, x_2, \dots x_{L}$,
 we want to predict a distribution of structures conditioned on the sequence $P(\bm{Y} \mid \bm{x})$,
-where the structure $\bm{Y}$ is represented by an upper triangular matrix of size $L \times L$, as defined in ?
+where the structure $\bm{Y}$ is represented by an upper triangular matrix of size $L \times L$, as defined in Fig \ref{fig:rna_ss_binary_mat}(c).
 
 %(TODO use the above notation).
 
@@ -283,6 +285,8 @@ P(\{y_{i, i+2}\}_{i=1, 2, \dots L-2} \mid \bm{x}, \{y_{i, i+1}\}_{i=1, 2, \dots 
 P(y_{i, j} \mid \bm{x}, \{y_{todo}\})
 $$
 
+mimcs the autoregressive process, where the time axis in our case is the distance to the off-diagonal line.
+
 The generative process implied by such formulation is illustrated in Fig \ref{fig:autoregressive_direction}.
 
 TODO re-generate plot using draw.io, or use the model plot?
@@ -296,13 +300,13 @@ where the last entry (in red TODO color plot) is generated conditioned on the in
 
 Above paragraph is quite long, cut it?
 
-\begin{figure}[h!]
+\begin{wrapfigure}{R}
     \centering
-    \includegraphics[width=0.5\textwidth]{plot/autoregressive_direction.png}
+    \includegraphics[width=0.5\textwidth]{plot/autoregressive_direction.pdf}
     \caption{TODO}
     \label{fig:autoregressive_direction}
     \centering
-\end{figure}
+\end{wrapfigure}
 
 
 %intuition, sample local connectivity then global?
