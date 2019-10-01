@@ -334,6 +334,7 @@ class PredictorSPlitModel(object):
         _model = load_model(model_file, custom_objects={'kb': kb, 'tf': tf,
                                                         'custom_loss': custom_loss,
                                                         'TriangularConvolution2D': TriangularConvolution2D})
+        self._model = _model
         self.model_repr, self.model_ar = self.split_model(_model)
 
     def split_model(self, model):
@@ -499,6 +500,89 @@ class PredictorSPlitModel(object):
         logps = [np.sum(x) for x in logps]
 
         return y, logps, fe[:, 0]
+
+    def gradient_ascent(self, seq, y_prev, idx1, idx2):
+        # current output
+        x_single = DataEncoder.encode_seqs([seq])
+        if len(y_prev.shape) == 2:
+            y_single = y_prev[np.newaxis, :, :, np.newaxis]
+        elif len(y_prev.shape) == 4:
+            y_single = y_prev.copy()
+        else:
+            raise ValueError
+
+        # z_repr, _ = self.model_repr.predict([x_single, y_single])
+        # y = self.model_ar.predict([z_repr, y_single])
+        # # compute gradient
+        # # layer_output = self.model_ar.layers[-1].output
+        # layer_output = self.model_ar.layers[-1].get_output_at(-1)
+        # loss = kb.mean(layer_output[:, idx1, idx2, :])
+        # input_node = self.model_ar.layers[0].input[0]  # seq input, not y_prev
+
+        # for this part, we assume the model has named layers
+        y, fe = self._model.predict([x_single, y_single])
+        # input_node = next(l for l in self._model.layers if l.name == 'input_org').input
+        # layer_output = next(l for l in self._model.layers if l.name == 'ar_label').get_output_at(-1)
+        input_node = self._model.input[0]
+        input_node2 = self._model.input[1]
+        layer_output = self._model.output[0]
+        print input_node
+        print layer_output
+        loss = kb.mean(layer_output[:, idx1, idx2, :])
+        # 'input_org'
+        # 'target_prev'
+        # 'ar_label'
+        # 'fe'
+
+        grads = kb.gradients(loss, input_node)[0]
+        grads /= (kb.sqrt(kb.mean(kb.square(grads))) + 1e-5)
+        # iterate = kb.function([input_node, input_node2], [loss, grads])
+        # iterate = kb.function([input_node], [loss, grads])
+        iterate = kb.function(self._model.input, [loss, grads])
+        print grads
+        print iterate
+
+        x_new = x_single.astype(np.float32)
+        # add a little bit noise
+        x_new += 1e-2
+        # normalize
+        x_new = x_new / np.sum(x_new, axis=-1)[:, :, np.newaxis]
+        # run gradient ascent
+        x_ite = []
+        for i in range(200):
+            print i
+            loss_value, grads_value = iterate([x_new, y_single])
+            # loss_value, grads_value = iterate([x_new])
+            x_new += grads_value * 0.01
+            # re-normalize
+            x_new = x_new / np.sum(x_new, axis=-1)[:, :, np.newaxis]
+            #     print x1_new
+
+            x_ite.append(x_new)
+            # # plot every 10 iteration
+            # if i % 10 == 0:
+            #     df = w_to_df(x1_new[0, :, :])
+            #     filter_logo = logomaker.Logo(df)
+            #     filter_logo.ax.set_title("Gradient ascent iteration {}".format(i))
+            #     filter_logo.fig.show()
+
+            # pred_new = self.model_ar.predict(x1_new)[0, :, 0]
+            # print pred_new[new_idx]
+        # TODO after gradient ascent, take argmax -> new sequence
+        # check prediction
+        nt_dict = ['A', 'C', 'G', 'U']
+        seq_new = []
+        for i in range(x_new.shape[1]):
+            seq_new.append(nt_dict[np.argmax(x_new[0, i, :])])
+        seq_new = ''.join(seq_new)
+        # print seq_new
+        # _x1 = encode_seq(seq_new)
+        # _x1 = _x1[np.newaxis, :, :]
+        # _pred = model.predict(_x1)[0, :, 0]
+        #
+        # print np.argmax(_pred), np.max(_pred)
+        # print _pred[new_idx]
+        return x_ite, seq_new
 
 
 # class Predictor(object):
