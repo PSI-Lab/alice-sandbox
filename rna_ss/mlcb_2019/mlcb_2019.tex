@@ -83,46 +83,68 @@
 
 Once believed to be an intermediate molecule that serves as a messenger between DNA and protein,
 RNA is now known to be involved in many aspects in gene regulation and expression.
-Unlike DNA which forms stable double helix (between two molecules), RNA is highly versatile
-and? a single RNA moldecule can fold onto itself by
+Unlike DNA which typically forms stable double helix between two molecules, RNA is highly flexible
+such that a single RNA moldecule can fold onto itself by
 forming base pairs via hydrogen bonds, including Watson-Crick pairs A-U,
 G-C and non-canonical pairs such as G-U.
-These base pairs act as building blocks, from which local structure forms? global?
+Base pairs form the basis for local structures like stems and loops,
+which assemble into the global secondary structure.
+%These base pairs act as building blocks, from which local structure forms? global?
 
-State-of-the-art RNA structure prediction algorithms,
+State-of-the-art RNA secondary structure prediction algorithms,
 such as ViennaRNA\cite{lorenz2011viennarna} and Mfold\cite{zuker2003mfold},
 are based on the fundamental property of base-pairing.
-Each type of base-pairing, as well as each type of local structure,
-has its own associated free energy that is measured experimentally.
+Each type of local structure comes with free energy that is measured experimentally.
 Total free energy is assumed to be the sum of all local free energy,
 and can be minimized efficiently using dynamic programming.
-Although people have worked out a large set of local structure types and
+Although researchers have worked out a large set of local structure types and
 their associated formulation for free energy calculation,
 there is no guarantee that it's either accurate or complete.
 There has been effort to fine tune the free energy parameters by
 training on experimentally solved structures\cite{andronescu2007efficient},
 but it's still limited by the known set of local structure types.
 
+Another limitation of dynamic programming based approaches is that
+it is extremely inefficient at predicting pseudoknot (TODO citation + existing work e.g. approximation).
+
+
+%Moreover, over the last decade,
+%combination of RNA structure probing and high throughput sequencing has enabled
+%the measurement of genome-wide RNA structural at single nucleotide resolution in multiple organisms and cell types,
+%which have only been combined? with dynamic programming using heuristics (ref?).
+%Such data also exhibit a high level of noise and sometimes with missing data (ref, sequencing, DMS),
+%which also calls for new approaches that can be trained end-to-end on different types of data,
+%to model ?differences in cell types and conditions.
+
 Moreover, over the last decade,
 combination of RNA structure probing and high throughput sequencing has enabled
-the measurement of genome-wide RNA structural at single nucleotide resolution in multiple organisms and cell types,
-which have only been combined? with dynamic programming using heuristics (ref?).
-Such data also exhibit a high level of noise and sometimes with missing data (ref, sequencing, DMS),
-which also calls for new approaches that can be trained end-to-end on different types of data,
-to model ?differences in cell types and conditions.
+the measurement of genome-wide RNA structural at single nucleotide resolution in multiple organisms and cell types (TODO citation).
+Due to the level of noise and missing data present in high throughput experiments,
+we will need a modelling approach that is more flexible and can be trained on different types of data.
+%Such data can be valuable in learning cell type specific RNA secondary structure model,
+%
+%Such data also exhibit a high level of noise and sometimes with missing data (ref, sequencing, DMS),
+%which also calls for new approaches that can be trained end-to-end on different types of data,
+%to model ?differences in cell types and conditions.
 
-In this work, we'll .... (overall summary)
+In this work, we propose a deep neural network that can be trained end-to-end on
+sequences and structures. When conditioned on the input RNA sequence,
+the model can generate a distribution of structures, including ones with pseudoknot.
+%We start by describing the problem formulation, followed by a brief review of
+%related work, and present the model
 
-TODO if we mention the above we'll need to talk about how to train on those data.
 
-sequence alone
-
-one sequence, many structures
+%TODO if we mention the above we'll need to talk about how to train on those data.
+%
+%sequence alone
+%
+%one sequence, many structures
 
 \subsection{Problem Formulation}
 
-For a sequence of length $L$, it is possible? to take on a distribution of strutures?.
-There are three common ways to represent a specific RNA secondary structure:
+For a RNA sequence of length $L$, we are interested in all possible secondary structures it can take on.
+%There are three common ways to represent a specific RNA secondary structure:
+For a specific structure, there are three common ways to represent it:
 
 \begin{itemize}
 
@@ -176,40 +198,39 @@ of left-right brackets represent the stem.
 
 \section{Related Work}
 
-There have been a few work using deep nn for modelling RNA secondary structure.
+There have been a few work using deep neural network for modelling RNA secondary structure.
 
 Wu\cite{wu2018convolutional} presented a convolution neural network to predict the free energy of local structure motifs.
-Convolution was run on circular matrix representation of the structure motif, to reflect the loop-like structure.
+Convolution was run on circular matrix representation of the structure motif, to reflect the loop-like nature of local structures.
 %Circular convolution was proposed as a nature fit for loop-like structures.
 The model was trained on experimentally measured free energy of short structure motifs,
 as well as random structure motifs whose energy was estimated using existing linear approximation models.
-Although it shows promising result on better modelling free energy of short structure motif from experimental data,
+Although it shows promising result on modelling free energy of short structure motif from experimental data,
 and can be used to estimate the free energy for a \textit{given} structure,
-it does not solve the problem of predicting structure from sequence end-to-end.
+it does not solve the problem of predicting structure from sequence.
 
 Other work were done to tackle the learning problem end-to-end.
 Researchers have framed the problem as a sequence to sequence learning task,
 and the proposed model either predicts the probability of being paired for each base,
-or predicts some form of the dot-bracket notation.
+or some forms of the dot-bracket notation.
 Willmott et. al\cite{willmottstate} proposed a bidirectional LSTM that predicts
 from RNA sequence the probability for 3 classes: paired, unpaired, and end-of-Sequence.
 The model was trained on experimentally solved structure of 16S rRNAs.
-(talk about the cons)
+It it unclear whether the model generalize to other types of RNAs.
 Zhang et. al\cite{zhang2019new} proposed using convolutional neural network to predict from sequence
-the dot-bracket notation, where each position is encoded as a 3-class softmax (left bracket, right bracket, dot).
+the dot-bracket notation, where each position is encoded as a 3-class softmax: left bracket, right bracket and dot.
 In order for a dot-bracket notation to yield valid structure, it has to follow a few syntactic constraints.
 For example, each left bracket needs to have a corresponding right bracket.
 As the authors have mentioned in the paper, output produces by the neural network
 is not guaranteed to be valid, thus needs to be further processed by dynamic programming
 to yield a valid structure prediction.
-
 Wang et. al\cite{wang2019dmfold} used bidirectional LSTM and modelled the dot-bracket notation as a
 7-class softmax, which also includes additional bracket notations to allow for pseudoknots.
 Similar to \cite{zhang2019new}, the prediction does not yield a valid structure, and needs to be corrected by additional logic.
 Furthermore, they used a dataset consisting of only four RNA families,
 but reported performance based on randomized training and validation set split.
 Random split is almost certain to result in sequences from the same family to be in both the training and validation set,
-thus whether such performance generalizes to an unseen RNA sequence is unclear.
+thus the generalization performance of the model remains unclear.
 %he model was trained on only ? RNA families, and CV split was random,
 %so generalization performance is unclear.
 
@@ -240,10 +261,10 @@ no additional post-processing.
 %﻿State inference of RNA secondary structures with deep recurrent neural networks  (replace above thesis)
 %\cite{willmottstate}
 
-SCFG: ﻿Learning RNA secondary structure (only) from structure probing data
-not that relevant, maybe we can skip it
-
-TODO talk about what's lacking in all above approaches.
+%SCFG: ﻿Learning RNA secondary structure (only) from structure probing data
+%not that relevant, maybe we can skip it
+%
+%TODO talk about what's lacking in all above approaches.
 
 
 %\begin{itemize}
@@ -264,8 +285,9 @@ TODO talk about what's lacking in all above approaches.
 \section{Method}
 
 
-In this work, we propose a new framework (deep nn) that can be trained end-to-end on dataset with sequences and structures.
-The model is capable of generating a distribution of structures, conditioned on the input sequence.
+In this work, we propose a deep neural network that can be trained end-to-end on dataset with sequences and structures.
+The model is capable of generating a distribution of structures, including structure with pseudoknot,
+conditioned on the input sequence.
 
 We formulate the predictive task as a conditional generative process.
 Specifically, given an input sequence with arbitrary length $L$: $\bm{x} = x_1, x_2, \dots x_{L}$,
@@ -274,51 +296,55 @@ where the structure $\bm{Y}$ is represented by an upper triangular matrix of siz
 
 %(TODO use the above notation).
 
-(move the following paragraph to the model section)
+%(move the following paragraph to the model section)
 We factorize the conditional distribution as follows:
 %In this work, we pick a specific way to factorize the conditional distribution,
 
-$$
+\begin{equation} \label{eq:conditional_distribution}
 P(\bm{Y} \mid \bm{x}) = P(\{y_{i, i+1}\}_{i=1, 2, \dots L-1} \mid \bm{x})
 P(\{y_{i, i+2}\}_{i=1, 2, \dots L-2} \mid \bm{x}, \{y_{i, i+1}\}_{i=1, 2, \dots L-1})
 \dots
-P(y_{i, j} \mid \bm{x}, \{y_{todo}\})
-$$
+P(y_{1, L} \mid \bm{x}, \{y_{i, j}\}^{i \neq 1}_{j \neq L})
+\end{equation}
 
-mimcs the autoregressive process, where the time axis in our case is the distance to the off-diagonal line.
+%which mimcs the autoregressive process, where the time axis in our case is the distance to the off-diagonal line.
 
 The generative process implied by such formulation is illustrated in Fig \ref{fig:autoregressive_direction}.
-
-TODO re-generate plot using draw.io, or use the model plot?
-
 We generate one off diagonal slice at a time, conditioned on the input sequence and the previous slices,
-starting from the one adjacent to the diagonal line, as shown in yellow on the plot.
-When generating the second slice (in green), we condition on the input sequence and the generated values in the first slice (in yellow).
-When generating the third one (in blue), we condition on the input sequence and both the yellow and green slices.
+starting from the one adjacent to the diagonal line, shown in light blue with $t=1$.
 This process continues until we fill the upper triangular matrix,
-where the last entry (in red TODO color plot) is generated conditioned on the input and the entire upper triangular matrix except for itself.
+where the last entry (dark blue, shown with $t=9$) is generated conditioned on the input and the entire upper triangular matrix except for itself.
+Intuitively, the distance to the off-diagonal line is the "timestamp" as in traditional autoregressive models.
 
-Above paragraph is quite long, cut it?
+%TODO re-generate plot using draw.io, or use the model plot?
+%
+%We generate one off diagonal slice at a time, conditioned on the input sequence and the previous slices,
+%starting from the one adjacent to the diagonal line, as shown in yellow on the plot.
+%When generating the second slice (in green), we condition on the input sequence and the generated values in the first slice (in yellow).
+%When generating the third one (in blue), we condition on the input sequence and both the yellow and green slices.
+%This process continues until we fill the upper triangular matrix,
+%where the last entry (in red TODO color plot) is generated conditioned on the input and the entire upper triangular matrix except for itself.
+%
+%Above paragraph is quite long, cut it?
 
 \begin{wrapfigure}{R}
     \centering
     \includegraphics[width=0.3\textwidth]{plot/autoregressive_direction.pdf}
-    \caption{TODO}
+    \caption{Generative process implied by factorization of the conditional distribution in Equation \ref{eq:conditional_distribution}.}
     \label{fig:autoregressive_direction}
     \centering
 \end{wrapfigure}
 
-TODO make sure timestamp in the other plot match with this one
+%TODO make sure timestamp in the other plot match with this one
 
 %intuition, sample local connectivity then global?
 
 
 \subsection{Model}
 
-(doesn't flow well, combine with previous paragraphs?)
+%(TODO doesn't flow well, combine with previous paragraphs?)
 
-We propose an architecture that encourages? learning
-basic rules of base pairing and local structures, to construct the global structure,
+We propose an architecture that builds global structure from local interactions between all positions on the sequence,
 without having any assumptions of the types of local structure and hard-coded parameters,
 such that the entire model can be trained end-to-end using only sequences and structures.
 The architecture consists of the following components:
@@ -327,7 +353,7 @@ The architecture consists of the following components:
 %    \begin{figure}[h]
         \centering
         \includegraphics[width=0.6\textwidth]{plot/nn_arch_1.pdf}
-        \caption{TODO}
+        \caption{Proposed model architecture. Top: sequence encoding. Bottom: generate structure.}
         \label{fig:nn_arch_1}
         \centering
 %    \end{figure}
@@ -336,49 +362,53 @@ The architecture consists of the following components:
 
 %Incoporate biological knowledge.
 
-TODO refer to parts in plot when talking about architecture.
+%TODO refer to parts in plot when talking about architecture.
+%
+%TODO itemize takes a lot of space, trim it? or combine items.
+%gorup things so they bettwen correspond to stuff on the plot.
 
-TODO itemize takes a lot of space, trim it? or combine items.
-gorup things so they bettwen correspond to stuff on the plot.
+%TODO label plot to make it easier to refer to different components
 
 \begin{itemize}
 
     \item Two sets of 1D convolution layers on the 1-hot-encoded sequence are run in parallel,
      each set has multiple convolution layers at different resolutions.
-    Note that although not shown explicitly on the plot (to keep it simple), multiple 1D conv layers...stacked...
+%    Note that although not shown explicitly on the plot (to keep it simple), multiple 1D conv layers...stacked...
 
-    \item Activations of each 1d conv layer (from both sets) are used to form a 2D feature map,
+    \item Activations of each 1d conv layer, one from each set, are used to form a 2D feature map,
 where the (i, j)-th entry is the dot-product (can be replaced by a fully connected NN) between the
-activation of first set at position i, and the activation of second set at position j.
-This is illustrated in Fig? where the ? shows one element at position $(i, j)$ in one
-2D feature map is created by the dot-product between the
-two sets of activation units of a specific 1D convolution layer (in this case the first one)
-at position $i$ and $j$.
+activation of first set at position $i$, and the activation of second set at position $j$.
+This is illustrated in Fig \ref{fig:nn_arch_1}.
+%    \item where the ? shows one element at position $(i, j)$ in one
+%2D feature map is created by the dot-product between the
+%two sets of activation units of a specific 1D convolution layer (in this case the first one)
+%at position $i$ and $j$.
 The idea of such set up is inspired by the fact that whether two bases form base pair or not
 is not only affected by the two nucleotides but also surrounding sequences.
-The hope is to learn low level sequence features that affect the 'compatibility'
+Such architecture can enable the neural network to learn low level sequence features that affect the 'compatibility'
 between two stretches of sequences.
 
-    \item Each 2D feature map corresponds to a receptive field?.
-    Multiple 2D feature maps (formed via multiple layers of 1D conv) are concatenated,
+    \item Multiple 2D feature maps (formed via activations of different layers of 1D conv) are concatenated,
 followed by a couple of 2D conv layers.
-Note that although not shown explicitly on the plot (to keep it simple), multiple 2D conv layers...stacked...
+%Note that although not shown explicitly on the plot (to keep it simple), multiple 2D conv layers...stacked...
 
 
 
-    \item  Activation of the last 2D conv layer is concatenated with target from the previous "time-stamp" $y^{t-1}$ (todo define notation),
-and the output is generated by an upper triangular convolution,
-which masks "future" timestamps and ensure the output is generated in auto-regressive fashion. (TODO more details on masked conv)
+    \item  Activation of the last 2D conv layer is concatenated with target from the previous "time-stamp" $y^{t-1}$,
+and the output is generated by an upper triangular convolution, as shown in Fig \ref{fig:nn_arch_1},
+which masks "future" timestamps and ensure the output is generated in auto-regressive fashion.
 
-    \item Finally, there is a fully connected layer along the feature (3rd) dimension,
+    \item Finally, there is a fully connected layer along the feature dimension,
    with sigmoid activation to produce an output between 0 and 1,
     for each position in the upper triangular matrix.
 
 \end{itemize}
 
-At training time, different timestamps can be trained in parallel.
-At test time, we need to initialize the output at time $t=-1$, typically with a matrix of all zeros,
+At training time, prediction, loss and gradient of all positions in the output can be computed in parallel.
+At test time, we need to initialize the output at time $t=0$, typically with a matrix of all zeros,
 then sample one slice at a time, until the full upper triangular matrix is filled.
+This is illustrated in Fig \ref{fig:nn_arch_2}.
+%TODO more details
 For a sequence of length $L-1$, we need to run $L-1$ steps sequentially.
 Note that multiple outputs can be sampled in parallel at test time.
 
@@ -392,14 +422,14 @@ Note that multiple outputs can be sampled in parallel at test time.
 %    \begin{figure}[h]
         \centering
         \includegraphics[width=0.4\textwidth]{plot/nn_arch_2.pdf}
-        \caption{TODO}
+        \caption{Sample structures conditioned on the input sequence.}
         \label{fig:nn_arch_2}
         \centering
 %    \end{figure}
 \end{wrapfigure}
 
 
-TODO plot for NN architecture
+%TODO plot for NN architecture
 
 %batch, mask
 
@@ -407,7 +437,7 @@ TODO plot for NN architecture
 
 We trained the model using a synthetic dataset, constructed by sampling $50000$ random sequences with length
 between $10$ and $100$.
-For each sequence, we ran RNAfold (TODO ref) with the default parameters and
+For each sequence, we ran RNAfold\cite{lorenz2011viennarna} with the default parameters and
 record the minimum free energy structure.
 
 For each minibatch, we zero-pad the sequence array and structure matrix to the maximum length in the minibatch.
@@ -415,9 +445,9 @@ When computing the loss and gradient, entries in structure matrix that were padd
 in addition to the lower triangular entries (since we're only predicting the upper triangular matrix).
 
 Note that although we present a single output structure for each input sequence at training time,
-the model is capable of generating a distribution of structures at test time.
+the model is capable of generating a distribution of structures at test time, by generalizing across different examples.
 
-TODO hyperparameters
+%TODO hyperparameters
 
 %Special constraints when sampling the matrix.
 
@@ -429,7 +459,7 @@ TODO hyperparameters
 \subsection{Inference}
 
 At test time, we can sample structures conditioned on the input sequence.
-As described in Section ?, we initialize the output structure with a matrix of all zeros,
+As shown in Fig \ref{fig:nn_arch_2}, we initialize the output structure with a matrix of all zeros,
 then sample one slice at a time until the upper triangular matrix is filled with sampled values.
 At each step, we sample a binary label for each position in the current slice based on the
 bernoulli probability predicted by the model.
@@ -439,8 +469,8 @@ then we set $y_{i, j}$ to $0$ without sampling from the model output.
 
 \section{Result}
 
-TODO show that we can predict well-known structure.
-Any known multi-structure sequences?
+%TODO show that we can predict well-known structure.
+%Any known multi-structure sequences?
 
 %\subsection{Generate distribution of structures}
 %
@@ -464,18 +494,24 @@ Any known multi-structure sequences?
 
 \subsection{Structure with pesudoknot}
 
-Although trained on synthetic dataset with no pseudoknot structure,
+Although trained on synthetic dataset with no pseudoknot structures,
 since our model doesn't incorporate hard-wired rules on how local structures assemble into global structure,
-our model is actually able to generate structure with pseudoknots.
-We illustrate with one example: TODO sequence ref.
-We sampled 100 structures from the model, and recovered ? with knots. (TODO also show other strutures? plot? pending fixing arr2db)
-See Fig \ref{fig:sample_structure_pseudoknot}.
+it is actually capable of generating structure with pseudoknots.
+As an example, we use the sequence of mouse mammary tumor virus (MMTV), whose secondary structure
+contains pseudoknot as measure by nuclear magnetic resonance (NMR), as shown in Fig \ref{fig:sample_structure_pseudoknot}(a).
+Minimum free energy structure predicted by RNAfold takes a quite different form, which is shown in Fig \ref{fig:sample_structure_pseudoknot}(b).
+In contrast, when we sample 100 structures from our model, it shows a diverse set of possible structures,
+including the one predicted by RNAfold, as shown in Fig \ref{fig:sample_structure_pseudoknot}(c3),
+and more interestingly, the pseudoknot structure from NMR, as shown in Fig \ref{fig:sample_structure_pseudoknot}(c1).
+
+%and recovered ? with knots. (TODO also show other strutures? plot? pending fixing arr2db)
+%See Fig \ref{fig:sample_structure_pseudoknot}.
 
 
 \begin{wrapfigure}{R}
     \centering
     \includegraphics[width=0.8\textwidth]{plot/sample_structure_pseudoknot.pdf}
-    \caption{Secondary structure of Mouse mammary tumor virus (MMTV): (a) measured by nuclear magnetic resonance (NMR), plot from \cite{staple2005pseudoknots} (TODO plot was a screenshot from the paper, any problems?), (b) predicted by RNAfold web server, (c) Structures generated by our model, specifically, (c1) is a structure with pseudoknot and is identical to (a), (c3) is identical to (b).}
+    \caption{Secondary structure of mouse mammary tumor virus (MMTV): (a) measured by nuclear magnetic resonance (NMR), plot from \cite{staple2005pseudoknots} (TODO plot was a screenshot from the paper, any problems?), (b) predicted by RNAfold web server, (c) Structures generated by our model, specifically, (c1) is a structure with pseudoknot and is identical to (a), (c3) is identical to (b).}
     \label{fig:sample_structure_pseudoknot}
     \centering
 \end{wrapfigure}
@@ -483,11 +519,11 @@ See Fig \ref{fig:sample_structure_pseudoknot}.
 
 %\subsection{Run time comparison}
 
-\subsection{Performance comparison}
-
-cross validation & test set (real sequences)
-
-\subsection{Interesting cases}
+%\subsection{Performance comparison}
+%
+%cross validation & test set (real sequences)
+%
+%\subsection{Interesting cases}
 
 \subsection{Differentiable model}
 
@@ -497,13 +533,13 @@ cross validation & test set (real sequences)
 
 \section{Conclusion}
 
-future work: train on real sequences and structure (we imagine the performance will improve)
-
-different AR/sampling setup, different factorization, better performance?
-
-train on high throughput data
-
-graph nn
+%future work: train on real sequences and structure (we imagine the performance will improve)
+%
+%different AR/sampling setup, different factorization, better performance?
+%
+%train on high throughput data
+%
+%graph nn
 
 
 
