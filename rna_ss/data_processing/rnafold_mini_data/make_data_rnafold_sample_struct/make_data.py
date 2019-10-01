@@ -7,7 +7,6 @@ import cPickle as pickle
 from StringIO import StringIO
 from subprocess import PIPE, Popen
 import pandas as pd
-from utils import get_fe_struct, one_idx
 from dgutils.pandas import add_columns, add_column
 
 
