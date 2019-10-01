@@ -147,8 +147,27 @@ def upper_band_index(l, n):
     return np.where(a == 1)
 
 
+# def arr2db(arr):
+#     # TODO debug this code!!
+#     assert len(arr.shape) == 2
+#     assert arr.shape[0] == arr.shape[1]
+#     assert np.all((arr == 0) | (arr == 1))
+#     assert np.max(np.sum(arr, axis=0)) <= 1
+#     assert np.max(np.sum(arr, axis=1)) <= 1
+#     idx_pairs = np.where(arr == 1)
+#     idx_pairs = zip(idx_pairs[0], idx_pairs[1])
+#
+#     db_str = ['.' for _ in range(len(arr))]
+#     for _i, _j in idx_pairs:
+#         i = min(_i, _j)
+#         j = max(_i, _j)
+#         db_str[i] = '('
+#         db_str[j] = ')'
+#     return ''.join(db_str)
+
+
 def arr2db(arr):
-    # TODO debug this code!!
+    # take into account pseudoknot
     assert len(arr.shape) == 2
     assert arr.shape[0] == arr.shape[1]
     assert np.all((arr == 0) | (arr == 1))
@@ -157,12 +176,67 @@ def arr2db(arr):
     idx_pairs = np.where(arr == 1)
     idx_pairs = zip(idx_pairs[0], idx_pairs[1])
 
+    # find different groups of stems
+
+    def _group(x):
+        # x should already be sorted
+        assert all([a[0] < b[0] for a, b in zip(x[:-1], x[1:])])
+        g = []
+        for a in x:
+            if len(g) == 0:
+                g.append(a)
+            else:
+                if a[0] == g[-1][0] + 1:
+                    g.append(a)
+                else:
+                    yield g
+                    g = []
+        if len(g) > 0:
+            yield g
+
+    idx_pair_groups = list(_group(idx_pairs))
+    print(idx_pair_groups)
+
+    if len(idx_pair_groups) == 0:
+        return '.' * arr.shape[0]
+
+    symbol_to_use = [0 for _ in range(len(idx_pair_groups))]  # 0: (), 1: [], 2: {}  # TODO what else?
+    # use special symbol if certain group create pseudoknot against other groups
+    # nothing needs to be done if there is only one group
+    for idx1 in range(0, len(idx_pair_groups)):
+        for idx2 in range(idx1 + 1, len(idx_pair_groups)):
+            for pair1 in idx_pair_groups[idx1]:
+                for pair2 in idx_pair_groups[idx2]:
+                    if pair2[0] < pair1[1] < pair2[1]:  # see if they cross
+                        # set the first group to special symbol
+                        symbol_to_use[idx1] = max([_s for _i, _s in enumerate(symbol_to_use) if
+                                                   _i != idx1]) + 1  # TODO can we potentially run out of symbols to use? use it in circular way?
+
+    if max(symbol_to_use) != 0:
+        print("Pseudoknot detected.")
+
+    if max(symbol_to_use) > 2:
+        print("More than 3 special groups found, need to recycle some symbols?")
+
+    print(symbol_to_use)
+
     db_str = ['.' for _ in range(len(arr))]
-    for _i, _j in idx_pairs:
-        i = min(_i, _j)
-        j = max(_i, _j)
-        db_str[i] = '('
-        db_str[j] = ')'
+    for idx_group, pair_group in enumerate(idx_pair_groups):
+        for _i, _j in pair_group:
+            i = min(_i, _j)
+            j = max(_i, _j)
+            if symbol_to_use[idx_group] % 3 == 0:
+                db_str[i] = '('
+                db_str[j] = ')'
+            elif symbol_to_use[idx_group] % 3 == 1:
+                db_str[i] = '['
+                db_str[j] = ']'
+            elif symbol_to_use[idx_group] % 3 == 2:
+                db_str[i] = '{'
+                db_str[j] = '}'
+            else:
+                raise ValueError  # shouldn;t be here
+
     return ''.join(db_str)
 
 
