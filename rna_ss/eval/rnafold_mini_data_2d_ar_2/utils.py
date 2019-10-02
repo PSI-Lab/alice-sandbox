@@ -501,7 +501,7 @@ class PredictorSPlitModel(object):
 
         return y, logps, fe[:, 0]
 
-    def gradient_ascent(self, seq, y_prev, idx1, idx2):
+    def gradient_ascent(self, seq, y_prev, idx1, idx2, n_ite, lr, verbose=False):
         # current output
         x_single = DataEncoder.encode_seqs([seq])
         if len(y_prev.shape) == 2:
@@ -526,8 +526,8 @@ class PredictorSPlitModel(object):
         input_node = self._model.input[0]
         input_node2 = self._model.input[1]
         layer_output = self._model.output[0]
-        print input_node
-        print layer_output
+        # print input_node
+        # print layer_output
         loss = kb.mean(layer_output[:, idx1, idx2, :])
         # 'input_org'
         # 'target_prev'
@@ -539,8 +539,8 @@ class PredictorSPlitModel(object):
         # iterate = kb.function([input_node, input_node2], [loss, grads])
         # iterate = kb.function([input_node], [loss, grads])
         iterate = kb.function(self._model.input, [loss, grads])
-        print grads
-        print iterate
+        # print grads
+        # print iterate
 
         x_new = x_single.astype(np.float32)
         # add a little bit noise
@@ -549,11 +549,19 @@ class PredictorSPlitModel(object):
         x_new = x_new / np.sum(x_new, axis=-1)[:, :, np.newaxis]
         # run gradient ascent
         x_ite = []
-        for i in range(200):
-            print i
+        for i in range(n_ite):
+            # print i
             loss_value, grads_value = iterate([x_new, y_single])
+
+            if verbose and i % max(1, (n_ite//100)) == 0:
+                print i, loss_value
+
             # loss_value, grads_value = iterate([x_new])
-            x_new += grads_value * 0.01
+            # print loss_value
+            # print grads_value
+            x_new += grads_value * lr
+            # avoid negative values
+            x_new = np.clip(x_new, 0.0, np.inf)
             # re-normalize
             x_new = x_new / np.sum(x_new, axis=-1)[:, :, np.newaxis]
             #     print x1_new
