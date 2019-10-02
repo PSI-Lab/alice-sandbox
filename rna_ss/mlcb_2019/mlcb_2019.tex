@@ -159,7 +159,9 @@ base pairing between sequence position $i$ and $j$, and $0$ represents no base p
 
 \end{itemize}
 
-As an example, a short RNA sequence GUUGUGAAAU of length $10$ (Entry \verb|CRW_00083| from \cite{andronescu2008rna}) takes a structure that
+As an example, a short RNA sequence GUUGUGAAAU of length $10$
+%(Entry \verb|CRW_00083| from \cite{andronescu2008rna})   # TODO this entry nmumber is not correct!
+takes a structure that
 consists of a stem and a loop, as seen in Fig \ref{fig:rna_ss_binary_mat}(a), represented by an undirected graph.
 This structure can also be represented by the upper triangular $10 \times 10$ matrix with all $0$'s,
 except for positions
@@ -556,8 +558,31 @@ and more interestingly, the pseudoknot structure from NMR, as shown in Fig \ref{
 %
 %\subsection{Interesting cases}
 
-\subsection{Differentiable model}
+\subsection{Sequence design via gradient ascent}
 
+One benefit of having a differentiable model like neural network is that we can answer interesting questions like:
+given my current input sequence, what (small) changes can I make to maximize the pairing probability of two positions?
+We illustrate this using a short RNA sequence GAUCACCUUUGGAUC.
+(TODO mention sampled structures)
+, with structure as shown in Fig \ref{gradient_ascent}(a).
+In order to find small, local changes to be made on this sequence,
+we computed the gradient of one output node $y_{i, j}$
+with respect to all the input nodes ($17 \times 4$ array).
+We ran $100$ gradient ascent iterations with step size $0.01$,
+in each step, after adding the gradient (times step size) onto the input,
+we re-normalize the input so the feature dimension sum up to 1.
+Fig \ref{gradient_ascent}(b) and (c) shows the resulting sequence and structure
+for $y_{5, 11}$ and $y_{6, 10}$, respectively.
+
+
+
+\begin{wrapfigure}{R}
+    \centering
+    \includegraphics[width=0.4\textwidth]{plot/gradient_ascent.pdf}
+    \caption{TODO}
+    \label{fig:gradient_ascent}
+    \centering
+\end{wrapfigure}
 
 
 %differentialble model. use case.
