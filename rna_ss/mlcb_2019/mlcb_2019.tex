@@ -78,34 +78,34 @@
 %  TODO
 %\end{abstract}
 
+\vspace*{-7em}
 
 \section{Introduction}
 
-Once believed to be an intermediate molecule that serves as a messenger between DNA and protein,
-RNA is now known to be involved in many aspects in gene regulation and expression.
+%Once believed to be an intermediate molecule that serves as a messenger between DNA and protein,
+%RNA is now known to be involved in many aspects in gene regulation and expression.
 Unlike DNA which typically forms stable double helix between two molecules, RNA is highly flexible
-such that a single RNA moldecule can fold onto itself by
+such that a single RNA molecule can fold onto itself by
 forming base pairs via hydrogen bonds, including Watson-Crick pairs A-U,
 G-C and non-canonical pairs such as G-U.
-Base pairs form the basis for local structures like stems and loops,
+Base pairs form local structures like stems and loops,
 which assemble into the global secondary structure.
 %These base pairs act as building blocks, from which local structure forms? global?
 
 State-of-the-art RNA secondary structure prediction algorithms,
 such as ViennaRNA\cite{lorenz2011viennarna} and Mfold\cite{zuker2003mfold},
-are based on the fundamental property of base-pairing.
-Each type of local structure comes with free energy that is measured experimentally.
-Total free energy is assumed to be the sum of all local free energy,
-and can be minimized efficiently using dynamic programming.
+are based thermodynamics.
+Each type of local structure comes with free energy that is measured experimentally,
+and total free energy is assumed to be the sum of all local free energy,
+which is minimized efficiently using dynamic programming.
 Although researchers have worked out a large set of local structure types and
 their associated formulation for free energy calculation,
 there is no guarantee that it's either accurate or complete.
 There has been effort to fine tune the free energy parameters by
 training on experimentally solved structures\cite{andronescu2007efficient},
 but it's still limited by the known set of local structure types.
-
 Another limitation of dynamic programming based approaches is that
-it is extremely inefficient at predicting pseudoknot (TODO citation + existing work e.g. approximation).
+it is incapable of predicting nested base pairs that appear in structure like pseudoknot.
 
 
 %Moreover, over the last decade,
@@ -132,7 +132,7 @@ sequences and structures. When conditioned on the input RNA sequence,
 the model can generate a distribution of structures, including ones with pseudoknot.
 %We start by describing the problem formulation, followed by a brief review of
 %related work, and present the model
-
+%differentiable
 
 %TODO if we mention the above we'll need to talk about how to train on those data.
 %
@@ -142,34 +142,42 @@ the model can generate a distribution of structures, including ones with pseudok
 
 \subsection{Problem Formulation}
 
-For a RNA sequence of length $L$, we are interested in all possible secondary structures it can take on.
+Given a RNA sequence of length $L$, we are interested in all possible secondary structures it can take on.
 %There are three common ways to represent a specific RNA secondary structure:
 For a specific structure, there are three common ways to represent it:
-
-\begin{itemize}
-
-    \item Undirected graph, where each node is a base in the sequence, and each vertex represent base pairing.
-
-    \item Upper triangular matrix (excluding the diagonal)
+(1) Undirected graph, where each node is a base in the sequence, and each vertex represents base pairing.
+(2) Upper triangular matrix (excluding the diagonal)
 of size $L \times L$ with binary values, where a value of $1$ at $(i, j)$ represents
 base pairing between sequence position $i$ and $j$, and $0$ represents no base paring.
-
-    \item A dot-bracket notation of length $L$ where unpaired based are denoted as dots,
+(3) Dot-bracket notation of length $L$ where unpaired based are denoted as dots,
     and paired bases are represented as left and right brackets.
+When pseudoknot is present, different styles of bracket needs to be used to represent nested structures.
 
-\end{itemize}
 
-As an example, a short RNA sequence GUUGUGAAAU of length $10$
+%\begin{itemize}
+%
+%    \item Undirected graph, where each node is a base in the sequence, and each vertex represent base pairing.
+%
+%    \item Upper triangular matrix (excluding the diagonal)
+%of size $L \times L$ with binary values, where a value of $1$ at $(i, j)$ represents
+%base pairing between sequence position $i$ and $j$, and $0$ represents no base paring.
+%
+%    \item A dot-bracket notation of length $L$ where unpaired based are denoted as dots,
+%    and paired bases are represented as left and right brackets.
+%
+%\end{itemize}
+
+As an example, for a short RNA sequence GUUGUGAAAU, one possible structure it can take on
 %(Entry \verb|CRW_00083| from \cite{andronescu2008rna})   # TODO this entry nmumber is not correct!
-takes a structure that
+%takes a structure that
 consists of a stem and a loop, as seen in Fig \ref{fig:rna_ss_binary_mat}(a), represented by an undirected graph.
-This structure can also be represented by the upper triangular $10 \times 10$ matrix with all $0$'s,
+Such structure can also be represented by an upper triangular $10 \times 10$ matrix with all $0$'s,
 except for positions
 %$y_{1, 10}, y_{2, 9}$ and $y_{3, 8}$,
 $(1, 10), (2, 9)$ and $(3, 8)$,
 all being $1$, as shown in Fig \ref{fig:rna_ss_binary_mat}(b).
 This contiguous stretch of $1$'s along the diagonal corresponds to the stem formed by the three base pairs: G-U, U-A and U-A.
-In Fig \ref{fig:rna_ss_binary_mat}(c) we show the dot-bracket notation of this structure, where the three pairs
+The equivalent dot-bracket notation is shown in Fig \ref{fig:rna_ss_binary_mat}(c), where the three pairs
 of left-right brackets represent the stem.
 %(TODO define x and y first)
 
@@ -198,7 +206,7 @@ of left-right brackets represent the stem.
 
 %TODO maybe talk about pairing matrix and dot-bracket notation here, to make it easier for literature review.
 
-\section{Related Work}
+\subsection{Related Work}
 
 There have been a few work that solve partial problem....
 
