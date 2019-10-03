@@ -207,6 +207,14 @@ of left-right brackets represent the stem.
 
 %TODO maybe talk about pairing matrix and dot-bracket notation here, to make it easier for literature review.
 
+\begin{wrapfigure}{R}
+    \centering
+    \includegraphics[width=0.23\textwidth]{plot/autoregressive_direction.pdf}
+    \caption{Generative process implied by Equation \ref{eq:conditional_distribution}.}
+    \label{fig:autoregressive_direction}
+    \centering
+\end{wrapfigure}
+
 \subsection{Related Work}
 
 %There have been a few work that solve partial problem.... % TODO ??
@@ -298,13 +306,16 @@ thus the generalization performance of the model remains unclear.
 
 %notation: we use ??? to represent a binary upper triangular matrix of size LxL.
 
-\begin{wrapfigure}{R}
-    \centering
-    \includegraphics[width=0.23\textwidth]{plot/autoregressive_direction.pdf}
-    \caption{Generative process implied by Equation \ref{eq:conditional_distribution}.}
-    \label{fig:autoregressive_direction}
-    \centering
+\begin{wrapfigure}{L}
+%    \begin{figure}[h]
+        \centering
+        \includegraphics[width=0.5\textwidth]{plot/nn_arch_1.pdf}
+        \caption{Proposed model architecture. Top: sequence encoding. Bottom: generate structure.}
+        \label{fig:nn_arch_1}
+        \centering
+%    \end{figure}
 \end{wrapfigure}
+
 
 
 \section{Method}
@@ -366,19 +377,11 @@ Intuitively, the distance to the off-diagonal line is the "timestamp" as in trad
 %(TODO doesn't flow well, combine with previous paragraphs?)
 
 We propose an architecture that builds global structure from local interactions between all positions on the sequence,
-without having any assumptions of the types of local structure and hard-coded parameters,
+without having any assumptions on the types of local structure and without hard-coded parameters,
 such that the entire model can be trained end-to-end using only sequences and structures.
 The architecture consists of the following components:
 
-\begin{wrapfigure}{R}
-%    \begin{figure}[h]
-        \centering
-        \includegraphics[width=0.5\textwidth]{plot/nn_arch_1.pdf}
-        \caption{Proposed model architecture. Top: sequence encoding. Bottom: generate structure.}
-        \label{fig:nn_arch_1}
-        \centering
-%    \end{figure}
-\end{wrapfigure}
+
 
 
 %Incoporate biological knowledge.
@@ -392,46 +395,46 @@ The architecture consists of the following components:
 
 \begin{itemize}
 
-    \item Two sets of 1D convolution layers on the 1-hot-encoded sequence are run in parallel,
+    \item Two sets of 1D convolution layers on the one-hot-encoded sequence are run in parallel,
      each set has multiple convolution layers at different resolutions.
-%    Note that although not shown explicitly on the plot (to keep it simple), multiple 1D conv layers...stacked...
-
-    \item Activations of each 1d conv layer, one from each set, are used to form a 2D feature map,
-where the (i, j)-th entry is the dot-product (can be replaced by a fully connected NN) between the
-activation of first set at position $i$, and the activation of second set at position $j$.
-This is illustrated in Fig \ref{fig:nn_arch_1}.
+    Activations of the 1D conv layer, one from each set, are used to form a 2D feature map
+via inner product along the feature dimension, as shown in Fig \ref{nn_arch_1} from (a) to (b).
+%where the (i, j)-th entry is the dot-product (can be replaced by a fully connected NN) between the
+%activation of first set at position $i$, and the activation of second set at position $j$.
+%This is illustrated in Fig \ref{fig:nn_arch_1}.
 %    \item where the ? shows one element at position $(i, j)$ in one
 %2D feature map is created by the dot-product between the
 %two sets of activation units of a specific 1D convolution layer (in this case the first one)
 %at position $i$ and $j$.
-The idea of such set up is inspired by the fact that whether two bases form base pair or not
-is not only affected by the two nucleotides but also surrounding sequences.
-Such architecture can enable the neural network to learn low level sequence features that affect the 'compatibility'
-between two stretches of sequences.
+This is inspired by the fact that base pairing
+is not only affected by the two bases but also surrounding sequences.
+Such architecture enables the neural network to learn features that affect
+interaction between any two positions in the sequence. (TODO number of layers, filter size)
 
-    \item Multiple 2D feature maps (formed via activations of different layers of 1D conv) are concatenated,
-followed by a couple of 2D conv layers.
+    \item Multiple 2D feature maps, each being the inner product of 1D activations at a specific layer,
+are concatenated (Fig \ref{nn_arch_1} (b) to (c)),
+followed by a several 2D conv layers (Fig \ref{nn_arch_1} (c) to (d)).
 %Note that although not shown explicitly on the plot (to keep it simple), multiple 2D conv layers...stacked...
 
 
 
-    \item  Activation of the last 2D conv layer is concatenated with target from the previous "time-stamp" $y^{t-1}$,
-and the output is generated by an upper triangular convolution, as shown in Fig \ref{fig:nn_arch_1},
+    \item  Activation of the last 2D conv layer is concatenated with target from the previous "timestamp" $y^{t-1}$,
+and the output is generated by an upper triangular convolution, as shown in Fig \ref{fig:nn_arch_1} from (e) to (f),
 which masks "future" timestamps and ensure the output is generated in auto-regressive fashion.
 
     \item Finally, there is a fully connected layer along the feature dimension,
    with sigmoid activation to produce an output between 0 and 1,
-    for each position in the upper triangular matrix.
+    for each position in the upper triangular matrix, as illustrated in Fig \ref{nn_arch_1} (f) to (e).
 
 \end{itemize}
 
-At training time, prediction, loss and gradient of all positions in the output can be computed in parallel.
-At test time, we need to initialize the output at time $t=0$, typically with a matrix of all zeros,
-then sample one slice at a time, until the full upper triangular matrix is filled.
-This is illustrated in Fig \ref{fig:nn_arch_2}.
-%TODO more details
-For a sequence of length $L$, we need to run $L-1$ steps sequentially.
-Note that multiple outputs can be sampled in parallel at test time.
+%At training time, prediction, loss and gradient of all positions in the output can be computed in parallel.
+%At test time, we need to initialize the output at time $t=0$, typically with a matrix of all zeros,
+%then sample one slice at a time, until the full upper triangular matrix is filled.
+%This is illustrated in Fig \ref{fig:nn_arch_2}.
+%%TODO more details
+%For a sequence of length $L$, we need to run $L-1$ steps sequentially.
+%Note that multiple outputs can be sampled in parallel at test time.
 
 
 %To encourage learning of base-pairing and local structure formation,
@@ -463,10 +466,12 @@ record the minimum free energy structure.
 
 For each minibatch, we zero-pad the sequence array and structure matrix to the maximum length in the minibatch.
 When computing the loss and gradient, entries in structure matrix that were padded are being masked,
-in addition to the lower triangular entries (since we're only predicting the upper triangular matrix).
+in addition to the lower triangular entries, since we're only predicting the upper triangular matrix.
+At training time, prediction, loss and gradient of all positions in the output can be computed in parallel,
+by passing in the target structure matrix as both the input and target.
 
-Note that although we present a single output structure for each input sequence at training time,
-the model is capable of generating a distribution of structures at test time, by generalizing across different examples.
+%Note that although we present a single output structure for each input sequence at training time,
+%the model is capable of generating a distribution of structures at test time, by generalizing across different examples.
 
 %TODO hyperparameters
 
@@ -479,7 +484,7 @@ the model is capable of generating a distribution of structures at test time, by
 
 \subsection{Inference}
 
-TODO this is repeated from the model section, maybe combine?
+%TODO this is repeated from the model section, maybe combine?
 
 At test time, we can sample structures conditioned on the input sequence.
 As shown in Fig \ref{fig:nn_arch_2}, we initialize the output structure with a matrix of all zeros,
@@ -489,6 +494,8 @@ Bernoulli probability predicted by the model.
 To ensure the sampled structure is valid, when sampling the label for location (i, j),
 if i-th or j-th position is already paired with another position (from samples in the previous timestamps),
 then we set $y_{i, j}$ to $0$ without sampling from the model output.
+For a sequence of length $L$, we need to run $L-1$ steps sequentially.
+Note that multiple outputs can be sampled in parallel at test time.
 
 \section{Result}
 
@@ -511,7 +518,7 @@ As we can see from the figure, majority of the RNAfold-generated structures can 
 
 \begin{wrapfigure}{R}
     \centering
-    \includegraphics[width=0.4\textwidth]{plot/performance_test_set.pdf}
+    \includegraphics[width=0.3\textwidth]{plot/performance_test_set.pdf}
     \caption{TODO}
     \label{fig:performance_test_set}
     \centering
@@ -562,7 +569,7 @@ and more interestingly, the pseudoknot structure from NMR, as shown in Fig \ref{
 
 \begin{wrapfigure}{R}
     \centering
-    \includegraphics[width=0.8\textwidth]{plot/sample_structure_pseudoknot.pdf}
+    \includegraphics[width=0.6\textwidth]{plot/sample_structure_pseudoknot.pdf}
     \caption{Secondary structure of mouse mammary tumor virus (MMTV): (a) measured by nuclear magnetic resonance (NMR), plot from \cite{staple2005pseudoknots} (TODO plot was a screenshot from the paper, any problems?), (b) predicted by RNAfold web server, (c) Structures generated by our model, specifically, (c1) is a structure with pseudoknot and is identical to (a), (c3) is identical to (b).}
     \label{fig:sample_structure_pseudoknot}
     \centering
@@ -597,7 +604,7 @@ for $y_{5, 11}$ and $y_{6, 10}$, respectively.
 
 \begin{wrapfigure}{R}
     \centering
-    \includegraphics[width=0.4\textwidth]{plot/gradient_ascent.pdf}
+    \includegraphics[width=0.25\textwidth]{plot/gradient_ascent.pdf}
     \caption{TODO}
     \label{fig:gradient_ascent}
     \centering
@@ -606,7 +613,7 @@ for $y_{5, 11}$ and $y_{6, 10}$, respectively.
 
 %differentialble model. use case.
 
-\section{Conclusion}
+%\section{Conclusion}
 
 %future work: train on real sequences and structure (we imagine the performance will improve)
 %
