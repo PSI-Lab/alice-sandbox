@@ -32,6 +32,7 @@
 \usepackage{wrapfig}
 \usepackage[font=small]{caption}
 \usepackage{enumitem}
+\usepackage{amsmath}
 
 %\addtolength{\belowcaptionskip}{-20pt}
 
@@ -318,7 +319,7 @@ generalization performance of the model remains unclear.
 \begin{wrapfigure}{R}
 %    \begin{figure}[h]
         \centering
-        \includegraphics[width=0.4\textwidth]{plot/nn_arch_1.pdf}
+        \includegraphics[width=0.5\textwidth]{plot/nn_arch_1.pdf}
         \caption{Proposed model architecture. Top: sequence encoder. Bottom: output generator.}
         \label{fig:nn_arch_1}
         \centering
@@ -347,12 +348,23 @@ where the structure $\bm{Y}$ is represented by an upper triangular matrix of siz
 We factorize the conditional distribution as follows:
 %In this work, we pick a specific way to factorize the conditional distribution,
 
-\begin{equation} \label{eq:conditional_distribution}
-{\scriptstyle
-P(\bm{Y} \mid \bm{x}) = P(\{y_{i, i+1}\}_{i=1, 2, \dots L-1} \mid \bm{x})
-P(\{y_{i, i+2}\}_{i=1, 2, \dots L-2} \mid \bm{x}, \{y_{i, i+1}\}_{i=1, 2, \dots L-1})
-\dots
-P(y_{1, L} \mid \bm{x}, \{y_{i, j}\}^{i \neq 1}_{j \neq L})}
+%\begin{equation} \label{eq:conditional_distribution}
+%{\scriptstyle
+%P(\bm{Y} \mid \bm{x}) = P(\{y_{i, i+1}\}_{i=1, 2, \dots L-1} \mid \bm{x})
+%P(\{y_{i, i+2}\}_{i=1, 2, \dots L-2} \mid \bm{x}, \{y_{i, i+1}\}_{i=1, 2, \dots L-1})
+%\dots
+%P(y_{1, L} \mid \bm{x}, \{y_{i, j}\}^{i \neq 1}_{j \neq L})}
+%\end{equation}
+
+
+\begin{equation}
+    \label{eq:conditional_distribution}
+    \begin{split}
+        P(\bm{Y} \mid \bm{x}) =& P(\{y_{i, i+1}\}_{i=1, \dots L-1} \mid \bm{x}) \\
+        & P(\{y_{i, i+2}\}_{i=1, \dots L-2} \mid \bm{x}, \{y_{i, i+1}\}_{i=1, \dots L-1}) \\
+        & \dots \\
+        & P(y_{1, L} \mid \bm{x}, \{y_{i, j}\}^{i \neq 1}_{j \neq L})
+    \end{split}
 \end{equation}
 
 %which mimcs the autoregressive process, where the time axis in our case is the distance to the off-diagonal line.
