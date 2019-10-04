@@ -33,6 +33,8 @@
 \usepackage[font=small]{caption}
 \usepackage{enumitem}
 
+%\addtolength{\belowcaptionskip}{-20pt}
+
 \title{End-to-end RNA Secondary Structure Prediction using Deep Neural Network}
 
 % The \author macro works with any number of authors. There are two commands
@@ -98,7 +100,7 @@ State-of-the-art RNA secondary structure prediction algorithms
 like ViennaRNA\cite{lorenz2011viennarna} and Mfold\cite{zuker2003mfold}
 are thermodynamics based.
 Free energy of each type of local structure is measured experimentally,
-and total free energy is assumed to be the sum of local terms?,
+and total free energy is assumed to be the sum of local energy terms,
 which is minimized efficiently via dynamic programming (DP).
 Although researchers have worked out a large set of local structure types and
 their associated formulation for free energy calculation,
@@ -231,7 +233,7 @@ Wu\cite{wu2018convolutional} presented a convolution neural network to predict t
 %Circular convolution was proposed as a nature fit for loop-like structures.
 %The model was trained on experimentally measured free energy of short structure motifs,
 %as well as random structure motifs whose energy was estimated using existing linear approximation models.
-Although it shows? promising result on modeling free energy of short structure motif from experimental data,
+Although it shows promising result on modeling free energy of short structure motif from experimental data,
 and can be used to estimate the free energy for a \textit{given} structure,
 it does not solve the problem of predicting structure from sequence.
 
@@ -253,7 +255,7 @@ to yield a valid structure prediction.
 Wang et. al\cite{wang2019dmfold} used bidirectional LSTM and modelled the dot-bracket notation as a
 7-class softmax, which includes additional bracket notations to allow for pseudoknots.
 Similar to \cite{zhang2019new}, the prediction does not yield a
-valid structure, and needs to be corrected by additional logic?.
+valid structure, and needs to be corrected by additional post-processing.
 Furthermore, they used a dataset of only four RNA families,
 but reported performance based on randomized training and validation set split.
 Since there is high level of sequence similarity within the same family,
@@ -359,7 +361,7 @@ The generative process implied by such formulation is illustrated in Fig \ref{fi
 We generate one off diagonal slice at a time, conditioned on the input sequence and the previous slices,
 starting from the one adjacent to the diagonal line, shown in light blue with $t=1$.
 This process continues until we fill the upper triangular matrix,
-where the last entry (dark blue, with $t=9$) is generated conditioned? on the input and the entire upper triangular matrix except for itself.
+where the last entry (dark blue, with $t=9$) is generated conditioned on the input and the entire upper triangular matrix except for itself.
 Intuitively, the distance to the off-diagonal line is the "timestamp" as in classic autoregressive models.
 
 %TODO re-generate plot using draw.io, or use the model plot?
@@ -433,7 +435,7 @@ and passed through? multiple layers of masked 2D conv layers, as shown in Fig \r
 (showing only one layer for simplicity),
 which masks "future" (top right) timestamps.
 
-    \item \label{enum:step_4} Finally?, a fully connected layer along the feature dimension
+    \item \label{enum:step_4} Finally, a fully connected layer along the feature dimension
    with sigmoid activation produces an output between 0 and 1,
     for each position in the upper triangular matrix, as illustrated in Fig \ref{fig:nn_arch_1} from (f) to (e).
 
@@ -481,7 +483,6 @@ between $10$ and $100$.
 For each sequence, we ran RNAfold\cite{lorenz2011viennarna} with default parameters and
 recorded the minimum free energy structure.
 
-(will table save some space?)
 The model has $5$ pairs of 1D-conv layers, each having $256$ filters, with filter width and dilation rate being
 $(7,1), (5,2), (5,2), (5,4), (5,4)$.
 There are $5$ masked 2D-conv layers, each having $50$ filters, with filter size and dilation rate being
@@ -537,6 +538,13 @@ For a sequence of length $L$, we run $L-1$ steps sequentially.
 
 %TODO show some training performance. how?
 
+\begin{wrapfigure}{R}
+    \centering
+    \includegraphics[width=0.25\textwidth]{plot/performance_test_set.pdf}
+    \caption{Performance on test set.}
+    \label{fig:performance_test_set}
+    \centering
+\end{wrapfigure}
 
 \subsection{Test set performance}
 
@@ -556,13 +564,7 @@ This indicates how well the model recovers each of structures produced by RNAfol
 Histogram showing the distribution of these performance metric across all structures in all sequences is shown in Figure \ref{fig:performance_test_set}.
 As we can see from the figure, majority of the RNAfold-generated structures can be recovered with larger than $0.8$ sensitivity and PPV.
 
-\begin{wrapfigure}{R}
-    \centering
-    \includegraphics[width=0.25\textwidth]{plot/performance_test_set.pdf}
-    \caption{Performance on test set.}
-    \label{fig:performance_test_set}
-    \centering
-\end{wrapfigure}
+
 
 
 % TODO run RNAfold, generate top-n strutcures in ensembl
@@ -588,6 +590,16 @@ As we can see from the figure, majority of the RNAfold-generated structures can 
 %\end{figure}
 
 
+\begin{wrapfigure}{R}
+    \centering
+    \includegraphics[width=0.5\textwidth]{plot/sample_structure_pseudoknot.pdf}
+    \caption{Secondary structure of mouse mammary tumor virus (MMTV): (a) measured by nuclear magnetic resonance (NMR), plot from \cite{staple2005pseudoknots}, (b) predicted by RNAfold, (c) Structures generated by our model.}
+    \label{fig:sample_structure_pseudoknot}
+    \centering
+\end{wrapfigure}
+
+
+
 
 %TODO show generating an ensemble of structures
 
@@ -605,15 +617,6 @@ and more interestingly, the pseudoknot structure from NMR, as shown in Fig \ref{
 
 %and recovered ? with knots. (TODO also show other strutures? plot? pending fixing arr2db)
 %See Fig \ref{fig:sample_structure_pseudoknot}.
-
-
-\begin{wrapfigure}{R}
-    \centering
-    \includegraphics[width=0.4\textwidth]{plot/sample_structure_pseudoknot.pdf}
-    \caption{Secondary structure of mouse mammary tumor virus (MMTV): (a) measured by nuclear magnetic resonance (NMR), plot from \cite{staple2005pseudoknots}, (b) predicted by RNAfold, (c) Structures generated by our model.}
-    \label{fig:sample_structure_pseudoknot}
-    \centering
-\end{wrapfigure}
 
 
 %\subsection{Run time comparison}
