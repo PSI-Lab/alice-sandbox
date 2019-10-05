@@ -314,13 +314,13 @@ generalization performance of the model remains unclear.
 
 %notation: we use ??? to represent a binary upper triangular matrix of size LxL.
 
-?TODO add box to illustrate inner product
 
 \begin{wrapfigure}{R}
 %    \begin{figure}[h]
         \centering
         \includegraphics[width=0.5\textwidth]{plot/nn_arch_1.pdf}
         \caption{Proposed model architecture. Top: sequence encoder. Bottom: output generator.}
+        \vspace{-8em}
         \label{fig:nn_arch_1}
         \centering
 %    \end{figure}
@@ -474,8 +474,9 @@ and \ref{enum:step_3}-\ref{enum:step_4} as the sequence generator.
 \begin{wrapfigure}{R}
 %    \begin{figure}[h]
         \centering
-        \includegraphics[width=0.3\textwidth]{plot/nn_arch_2.pdf}
+        \includegraphics[width=0.35\textwidth]{plot/nn_arch_2.pdf}
         \caption{Sample structures conditioned on the input sequence.}
+        \vspace{-3em}
         \label{fig:nn_arch_2}
         \centering
 %    \end{figure}
@@ -552,7 +553,7 @@ For a sequence of length $L$, we run $L-1$ steps sequentially.
 
 \begin{wrapfigure}{R}
     \centering
-    \includegraphics[width=0.25\textwidth]{plot/performance_test_set.pdf}
+    \includegraphics[width=0.3\textwidth]{plot/performance_test_set.pdf}
     \caption{Performance on test set.}
     \label{fig:performance_test_set}
     \centering
@@ -664,6 +665,7 @@ for $i=5, j=11$ and $i=6, j=10$, respectively.
     \centering
     \includegraphics[width=0.2\textwidth]{plot/gradient_ascent.pdf}
     \caption{Gradient ascent to maximize base pairing. (a) position (5, 11), (b) position (6, 10).}
+    \vspace{-8em}
     \label{fig:gradient_ascent}
     \centering
 \end{wrapfigure}
