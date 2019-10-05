@@ -161,12 +161,12 @@ Given an RNA sequence of length $L$, we are interested in all possible secondary
 %There are three common ways to represent a specific RNA secondary structure:
 To represent a specific secondary structure, there are three commonly used conventions:
 (1) undirected graph, where each node is a base in the sequence, and each edge represents base pairing.
-(2) Upper triangular matrix (excluding the diagonal)
+(2) upper triangular matrix (excluding the diagonal)
 of size $L \times L$ with binary values, where a value of $1$ at $(i, j)$ represents
 base pairing between sequence position $i$ and $j$, and $0$ represents no base paring.
-(3) Dot-bracket notation of length $L$ where unpaired bases are denoted as dots,
+(3) dot-bracket notation of length $L$ where unpaired bases are denoted as dots,
     and paired bases are represented as left and right brackets.
-When pseudoknot is present, different styles of bracket needs to be used to represent nested structures.
+%When pseudoknot is present, different styles of bracket needs to be used to represent nested structures.
 
 
 %\begin{itemize}
@@ -245,8 +245,8 @@ The proposed models either predict the pairing probability for each base,
 or some forms of the dot-bracket notation.
 Willmott et. al\cite{willmottstate} proposed a bidirectional LSTM that predicts
 the per-position probability for 3 classes: paired, unpaired, and end-of-sequence.
-The model was trained on experimentally solved structure of 16S rRNAs.
-It it unclear whether the model generalizes to other types of RNAs.
+The model was trained on sequences that belong to the same RNA family,
+so it is unclear whether the model generalizes to other types of RNAs.
 Zhang et. al\cite{zhang2019new} proposed a convolutional neural network to predict
 the dot-bracket notation, where each position is encoded as a 3-class softmax: left bracket, right bracket and dot.
 In order for a dot-bracket notation to yield valid structure, it has to follow a few syntactic constraints.
@@ -254,8 +254,8 @@ For example, each left bracket needs to have a corresponding right bracket.
 As the authors mentioned in the paper, output produced by the neural network
 was not guaranteed to be valid, thus needed to be further processed by dynamic programming
 to yield a valid structure prediction.
-Wang et. al\cite{wang2019dmfold} used bidirectional LSTM and modelled the dot-bracket notation as a
-7-class softmax, which includes additional bracket notations to allow for pseudoknots.
+Wang et. al\cite{wang2019dmfold} used bidirectional LSTM to predict the dot-bracket notation as a
+7-class softmax, which includes additional bracket notations to allow for pseudoknot.
 Similar to \cite{zhang2019new}, the prediction did not yield a
 valid structure, and needed further post-processing.
 Furthermore, they used a dataset of only four RNA families,
@@ -340,7 +340,7 @@ including structures with pseudoknot.
 
 
 We formulate the predictive task as a conditional generative process.
-Specifically, given an input sequence with length $L$: $\bm{x} = (x_1, x_2, \dots x_{L})$,
+Specifically, given an input sequence of length $L$: $\bm{x} = (x_1, x_2, \dots x_{L})$,
 we want to predict a distribution of structures conditioned on the sequence $P(\bm{Y} \mid \bm{x})$,
 where the structure $\bm{Y}$ is represented by an upper triangular matrix of size $L \times L$, as defined in Fig \ref{fig:rna_ss_binary_mat}(b).
 
@@ -372,11 +372,13 @@ We factorize the conditional distribution as follows:
 %which mimcs the autoregressive process, where the time axis in our case is the distance to the off-diagonal line.
 
 The generative process implied by such formulation is illustrated in Fig \ref{fig:autoregressive_direction}.
-We generate one off diagonal slice at a time, conditioned on the input sequence and the previous slices,
-starting from the one adjacent to the diagonal line, shown in light blue with $t=1$.
+Starting from the slice adjacent to the off-diagonal line (light blue with $t=1$),
+we generate one off-diagonal slice at a time, conditioned on the input sequence and the previous slices.
+%We generate one off-diagonal slice at a time, conditioned on the input sequence and the previous slices,
+%starting from the one adjacent to the off-diagonal line, shown in light blue with $t=1$.
 This process continues until we fill the upper triangular matrix,
 where the last entry (dark blue, with $t=9$) is conditioned on the input and the entire upper triangular matrix except for itself.
-Intuitively, the distance to the off-diagonal line is analogous to the "timestamp" as in classic autoregressive models.
+Intuitively, the distance to the off-diagonal line is analogous to the ``timestamp'' as in classic autoregressive models.
 
 %TODO re-generate plot using draw.io, or use the model plot?
 %
@@ -397,7 +399,7 @@ Intuitively, the distance to the off-diagonal line is analogous to the "timestam
 
 
 
-\subsection{Model}
+\subsection{Architecture}
 
 %(TODO doesn't flow well, combine with previous paragraphs?)
 
@@ -446,21 +448,21 @@ This is followed by several 2D conv layers, as shown in Fig \ref{fig:nn_arch_1} 
 
 
     \item \label{enum:step_3} Activations of the last 2D conv layer is concatenated with output
-    from the previous "timestamp" $y^{t-1}$,
+    from the previous ``timestamp'' $y^{t-1}$,
 and processed by multiple layers of masked 2D conv layers, as shown in Fig \ref{fig:nn_arch_1} from (e) to (f)
 (showing only one layer for simplicity).
 Masking ensures that the output node only has access to
-    information in the lower left corner ("past" \textit{w.r.t.} the output node) of the matrix,
-    which enables the model to generate output in autoregressive fashion in inference mode.
+    information in the lower left corner (``past'' \textit{w.r.t.} the output node) of the matrix,
+    which enables the model to generate output in autoregressive fashion once unrolled in inference mode (see Section \ref{sec:inference} for mode details).
 
     \item \label{enum:step_4} Finally, a fully connected layer along the feature dimension
    with sigmoid activation produces an output between 0 and 1,
-    for each position in the upper triangular matrix, as illustrated in Fig \ref{fig:nn_arch_1} from (f) to (e).
+    for each position in the upper triangular matrix, as illustrated in Fig \ref{fig:nn_arch_1} from (e) to (f).
 
 \end{enumerate}
 
 As shown in Fig \ref{fig:nn_arch_1}, we refer to \ref{enum:step_1}-\ref{enum:step_2} as the sequence encoder,
-and \ref{enum:step_3}-\ref{enum:step_4} as the sequence generator.
+and \ref{enum:step_3}-\ref{enum:step_4} as the output generator.
 
 %At training time, prediction, loss and gradient of all positions in the output can be computed in parallel.
 %At test time, we need to initialize the output at time $t=0$, typically with a matrix of all zeros,
@@ -535,7 +537,7 @@ by passing in the target structure matrix as both the input and target.
 %1-step AR.
 
 
-\subsection{Inference}
+\subsection{Inference} \label{sec:inference}
 
 %TODO this is repeated from the model section, maybe combine?
 
@@ -575,7 +577,7 @@ using the same procedure that generated the training set.
 For each sequence in the test set, we ran RNAfold and sampled $100$ structures from the ensemble.
 We also used our model to sample $100$ structures from the output distribution conditioned on each sequence.
 To avoid evaluating on low probability samples, structures occurring only once were discarded.
-To compare the two structure distributinos,
+To compare the two structure distributions,
 for each unique structure produced by RNAfold, we computed sensitivity
 (﻿number of correctly predicted base pairs divided by ﻿number of true base pairs) and
 positive predictive value (PPV, a.k.a. precision, number of correctly predicted base pairs
@@ -616,7 +618,7 @@ It can be observed that majority of the RNAfold-generated structures can be reco
     \centering
     \vspace{-3em}
     \includegraphics[width=0.5\textwidth]{plot/sample_structure_pseudoknot.pdf}
-    \caption{Secondary structure of mouse mammary tumor virus (MMTV): (a) measured by nuclear magnetic resonance (NMR), plot from \cite{staple2005pseudoknots}, (b) predicted by RNAfold, (c) Structures generated by our model (only showing unique structures).}
+    \caption{Secondary structure of mouse mammary tumor virus (MMTV): (a) measured by nuclear magnetic resonance (NMR)\cite{staple2005pseudoknots}, (b) predicted by RNAfold, (c) generated by our model (only showing unique structures).}
     \vspace{-3em}
     \label{fig:sample_structure_pseudoknot}
     \centering
@@ -665,10 +667,10 @@ We start with the current predicted structure and want to maximize base pairing 
 In order to find small changes to be made on this sequence,
 we computed the gradient of the output node at $(i, j)$
 with respect to all the input nodes ${\partial y_{i,j}}/{\partial \bm{x}}$.
-We ran $100$ gradient ascent iterations with step size $0.01$,
-in each step, after adding the gradient (times step size) onto the input,
+We ran $100$ gradient ascent iterations with step size $0.01$.
+In each step, after adding the gradient (times step size) onto the input,
 we re-normalize the input so values along the feature dimension sum up to 1.
-After all $100$ iterations, we convert the one-hot-encoding back to a sequence
+After all $100$ iterations, we convert the input matrix back to a sequence
 by taking the nucleotide with max score for each position.
 Fig \ref{fig:gradient_ascent}(b) and (c) shows the resulting sequence and structure
 for $i=5, j=11$ and $i=6, j=10$, respectively.
