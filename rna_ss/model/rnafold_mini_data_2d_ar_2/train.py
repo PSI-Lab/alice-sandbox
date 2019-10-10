@@ -61,7 +61,8 @@ def main(config, data_file, output_dir):
     # validation_dataset = DataGeneratorFixedLen(df_validation, config['batch_size'])
     # for training we group sequence of similar lengths in same minibatch to speed up
     # for validation we randomize the minibatch to make sure we have a good sampling of all lengths
-    training_dataset = DataGeneratorVarLen(df_training, config['batch_size'], length_grouping=True)
+    # training_dataset = DataGeneratorVarLen(df_training, config['batch_size'], length_grouping=True)
+    training_dataset = DataGeneratorVarLen(df_training, config['batch_size'], length_grouping=False)
     validation_dataset = DataGeneratorVarLen(df_validation, config['batch_size'], length_grouping=False)
 
     sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
