@@ -1,5 +1,5 @@
 batch_size: 10
-learning_rate: 0.001
+learning_rate: 0.0001
 es_patience: 20
 num_batch_for_validation: 10
 num_epoch: 200
