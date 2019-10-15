@@ -129,4 +129,4 @@ print(len(df_metric))
 print(sum(df_metric['ppv']>0.8)/float(len(df_metric)))
 
 # df_metric[['seq', 'sensitivity', 'ppv', 'f_measure']].to_csv('/Users/alicegao/data/tmp/perf_rand_ensemble_metric.csv', index=False)
-print df_metric.describe()
+print df_metric.describe(percentiles=np.linspace(0, 1, 10))
