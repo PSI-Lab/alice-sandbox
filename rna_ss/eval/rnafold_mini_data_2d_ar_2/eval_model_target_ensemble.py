@@ -37,7 +37,7 @@ def process_row(seq, n_sample, model):
     # TODO compute CHUNK_SIZE based on sequence length
     CHUNK_SIZE = 20
     _n = range(0, n_sample, CHUNK_SIZE)
-    _n = _n.append(n_sample)
+    _n.append(n_sample)
     _n = [b - a for a, b in zip(_n[:-1], _n[1:])]  # batch sizes
     assert sum(_n) == n_sample
     if n_sample > CHUNK_SIZE:
