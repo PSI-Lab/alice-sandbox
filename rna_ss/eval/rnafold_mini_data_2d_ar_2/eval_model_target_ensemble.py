@@ -11,7 +11,7 @@ logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
 
-def process_row(seq, n_sample, model):
+def _process_row(seq, n_sample, model):
     pred, logp, fe = model.predict_one_step_ar(seq=seq, n_sample=n_sample, start_offset=2)  # hard-coded offset for now
 
     data_pred = []   # index of the sampled 1's
@@ -31,6 +31,23 @@ def process_row(seq, n_sample, model):
         # data_ppv.append(ppv)
         # data_f.append(f_measure)
     return data_pred
+
+
+def process_row(seq, n_sample, model):
+    # TODO compute CHUNK_SIZE based on sequence length
+    CHUNK_SIZE = 20
+    _n = range(0, n_sample, CHUNK_SIZE)
+    _n = _n.append(n_sample)
+    _n = [b - a for a, b in zip(_n[:-1], _n[1:])]  # batch sizes
+    assert sum(_n) == n_sample
+    if n_sample > CHUNK_SIZE:
+        result = []
+        for _l in _n:
+            _r = _process_row(seq, _l, model)
+            result.append(_r)
+    else:
+        result = _process_row(seq, n_sample, model)
+    return result
 
 
 def main(model_file, dataset_file, n_sample, output):
