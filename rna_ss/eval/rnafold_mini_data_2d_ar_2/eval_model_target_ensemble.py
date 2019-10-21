@@ -44,7 +44,7 @@ def process_row(seq, n_sample, model):
         result = []
         for _l in _n:
             _r = _process_row(seq, _l, model)
-            result.append(_r)
+            result.extend(_r)
     else:
         result = _process_row(seq, n_sample, model)
     return result
