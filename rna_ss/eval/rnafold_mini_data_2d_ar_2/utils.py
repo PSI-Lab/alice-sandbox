@@ -376,7 +376,14 @@ class PredictorSPlitModel(object):
                        output=new_output)
         return model1, model2
 
-    def predict_one_step_ar(self, seq, n_sample=1, start_offset=1, p_clip=1e-7):
+    def predict_one_step_ar(self, seq, n_sample=1, start_offset=1, p_clip=1e-7,
+                            ml_path=False, ml_threshold=None):
+        # if generating maximum likelihood path, we only need one sample
+        if ml_path:
+            assert n_sample == 1
+            assert 0 < ml_threshold < 1
+            logging.info("Generating maximum likelihood path using threshold {}".format(ml_threshold))
+
         L = len(seq)
         # x = np.tile(DataEncoder.encode_seqs([seq]), [n_sample, 1, 1])
         x_single = DataEncoder.encode_seqs([seq])
@@ -400,8 +407,12 @@ class PredictorSPlitModel(object):
                 # sample n-th upper triangular band
                 n_th_band_idx = upper_band_index(L, n)
                 vals = pred[n_th_band_idx]
-                threshold = np.random.uniform(0, 1, size=vals.shape)
-                vals_sampled = (vals > threshold).astype(np.float32)
+
+                if ml_path:
+                    vals_sampled = (vals > ml_threshold).astype(np.float32)
+                else:
+                    threshold = np.random.uniform(0, 1, size=vals.shape)
+                    vals_sampled = (vals > threshold).astype(np.float32)
 
                 # create list of i-j pairs for positions in the slice
                 i_idxes = np.arange(0, L - n)
