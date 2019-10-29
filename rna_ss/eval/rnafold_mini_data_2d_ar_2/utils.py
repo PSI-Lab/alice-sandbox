@@ -195,7 +195,7 @@ def arr2db(arr):
             yield g
 
     idx_pair_groups = list(_group(idx_pairs))
-    print(idx_pair_groups)
+    # print(idx_pair_groups)
 
     if len(idx_pair_groups) == 0:
         return '.' * arr.shape[0]
