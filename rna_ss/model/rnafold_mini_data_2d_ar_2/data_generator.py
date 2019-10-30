@@ -276,7 +276,7 @@ class FixedLengthDataBatch(object):
     def _generate_sequences(self, num_seq, seq_len):
         seqs = []  # TODO use set so we don't add duplicates (but the probability of getting duplicate is very low)
         for _ in range(num_seq):
-            seq = ''.join(random.choice(list('ACGU')) for _ in seq_len)
+            seq = ''.join(random.choice(list('ACGU')) for _ in range(seq_len))
             seqs.append(seq)
         return seqs
 
