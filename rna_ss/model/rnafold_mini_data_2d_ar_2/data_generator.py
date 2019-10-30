@@ -179,8 +179,10 @@ class DataGeneratorVarLen(keras.utils.Sequence):
         return [x1, y], [y, y2]
 
 
-def sample_structures(seq, n_samples):
-    p = Popen(['RNAsubopt',  '-p', str(n_samples)], stdin=PIPE,
+def sample_structures(seq, num_structures):
+    # use -N for generating non-redundant samples <- only use this for generating training data
+    # use "-e 2" to generate all structures within 2Kcal/mol within the MFE
+    p = Popen(['RNAsubopt',  '-N',  '-e',  '2'], stdin=PIPE,
               stdout=PIPE, stderr=PIPE, universal_newlines=True)
     stdout, stderr = p.communicate(input=seq)
     rc = p.returncode
@@ -190,14 +192,26 @@ def sample_structures(seq, n_samples):
         raise Exception(msg)
     # parse output
     lines = stdout.splitlines()
-    assert len(lines) == n_samples + 1
+    # assert len(lines) == n_samples + 1
     lines = lines[1:]
     # convert to idx array
     all_vals = []
-    for s in lines:
+
+    # check if we have enough structures
+    # if not, duplicate
+    if len(lines) > num_structures:
+        lines = lines[:num_structures]
+    elif len(lines) < num_structures:
+        # sample with replacement
+        lines = np.random.choice(lines, num_structures)
+
+    for line in lines:
+        s, e = line.split(' ')
+        fe = float(e)
+        assert fe < 0  # just check it can be converted
         assert len(s) == len(seq)
         # convert to ct file (add a fake energy, otherwise b2ct won't run)
-        input_str = '>seq\n{}\n{} (-0.0)'.format(seq, s)
+        input_str = '>seq\n{}\n{} ({})'.format(seq, s, e)
         p = Popen(['b2ct'], stdin=PIPE,
                   stdout=PIPE, stderr=PIPE, universal_newlines=True)
         stdout, stderr = p.communicate(input=input_str)
@@ -223,7 +237,8 @@ def sample_structures(seq, n_samples):
         # set lower triangular to 0
         vals[np.tril_indices(vals.shape[0])] = 0
         pred_idx = np.where(vals == 1)
-        all_vals.append(pred_idx)
+        all_vals.append((pred_idx, fe))
+    assert len(all_vals) == num_structures
     return all_vals
 
 
@@ -254,8 +269,9 @@ class FixedLengthDataBatch(object):
         return self._get_data(self._idx + 1)
 
     def _get_data(self, idx):
-        structs = [ss[idx] for ss in self.y]
-        return self.x, structs
+        structs = [ss[idx][0] for ss in self.y]
+        fes = [ss[idx][1] for ss in self.y]
+        return self.x, structs, fes
 
     def _generate_sequences(self, num_seq, seq_len):
         seqs = []  # TODO use set so we don't add duplicates (but the probability of getting duplicate is very low)
@@ -304,7 +320,7 @@ class DataGeneratorInfinite(keras.utils.Sequence):
         # check if we need to generate new data
         if not self._data[index]:
             self._data[index] = FixedLengthDataBatch(np.random.randint(self.min_len, self.max_len), self.num_structures)
-        _x, _y = self._data[index].pop_data()
+        _x, _y, _e = self._data[index].pop_data()
         x, y = self._encode_data(_x, _y)
 
     def on_epoch_end(self):
@@ -336,10 +352,11 @@ class DataGeneratorInfinite(keras.utils.Sequence):
         pair_matrix = _mask(pair_matrix)
         return pair_matrix
 
-    def _encode_data(self, x, y):
+    def _encode_data(self, x, y, e):
         x_data = []
         y_data = []
         assert len(x) == len(y)
+        assert len(x) == len(e)
         for seq, one_idx in zip(x, y):
             _x = self._encode_seq(seq)
             arr = self._make_pair_arr(seq, one_idx)
@@ -347,7 +364,8 @@ class DataGeneratorInfinite(keras.utils.Sequence):
             y_data.append(arr)
         x_data = np.asarray(x_data)
         y_data = np.asarray(y_data)
-        return [x_data, y_data], y_data
+        e_data = np.asarray(e)[np.newaxis, :]
+        return [x_data, y_data], [y_data, e_data]
 
 
 # class DataGeneratorFixedLen(keras.utils.Sequence):
