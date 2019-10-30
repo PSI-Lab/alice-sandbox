@@ -206,7 +206,7 @@ def sample_structures(seq, num_structures):
         lines = np.random.choice(lines, num_structures)
 
     for line in lines:
-        s, e = line.split(' ')
+        s, e = line.split()  # split on multiple white spaces
         fe = float(e)
         assert fe < 0  # just check it can be converted
         assert len(s) == len(seq)
