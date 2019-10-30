@@ -319,7 +319,9 @@ class DataGeneratorInfinite(keras.utils.Sequence):
         """Generate one batch of data"""
         # check if we need to generate new data
         if not self._data[index]:
-            self._data[index] = FixedLengthDataBatch(np.random.randint(self.min_len, self.max_len), self.num_structures)
+            self._data[index] = FixedLengthDataBatch(self.batch_size,
+                                                     np.random.randint(self.min_len, self.max_len),
+                                                     self.num_structures)
         _x, _y, _e = self._data[index].pop_data()
         x, y = self._encode_data(_x, _y, _e)
         return x, y
