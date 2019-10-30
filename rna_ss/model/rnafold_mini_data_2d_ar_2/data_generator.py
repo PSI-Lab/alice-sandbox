@@ -309,7 +309,7 @@ class DataGeneratorInfinite(keras.utils.Sequence):
         self.min_len = min_len
         self.max_len = max_len
         self.num_structures = num_structures
-        self._data = {i: None for i in num_batches}  # make it dict, easy to use
+        self._data = {i: None for i in range(num_batches)}  # make it dict, easy to use
 
     def __len__(self):
         """number of batches per each epoch"""
@@ -328,7 +328,7 @@ class DataGeneratorInfinite(keras.utils.Sequence):
         """decide whether to wipe data"""
         # wolg, check the first one
         if not self._data[0] or not self._data[0].is_valid():
-            self._data = {i: None for i in self.num_batches}
+            self._data = {i: None for i in range(self.num_batches)}
 
     def _encode_seq(self, seq):
         seq = seq.upper().replace('A', '1').replace('C', '2').replace('G', '3').replace('T', '4').replace('U', '4').replace('N', '0')
