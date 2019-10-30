@@ -21,7 +21,8 @@ from keras.models import load_model
 from keras.callbacks import TensorBoard, ModelCheckpoint, EarlyStopping, ReduceLROnPlateau, CSVLogger, Callback
 from genome_kit import Interval
 # from data_generator import DataGeneratorFixedLen
-from data_generator import DataGeneratorVarLen
+# from data_generator import DataGeneratorVarLen
+from data_generator import DataGeneratorInfinite
 from dgutils.pandas import Column, get_metadata, write_dataframe, add_column, read_dataframe
 from model import build_model, custom_loss, TriangularConvolution2D
 # from config import config
@@ -38,7 +39,7 @@ class Histories(Callback):
         self.accuracies.append(logs.get('acc'))
 
 
-def main(config, data_file, output_dir):
+def main(config, output_dir):
     git_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip()
 
     # load data TODO hard-coded for now
@@ -48,22 +49,28 @@ def main(config, data_file, output_dir):
     # df_intervals = pd.read_pickle('data/s_processed.pkl')
     # # var length random seq dataset
     # df_intervals = pd.read_pickle('data/rand_seqs_var_len_10_100_100000.pkl.gz')
-    df_intervals = pd.read_pickle(data_file)
+    # df_intervals = pd.read_pickle(data_file)
 
-    n_train = int(len(df_intervals) * 0.8)
-    df_training = df_intervals[:n_train].reset_index(drop=True)
-    df_validation = df_intervals[n_train:].reset_index(drop=True)
+    # n_train = int(len(df_intervals) * 0.8)
+    # df_training = df_intervals[:n_train].reset_index(drop=True)
+    # df_validation = df_intervals[n_train:].reset_index(drop=True)
 
-    print("Num sequences in training: %d" % len(df_training))
-    print("Num sequences in validation: %d" % len(df_validation))
+    # print("Num sequences in training: %d" % len(df_training))
+    # print("Num sequences in validation: %d" % len(df_validation))
 
     # training_dataset = DataGeneratorFixedLen(df_training, config['batch_size'])
     # validation_dataset = DataGeneratorFixedLen(df_validation, config['batch_size'])
     # for training we group sequence of similar lengths in same minibatch to speed up
     # for validation we randomize the minibatch to make sure we have a good sampling of all lengths
     # training_dataset = DataGeneratorVarLen(df_training, config['batch_size'], length_grouping=True)
-    training_dataset = DataGeneratorVarLen(df_training, config['batch_size'], length_grouping=False)
-    validation_dataset = DataGeneratorVarLen(df_validation, config['batch_size'], length_grouping=False)
+    # training_dataset = DataGeneratorVarLen(df_training, config['batch_size'], length_grouping=False)
+    # validation_dataset = DataGeneratorVarLen(df_validation, config['batch_size'], length_grouping=False)
+
+    training_dataset = DataGeneratorInfinite(batch_size=config['batch_size'], num_batches=200,
+                                             min_len=20, max_len=200, num_structures=10)
+    validation_dataset = DataGeneratorInfinite(batch_size=config['batch_size'],
+                                               num_batches=config['num_batch_for_validation'],
+                                               min_len=20, max_len=200, num_structures=10)
 
     sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
     kb.tensorflow_backend._get_available_gpus()
@@ -172,7 +179,7 @@ def main(config, data_file, output_dir):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, help='path to config file')
-    parser.add_argument('--data', type=str, help='training dataset')
+    # parser.add_argument('--data', type=str, help='training dataset')
     parser.add_argument('--output', type=str, help='output dir to save the best model')
     # parser.add_argument('--fold', type=int, help='validation fold ID')
     args = parser.parse_args()
@@ -182,4 +189,5 @@ if __name__ == "__main__":
 
     # fold_idx = int(sys.argv[1])
     # assert 0 <= args.fold < len(config['chrom_folds'])
-    main(config, args.data, args.output)
+    # main(config, args.data, args.output)
+    main(config, args.output)

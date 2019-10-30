@@ -321,7 +321,8 @@ class DataGeneratorInfinite(keras.utils.Sequence):
         if not self._data[index]:
             self._data[index] = FixedLengthDataBatch(np.random.randint(self.min_len, self.max_len), self.num_structures)
         _x, _y, _e = self._data[index].pop_data()
-        x, y = self._encode_data(_x, _y)
+        x, y = self._encode_data(_x, _y, _e)
+        return x, y
 
     def on_epoch_end(self):
         """decide whether to wipe data"""
