@@ -366,7 +366,7 @@ class DataGeneratorInfinite(keras.utils.Sequence):
             y_data.append(arr[:, :, np.newaxis])
         x_data = np.asarray(x_data)
         y_data = np.asarray(y_data)
-        e_data = np.asarray(e)[np.newaxis, :]
+        e_data = np.asarray(e)[:, np.newaxis]
         return [x_data, y_data], [y_data, e_data]
 
 
