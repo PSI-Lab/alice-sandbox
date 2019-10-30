@@ -1,8 +1,9 @@
 batch_size: 10
-learning_rate: 0.00002
+learning_rate: 0.00001
 es_patience: 20
 num_batch_for_validation: 10
-num_epoch: 200
+#num_epoch: 200
+num_epoch: 2000
 #model_dir: model/
 
 
