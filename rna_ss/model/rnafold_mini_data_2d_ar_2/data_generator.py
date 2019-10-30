@@ -208,7 +208,6 @@ def sample_structures(seq, num_structures):
     for line in lines:
         s, e = line.split()  # split on multiple white spaces
         fe = float(e)
-        assert fe < 0  # just check it can be converted
         assert len(s) == len(seq)
         # convert to ct file (add a fake energy, otherwise b2ct won't run)
         input_str = '>seq\n{}\n{} ({})'.format(seq, s, e)
