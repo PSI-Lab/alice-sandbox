@@ -86,6 +86,7 @@ def main(config, output_dir):
     # model.compile(loss=custom_loss,
     #               optimizer=opt)
     model.compile(loss={'ar_label': custom_loss, 'fe': 'mean_squared_error'},
+                  loss_weights={'ar_label': 1.0, 'fe': 0.0},  # FIXME turn off fe loss for now
                   optimizer=opt)
     # TODO loss weighting
 
