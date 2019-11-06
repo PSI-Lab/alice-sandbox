@@ -1,4 +1,5 @@
 import numpy as np
+import logging
 import keras
 import random
 import itertools
@@ -10,6 +11,10 @@ import datacorral as dc
 from genome_kit import Genome, GenomeTrack, Interval
 from dgutils.interval import DisjointIntervalsSequence
 from dgutils.pandas import add_column, read_dataframe
+
+
+logging.basicConfig()
+logging.getLogger().setLevel(logging.DEBUG)
 
 
 class DataGeneratorVarLen(keras.utils.Sequence):
@@ -249,6 +254,9 @@ class FixedLengthDataBatch(object):
     """
 
     def __init__(self, num_seq, seq_len, num_structures):
+        logging.debug("Initialize fixed length batch of {} sequences ({} structures each) of length {}".format(num_seq,
+                                                                                                               num_structures,
+                                                                                                               seq_len))
         self.x = self._generate_sequences(num_seq, seq_len)
         self.y = self._generate_structures(self.x, num_structures)
         self._idx = num_structures - 1
@@ -264,6 +272,7 @@ class FixedLengthDataBatch(object):
 
     def pop_data(self):
         assert self.is_valid()
+        logging.debug("Pop data at index {} and decrease to {}".format(self._idx, self._idx - 1))
         self._idx -= 1
         return self._get_data(self._idx + 1)
 
