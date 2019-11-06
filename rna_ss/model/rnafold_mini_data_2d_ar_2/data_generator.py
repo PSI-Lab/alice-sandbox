@@ -325,6 +325,7 @@ class DataGeneratorInfinite(keras.utils.Sequence):
 
     def __getitem__(self, index):
         """Generate one batch of data"""
+        logging.debug("Accessing batch {}".format(index))
         # check if we need to generate new data
         if not self._data[index]:
             self._data[index] = FixedLengthDataBatch(self.batch_size,
