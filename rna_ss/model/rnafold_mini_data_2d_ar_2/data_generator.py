@@ -333,7 +333,9 @@ class DataGeneratorInfinite(keras.utils.Sequence):
             self._data[index] = FixedLengthDataBatch(self.batch_size,
                                                      np.random.randint(self.min_len, self.max_len),
                                                      self.num_structures)
-        logging.debug("[{}] self._data: {}".format(self.name, self._data))
+        # debug display non-missing data batches
+        logging.debug(
+            "[{}] self._data (indexes with data): {}".format(self.name, {k: v for k, v in self._data.iteritems() if v}))
         _x, _y, _e = self._data[index].pop_data()
         x, y = self._encode_data(_x, _y, _e)
         return x, y
