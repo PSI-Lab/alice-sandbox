@@ -343,6 +343,7 @@ class DataGeneratorInfinite(keras.utils.Sequence):
         logging.debug("[{}] epoch end".format(self.name))
         # debug
         if not self._data[0]:
+            logging.debug("[{}] self._data: {}".format(self.name, self._data))
             logging.debug("[{}] not self._data[0]".format(self.name))
         elif not self._data[0].is_valid():
             logging.debug("[{}] not self._data[0].is_valid()".format(self.name))
