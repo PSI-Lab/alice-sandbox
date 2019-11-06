@@ -339,7 +339,11 @@ class DataGeneratorInfinite(keras.utils.Sequence):
     def on_epoch_end(self):
         """decide whether to wipe data"""
         # wolg, check the first one
-        if not self._data[0] or not self._data[0].is_valid():
+        logging.debug("epoch end")
+        # if not self._data[0] or not self._data[0].is_valid():
+        if not self._data[0].is_valid():
+            logging.debug("self._data[0].is_valid(): {}".format(self._data[0].is_valid()))
+            logging.debug("Reset all batches ")
             self._data = {i: None for i in range(self.num_batches)}
 
     def _encode_seq(self, seq):
