@@ -67,10 +67,10 @@ def main(config, output_dir):
     # validation_dataset = DataGeneratorVarLen(df_validation, config['batch_size'], length_grouping=False)
 
     training_dataset = DataGeneratorInfinite(batch_size=config['batch_size'], num_batches=500,
-                                             min_len=20, max_len=200, num_structures=10)
+                                             min_len=20, max_len=200, num_structures=10, name='training')
     validation_dataset = DataGeneratorInfinite(batch_size=config['batch_size'],
                                                num_batches=config['num_batch_for_validation'],
-                                               min_len=20, max_len=200, num_structures=10)
+                                               min_len=20, max_len=200, num_structures=10, name='validation')
 
     sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
     kb.tensorflow_backend._get_available_gpus()
