@@ -227,7 +227,7 @@ def sample_structures(seq, num_structures):
         # load data
         df = pd.read_csv(StringIO(stdout), skiprows=1, header=None,
                          names=['i1', 'base', 'idx_i', 'i2', 'idx_j', 'i3'],
-                         sep=r"\s*")
+                         sep=r"\s*", engine='python')
         assert ''.join(df['base'].tolist()) == seq, ''.join(df['base'].tolist())
         # matrix
         vals = np.zeros((len(seq), len(seq)))
