@@ -311,13 +311,14 @@ class DataGeneratorInfinite(keras.utils.Sequence):
         'U': 'A',
     }
 
-    def __init__(self, batch_size, num_batches, min_len=20, max_len=200, num_structures=10):
+    def __init__(self, batch_size, num_batches, min_len=20, max_len=200, num_structures=10, name='unspecified'):
         self.batch_size = batch_size
         self.num_batches = num_batches
         self.min_len = min_len
         self.max_len = max_len
         self.num_structures = num_structures
         self._data = {i: None for i in range(num_batches)}  # make it dict, easy to use
+        self.name = name
 
     def __len__(self):
         """number of batches per each epoch"""
@@ -325,10 +326,10 @@ class DataGeneratorInfinite(keras.utils.Sequence):
 
     def __getitem__(self, index):
         """Generate one batch of data"""
-        logging.debug("Accessing batch {}".format(index))
+        logging.debug("[{}] Accessing batch {}".format(self.name, index))
         # check if we need to generate new data
         if not self._data[index]:
-            logging.debug("Generating batch {}".format(index))
+            logging.debug("[{}] Generating batch {}".format(self.name, index))
             self._data[index] = FixedLengthDataBatch(self.batch_size,
                                                      np.random.randint(self.min_len, self.max_len),
                                                      self.num_structures)
@@ -339,11 +340,11 @@ class DataGeneratorInfinite(keras.utils.Sequence):
     def on_epoch_end(self):
         """decide whether to wipe data"""
         # wolg, check the first one
-        logging.debug("epoch end")
-        # if not self._data[0] or not self._data[0].is_valid():
-        if not self._data[0].is_valid():
-            logging.debug("self._data[0].is_valid(): {}".format(self._data[0].is_valid()))
-            logging.debug("Reset all batches ")
+        logging.debug("[{}] epoch end".format(self.name))
+        if not self._data[0] or not self._data[0].is_valid():
+        # if not self._data[0].is_valid():
+            # logging.debug("self._data[0].is_valid(): {}".format(self._data[0].is_valid()))
+            logging.debug("[{}] Reset all batches".format(self.name))
             self._data = {i: None for i in range(self.num_batches)}
 
     def _encode_seq(self, seq):
