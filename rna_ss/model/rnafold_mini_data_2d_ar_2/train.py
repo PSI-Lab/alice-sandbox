@@ -66,8 +66,13 @@ def main(config, output_dir):
     # training_dataset = DataGeneratorVarLen(df_training, config['batch_size'], length_grouping=False)
     # validation_dataset = DataGeneratorVarLen(df_validation, config['batch_size'], length_grouping=False)
 
-    training_dataset = DataGeneratorInfinite(batch_size=config['batch_size'], num_batches=500,
+    # debug
+    print("debug")
+    training_dataset = DataGeneratorInfinite(batch_size=config['batch_size'], num_batches=5,
                                              min_len=20, max_len=200, num_structures=10, name='training')
+
+    # training_dataset = DataGeneratorInfinite(batch_size=config['batch_size'], num_batches=500,
+    #                                          min_len=20, max_len=200, num_structures=10, name='training')
     validation_dataset = DataGeneratorInfinite(batch_size=config['batch_size'],
                                                num_batches=config['num_batch_for_validation'],
                                                min_len=20, max_len=200, num_structures=10, name='validation')
