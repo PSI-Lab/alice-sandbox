@@ -341,6 +341,11 @@ class DataGeneratorInfinite(keras.utils.Sequence):
         """decide whether to wipe data"""
         # wolg, check the first one
         logging.debug("[{}] epoch end".format(self.name))
+        # debug
+        if not self._data[0]:
+            logging.debug("[{}] not self._data[0]".format(self.name))
+        elif not self._data[0].is_valid():
+            logging.debug("[{}] not self._data[0].is_valid()".format(self.name))
         if not self._data[0] or not self._data[0].is_valid():
         # if not self._data[0].is_valid():
             # logging.debug("self._data[0].is_valid(): {}".format(self._data[0].is_valid()))
