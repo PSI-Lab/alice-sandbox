@@ -143,7 +143,15 @@ def main(config, output_dir):
                         shuffle=True,
                         epochs=config['num_epoch'],
                         use_multiprocessing=True,
-                        workers=8)
+                        workers=1)
+    # model.fit_generator(generator=training_dataset,
+    #                     validation_data=validation_dataset,
+    #                     validation_steps=config['num_batch_for_validation'],
+    #                     callbacks=callbacks,
+    #                     shuffle=True,
+    #                     epochs=config['num_epoch'],
+    #                     use_multiprocessing=True,
+    #                     workers=8)
 
     print("run_dir: {}".format(run_dir))
     # copy over the best model
