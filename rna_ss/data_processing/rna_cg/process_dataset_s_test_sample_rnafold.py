@@ -69,7 +69,8 @@ def sample_structures(seq, n_samples):
     return all_vals
 
 
-def main(input_file, outfile, num_seqs):
+def main(input_file, outprefix, num_seqs, chunksize):
+    part_idx = 0
     data = []
 
     for lines in file_gen(input_file):
@@ -93,16 +94,30 @@ def main(input_file, outfile, num_seqs):
             'truth_one_idx': idxes,
             'rnafold_one_idx': sample_structures(seq, num_seqs),
         })
-        print(len(data), seq_id)
+        print(part_idx, len(data), seq_id)
 
-    data = pd.DataFrame(data)
-    data.to_pickle(outfile, compression='gzip')
+        if len(data) == chunksize:
+            df = pd.DataFrame(data)
+            outfile = outprefix + ".part_{}.pkl.gz".format(part_idx)
+            df.to_pickle(outfile, compression='gzip')
+            part_idx += 1
+            data = []
+
+    # left over data points
+    if len(data) > 0:
+        df = pd.DataFrame(data)
+        outfile = outprefix + ".part_{}.pkl.gz".format(part_idx)
+        df.to_pickle(outfile, compression='gzip')
+
+    # data = pd.DataFrame(data)
+    # data.to_pickle(outfile, compression='gzip')
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--infile', type=str, help='input file')
-    parser.add_argument('--outfile', type=str, help='output file')
+    parser.add_argument('--outprefix', type=str, help='output file prefix')
+    parser.add_argument('--chunksize', type=int, help='maximum number of sequences per each output file')
     parser.add_argument('--num', type=int, default=100, help='total number of sequences to generate')
     args = parser.parse_args()
-    main(args.infile, args.outfile, args.num)
+    main(args.infile, args.outprefix, args.num, args.chunksize)
