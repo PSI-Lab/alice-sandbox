@@ -2,7 +2,7 @@ import yaml
 import argparse
 import numpy as np
 import pandas as pd
-from dgutils.pandas import add_column
+from dgutils.pandas import add_columns
 from utils import PredictorSPlitModel, arr2db, EvalMetric
 import logging
 
@@ -30,7 +30,7 @@ def _process_row(seq, n_sample, model):
         # data_sensitivity.append(sensitivity)
         # data_ppv.append(ppv)
         # data_f.append(f_measure)
-    return data_pred
+    return data_pred, fe.tolist()
 
 
 def process_row(seq, n_sample, model):
@@ -41,13 +41,15 @@ def process_row(seq, n_sample, model):
     _n = [b - a for a, b in zip(_n[:-1], _n[1:])]  # batch sizes
     assert sum(_n) == n_sample
     if n_sample > CHUNK_SIZE:
-        result = []
+        result_idx = []
+        result_fe = []
         for _l in _n:
-            _r = _process_row(seq, _l, model)
-            result.extend(_r)
+            _r, _f = _process_row(seq, _l, model)
+            result_idx.extend(_r)
+            result_fe.extend(_f)
     else:
-        result = _process_row(seq, n_sample, model)
-    return result
+        result_idx, result_fe = _process_row(seq, n_sample, model)
+    return result_idx, result_fe
 
 
 def main(model_file, dataset_file, n_sample, output):
@@ -55,7 +57,7 @@ def main(model_file, dataset_file, n_sample, output):
     # TODO make sure dataset has unified format
     df = pd.read_pickle(dataset_file)
 
-    df = add_column(df, 'pred_idx', ['seq'],
+    df = add_columns(df, ['pred_idx', 'pred_norm_fe'], ['seq'],
                     lambda x: process_row(x, n_sample, model), pbar=True)
 
     df.to_pickle(output)
