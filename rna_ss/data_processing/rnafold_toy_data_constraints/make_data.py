@@ -101,19 +101,28 @@ def sample_structures(seq, n_samples, accessible_motifs=None, accessible_prob=1.
     return one_idx, prob_pair
 
 
+def unique_struct(one_idx):
+    # return set(one_idx)  # TODO does this work?
+    df = pd.DataFrame(one_idx, columns=['left', 'right'])
+    df = add_column(df, 'left', ['left'], lambda x: tuple(x))
+    df = add_column(df, 'right', ['right'], lambda x: tuple(x))
+    df = df.drop_duplicates()
+    return [tuple(x) for x in df.values]
+
+
 # test
 one_idx, prob_pair = sample_structures('CGGCUCGCAACAGACCUAUUAGU',
-                  20, ['CUC'], accessible_prob=1.0)
+                  100, ['CUC'], accessible_prob=1.0)
 
-for x in one_idx:
+for x in unique_struct(one_idx):
     print(x)
 
 print(prob_pair)
 
 
-one_idx, prob_pair = sample_structures('CGGCUCGCAACAGACCUAUUAGU', 20)
+one_idx, prob_pair = sample_structures('CGGCUCGCAACAGACCUAUUAGU', 100)
 
-for x in one_idx:
+for x in unique_struct(one_idx):
     print(x)
 
 print(prob_pair)
