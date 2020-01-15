@@ -33,7 +33,7 @@ def generate_reactivity_data(seq, accessible_motifs, accessible_prob=1.0):
     return df
 
 
-def sample_structures(seq, n_samples, accessible_motifs=None, accessible_prob=1.0):
+def sample_structures(seq, n_samples, accessible_motifs=None, accessible_prob=1.0, unique=True):
     if accessible_motifs:
         df_reactivities = generate_reactivity_data(seq, accessible_motifs, accessible_prob)
         with tempfile.NamedTemporaryFile() as f:
@@ -98,6 +98,9 @@ def sample_structures(seq, n_samples, accessible_motifs=None, accessible_prob=1.
     # compute pair prob
     prob_pair = np.asarray(prob_pair)
     prob_pair = np.mean(prob_pair, axis=0)
+    # keep unique struct only
+    if unique:
+        one_idx = unique_struct(one_idx)
     return one_idx, prob_pair
 
 
@@ -106,23 +109,52 @@ def unique_struct(one_idx):
     df = pd.DataFrame(one_idx, columns=['left', 'right'])
     df = add_column(df, 'left', ['left'], lambda x: tuple(x))
     df = add_column(df, 'right', ['right'], lambda x: tuple(x))
-    df = df.drop_duplicates()
+    # get unique rows and their count
+    df = df.groupby(df.columns.tolist()).size().reset_index().rename(columns={0: 'count'})
     return [tuple(x) for x in df.values]
 
 
-# test
-one_idx, prob_pair = sample_structures('CGGCUCGCAACAGACCUAUUAGU',
-                  100, ['CUC'], accessible_prob=1.0)
+def main(seq_len, num_seqs, num_structs_per_seq, outfile):
+    # other parameters are hard-coded for now
+    seqs = []  # TODO use set so we don't add duplicates (but the probability of getting duplicate is very low)
+    for _ in range(num_seqs):
+        seq = ''.join(random.choice(list('ACGU')) for _ in range(seq_len))
+        seqs.append(seq)
+    print("Running rnafold...")
+    df = pd.DataFrame({'seq': seqs})
+    # without constraints
+    df = add_columns(df, ['one_idx_nc', 'pair_prob_nc'], ['seq'],
+                     lambda x: sample_structures(x, num_structs_per_seq))
+    # with constraints
+    df = add_columns(df, ['one_idx_wc', 'pair_prob_wc'], ['seq'],
+                     lambda x: sample_structures(x, num_structs_per_seq, accessible_motifs=['ACCA']))  # TODO input
+    # df.to_pickle(outfile, compression='gzip')
+    print(df)
 
-for x in unique_struct(one_idx):
-    print(x)
 
-print(prob_pair)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--len', type=int, default=20, help='sequence length')
+    parser.add_argument('--num', type=int, default=100, help='total number of sequences to generate')
+    parser.add_argument('--ns', type=int, default=100, help='number of structures per sequence to sample')
+    parser.add_argument('--out', type=str, help='output file')
+    args = parser.parse_args()
+    main(args.len, args.num, args.ns,  args.out)
 
 
-one_idx, prob_pair = sample_structures('CGGCUCGCAACAGACCUAUUAGU', 100)
-
-for x in unique_struct(one_idx):
-    print(x)
-
-print(prob_pair)
+# # test
+# one_idx, prob_pair = sample_structures('CGGCUCGCAACAGACCUAUUAGU',
+#                   100, ['CUC'], accessible_prob=1.0)
+#
+# for x in unique_struct(one_idx):
+#     print(x)
+#
+# print(prob_pair)
+#
+#
+# one_idx, prob_pair = sample_structures('CGGCUCGCAACAGACCUAUUAGU', 100)
+#
+# for x in unique_struct(one_idx):
+#     print(x)
+#
+# print(prob_pair)
