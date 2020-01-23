@@ -21,5 +21,5 @@ tmp_output/data_%.pkl.gz: make_data_var_len.py
 data/rand_seqs_var_len_sample_mfe_$(MINLEN)_$(MAXLEN)_$(NUM).pkl.gz: $(VARS) combine_data.py
 	python combine_data.py data/rand_seqs_var_len_sample_mfe_$(MINLEN)_$(MAXLEN)_$(NUM).pkl.gz tmp_output
 
-all: data/rand_seqs_var_len_sample_mfe_$(MINLEN)_$(MAXLEN)_$(NUM).pkl.gz
+all: data/rand_seqs_var_len_sample_mfe_pair_prob_$(MINLEN)_$(MAXLEN)_$(NUM).pkl.gz
 

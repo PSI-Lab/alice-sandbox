@@ -4,7 +4,7 @@ import argparse
 import random
 import cPickle as pickle
 import pandas as pd
-from utils import get_fe_struct, one_idx
+from utils import get_fe_struct, one_idx, get_pair_prob_matrix
 from dgutils.pandas import Column, get_metadata, write_dataframe, add_columns, add_column
 
 
@@ -22,6 +22,8 @@ def main(minlen=10, maxlen=100, num_seqs=100000, outfile=None):
     # replace matrix with 1 idx, since it's sparse
     df = add_column(df, 'one_idx', ['pair_matrix'], one_idx)
     df = df.drop(columns=['pair_matrix'])
+    # add pair probability
+    df = add_column(df, 'pair_prob', ['sequence'], get_pair_prob_matrix)
     # add length
     df = add_column(df, 'len', ['sequence'], lambda x: len(x))
     # rename so match new data schema, to ease training setup
