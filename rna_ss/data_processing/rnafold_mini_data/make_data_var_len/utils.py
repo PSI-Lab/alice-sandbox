@@ -84,6 +84,8 @@ def get_pair_prob_matrix(seq):
         p2 = int(p2) - 1
         vals[p1, p2] = float(sqrt_prob) ** 2
         vals[p2, p1] = float(sqrt_prob) ** 2
+    # should be symmetric
+    assert np.allclose(vals, vals.T)
     return vals
 
 
