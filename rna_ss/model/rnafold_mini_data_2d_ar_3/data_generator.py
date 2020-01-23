@@ -183,7 +183,7 @@ class DataGeneratorVarLen(keras.utils.Sequence):
                          'constant', constant_values=(0, 0))
             _y = np.pad(_y, ((0, max_len - _y.shape[0]), (0, max_len - _y.shape[1]), (0, 0)),
                         'constant', constant_values=-1)  # only specify one value since it has to be the same if padding multiple axes
-            _y3 = np.pad(_y3, ((0, max_len - _y3.shape[0]), (0, max_len - _y3.shape[1]), (0, 0)),
+            _y3 = np.pad(_y3, ((0, max_len - _y3.shape[0]), (0, 0)),
                         'constant', constant_values=-1)
             x1.append(_x1)
             y.append(_y)
