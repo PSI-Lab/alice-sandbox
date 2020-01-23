@@ -213,7 +213,15 @@ def build_model():
     # max and mean pooling along row and col, for predicting base pair probability
     # eventually we'll do both row and col
     # right now doing row only, just as a proof-of-concept
-    hid_pooled = Concatenate(axis=-1, name='hid_pooled')([kb.max(hid, axis=0), kb.mean(hid, axis=0)])
+
+    def length_pool_max(x):
+        return kb.max(x, axis=0)
+
+    def length_pool_mean(x):
+        return kb.mean(x, axis=0)
+
+    hid_pooled = Concatenate(axis=-1, name='hid_pooled')([Lambda(length_pool_max)(hid),
+                                                          Lambda(length_pool_mean)(hid)])
     # fully connected (use 1D conv with len=1)
     output3 = Conv1D(10, 1, padding='same', activation='relu', name='base_pair_prob_hid')(hid_pooled)
     output3 = Conv1D(1, 1, padding='same', activation='sigmoid', name='base_pair_prob_output')(output3)
