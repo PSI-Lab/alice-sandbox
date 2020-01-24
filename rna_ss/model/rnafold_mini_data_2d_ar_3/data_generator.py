@@ -169,7 +169,7 @@ class DataGeneratorVarLen(keras.utils.Sequence):
         y = y[:, :, np.newaxis]
         y2 = [row['fe']]
         y3 = np.asarray(row['base_pair_prob'])
-        y3 = y3[: np.newaxis]
+        y3 = y3[:, np.newaxis]
         return x1, y, y2, y3
 
     def get_data(self, indexes, max_len):
