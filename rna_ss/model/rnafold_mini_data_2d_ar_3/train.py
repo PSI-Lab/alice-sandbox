@@ -95,6 +95,9 @@ def main(config, data_file, output_dir):
                   optimizer=opt)
     # TODO loss weighting
 
+    # debug
+    print(model.summary())
+
     # callbacks
     tictoc = strftime("%Y_%m_%d_%H_%M_%S", gmtime())
     log_dir = 'log_' + tictoc
