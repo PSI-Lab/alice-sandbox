@@ -90,17 +90,9 @@ def main(config, data_file, output_dir):
     # model.compile(loss='binary_crossentropy',optimizer=opt)
     # model.compile(loss=custom_loss,
     #               optimizer=opt)
-    # model.compile(loss={'ar_label': custom_loss, 'fe': 'mean_squared_error', 'base_pair_prob_output': custom_loss},
-    #               loss_weights={'ar_label': 1.0, 'fe': 0.0, 'base_pair_prob_output': 1.0},  # FIXME turn off fe loss for now
-    #               optimizer=opt)
-
-    # FIXME debug: just to check whether custom_loss is causing the mismatched shape!
-    model.compile(loss={'ar_label': custom_loss, 'fe': 'mean_squared_error', 'base_pair_prob_output': 'binary_crossentropy'},
+    model.compile(loss={'ar_label': custom_loss, 'fe': 'mean_squared_error', 'base_pair_prob_output': custom_loss},
                   loss_weights={'ar_label': 1.0, 'fe': 0.0, 'base_pair_prob_output': 1.0},  # FIXME turn off fe loss for now
                   optimizer=opt)
-
-
-    # TODO loss weighting
 
     # debug
     print(model.summary())

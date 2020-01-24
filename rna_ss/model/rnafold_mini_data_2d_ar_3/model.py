@@ -215,10 +215,10 @@ def build_model():
     # right now doing row only, just as a proof-of-concept
 
     def length_pool_max(x):
-        return kb.max(x, axis=0)
+        return kb.max(x, axis=1)  # dim-0 is the batch!
 
     def length_pool_mean(x):
-        return kb.mean(x, axis=0)
+        return kb.mean(x, axis=1)  # dim-0 is the batch!
 
     hid_pooled = Concatenate(axis=-1, name='hid_pooled')([Lambda(length_pool_max)(hid),
                                                           Lambda(length_pool_mean)(hid)])
