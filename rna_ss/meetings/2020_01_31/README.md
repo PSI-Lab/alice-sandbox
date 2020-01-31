@@ -117,14 +117,16 @@ CGGUUUACCG
 
 ## Toy dataset
 
+still in progress.
 
 ## Graph NN & system bio
 
 Had a meeting with Amir and Andrew.
 
-
+yeast?
 
 ## Ideas
+
 
 - evaluate my model on their test set (how to generate one structure?)
 
@@ -135,6 +137,8 @@ Had a meeting with Amir and Andrew.
 - add non-recurrent target
 
 - random recurrent directions
+
+
 
 
 
