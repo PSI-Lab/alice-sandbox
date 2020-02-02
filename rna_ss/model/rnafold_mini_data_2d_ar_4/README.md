@@ -1,0 +1,4 @@
+autoregressive + non-ar output
+
+
+
