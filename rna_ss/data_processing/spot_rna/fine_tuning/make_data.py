@@ -48,7 +48,7 @@ df = []
 for seq_id in sequences.keys():
     df.append({
         'seq_id': seq_id,
-        'sequence': sequences[seq_id],
+        'seq': sequences[seq_id],
         'len': len(sequences[seq_id]),
         'one_idx': labels[seq_id],
     })
