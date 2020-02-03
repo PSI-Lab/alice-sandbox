@@ -276,16 +276,19 @@ def rna_eval_fe(seq, struct, verbose=True):
 
 class EvalMetric(object):
 
-    @staticmethod
-    def _check_arr(arr):
+    def __init__(self, bypass_pairing_check=False):
+        # bypass checking that a single base can only be paired against 0 or 1 base
+        self.bypass_pairing_check = bypass_pairing_check
+
+    def _check_arr(self, arr):
         assert len(arr.shape) == 2
         assert arr.shape[0] == arr.shape[1]
         assert np.all((arr == 0) | (arr == 1))
-        assert np.max(np.sum(arr, axis=0)) <= 1
-        assert np.max(np.sum(arr, axis=1)) <= 1
+        if not self.bypass_pairing_check:
+            assert np.max(np.sum(arr, axis=0)) <= 1
+            assert np.max(np.sum(arr, axis=1)) <= 1
 
-    @staticmethod
-    def sensitivity(_pred, _target):
+    def sensitivity(self, _pred, _target):
         # numerator: number of correct predicted base pairs
         # denominator: number of true base pairs
         assert _pred.shape[0] == _target.shape[0]
@@ -302,8 +305,7 @@ class EvalMetric(object):
         idx_true_base_pair = np.where(target == 1)
         return float(np.sum(pred[idx_true_base_pair]))/np.sum(target)
 
-    @staticmethod
-    def ppv(_pred, _target):
+    def ppv(self, _pred, _target):
         # numerator: number of correct predicted base pairs
         # denominator: number of predicted base pairs
         assert _pred.shape[0] == _target.shape[0]

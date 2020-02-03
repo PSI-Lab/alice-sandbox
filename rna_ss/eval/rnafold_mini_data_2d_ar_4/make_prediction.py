@@ -44,7 +44,7 @@ def main(model_file, dataset_file, ml_threshold, output):
                     lambda x: process_row(x, ml_threshold, model), pbar=True)
 
     # add metric
-    eval = EvalMetric()
+    eval = EvalMetric(bypass_pairing_check=True)
     df = add_columns(df, ['sensitivity', 'ppv', 'f_measure'],
                      ['one_idx', 'pred_idx', 'len'],
                      lambda a, b, c: calculate_metric(a, b, c, eval))
