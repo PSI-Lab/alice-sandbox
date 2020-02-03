@@ -299,8 +299,8 @@ class EvalMetric(object):
         pred[np.tril_indices(n)] = 0
         target[np.tril_indices(n)] = 0
         # checks
-        EvalMetric._check_arr(pred)
-        EvalMetric._check_arr(target)
+        self._check_arr(pred)
+        self._check_arr(target)
         # metric
         idx_true_base_pair = np.where(target == 1)
         return float(np.sum(pred[idx_true_base_pair]))/np.sum(target)
@@ -316,8 +316,8 @@ class EvalMetric(object):
         pred[np.tril_indices(n)] = 0
         target[np.tril_indices(n)] = 0
         # checks
-        EvalMetric._check_arr(pred)
-        EvalMetric._check_arr(target)
+        self._check_arr(pred)
+        self._check_arr(target)
         # metric
         idx_predicted_base_pair = np.where(pred == 1)
         return float(np.sum(target[idx_predicted_base_pair])/np.sum(pred))
