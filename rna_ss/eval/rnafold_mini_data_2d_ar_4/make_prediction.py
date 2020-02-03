@@ -2,7 +2,7 @@ import yaml
 import argparse
 import numpy as np
 import pandas as pd
-from dgutils.pandas import add_column
+from dgutils.pandas import add_column, add_columns
 from utils import PredictorSPlitModel, arr2db, EvalMetric
 import logging
 
@@ -25,6 +25,16 @@ def process_row(seq, threshold, model):
     return data_pred
 
 
+def calculate_metric(one_idx, pred_idx, seq_len, eval):
+    target = np.zeros((seq_len, seq_len))
+    pred = np.zeros((seq_len, seq_len))
+    target[one_idx] = 1
+    pred[pred_idx] = 1
+    sensitivity = eval.sensitivity(pred, target)
+    ppv = eval.ppv(pred, target)
+    return sensitivity, ppv, eval.f_measure(sensitivity, ppv)
+
+
 def main(model_file, dataset_file, ml_threshold, output):
     model = PredictorSPlitModel(model_file)
     # TODO make sure dataset has unified format
@@ -32,6 +42,12 @@ def main(model_file, dataset_file, ml_threshold, output):
 
     df = add_column(df, 'pred_idx', ['seq'],
                     lambda x: process_row(x, ml_threshold, model), pbar=True)
+
+    # add metric
+    eval = EvalMetric()
+    df = add_columns(df, ['sensitivity', 'ppv', 'f_measure'],
+                     ['one_idx', 'pred_idx', 'len'],
+                     lambda a, b, c: calculate_metric(a, b, c, eval))
 
     df.to_pickle(output)
 
