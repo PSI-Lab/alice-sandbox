@@ -109,7 +109,7 @@ class DataEncoder(object):
     def _encode_seq(seq):
         seq = seq.upper().replace('A', '1').replace('C', '2').replace('G', '3').replace('T', '4').replace('U',
                                                                                                           '4').replace(
-            'N', '0')
+            'N', '0').replace('P', 0)  # don't know what P is, encoding it as missing data
         x = np.asarray(map(int, list(seq)))
         x = DataEncoder.DNA_ENCODING[x.astype('int8')]
         return x
