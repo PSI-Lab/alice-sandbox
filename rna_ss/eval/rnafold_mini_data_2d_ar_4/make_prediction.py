@@ -56,7 +56,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', type=str, help='path to model file')
     parser.add_argument('--dataset', type=str, help='path to dataset file')
-    parser.add_argument('--threshold', type=float, default=0.5, help='threshold to get binary output')
+    parser.add_argument('--threshold', type=float, default=None, help='threshold to get binary output, default to not using threshold (real value output)')
     parser.add_argument('--output', type=str, help='path to output file')
     args = parser.parse_args()
 
