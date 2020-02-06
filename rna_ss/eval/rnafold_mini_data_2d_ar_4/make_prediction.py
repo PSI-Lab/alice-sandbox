@@ -19,10 +19,11 @@ def process_row(seq, threshold, model):
     _pred = pred[0, :, :, 0].copy()  # need to copy! otherwise following code will overwrite the values
     # set lower triangular to 0
     _pred[np.tril_indices(_pred.shape[0])] = 0
-    # make sure it only has 0s and 1s
-    assert np.all((_pred == 1) | (_pred == 0))
-    data_pred = np.where(_pred == 1)  # index of the sampled 1's
-    return data_pred
+    return _pred
+    # # make sure it only has 0s and 1s
+    # assert np.all((_pred == 1) | (_pred == 0))
+    # data_pred = np.where(_pred == 1)  # index of the sampled 1's
+    # return data_pred
 
 
 # def calculate_metric(one_idx, pred_idx, seq_len, eval):
@@ -44,7 +45,7 @@ def main(model_file, dataset_file, output):
     #                 lambda x: process_row(x, ml_threshold, model), pbar=True)
 
     # do not apply threshold, get real value pred
-    df = add_column(df, 'pred_idx', ['seq'],
+    df = add_column(df, 'pred_val', ['seq'],
                     lambda x: process_row(x, None, model), pbar=True)
 
     # # add metric
