@@ -1,4 +1,5 @@
 import os
+import sys
 import os.path
 import pandas as pd
 
@@ -6,6 +7,7 @@ import pandas as pd
 input_dir = 'PDB_dataset'
 sequences = {}
 labels = {}
+data_part = {}
 
 
 def process_labels(fname):
@@ -25,6 +27,10 @@ def process_labels(fname):
 
 for dirpath, dirnames, filenames in os.walk(input_dir):
     for filename in filenames:
+        # extract dataset partition name (i.e. whether it's TR1/TS1/etc.)
+        data_part_name = dirpath.split('/')[1]
+        data_part_name, _ = data_part_name.split('_')
+
         # skip hacky files
         if filename in ['output.clstr', 'val2_seq', 'val_seq', 'train_seq.txt', 'combined_seq', 'output']:
             continue
@@ -35,6 +41,8 @@ for dirpath, dirnames, filenames in os.walk(input_dir):
             first_char = f.read(1)
             if first_char == '>':
                 sequences[filename] = f.readlines()[-1].strip()
+                # wlog, only populate data part name if it's sequence file (since the label file will be the same)
+                data_part[filename] = data_part_name
             elif first_char == '#':
                 labels[filename] = process_labels(fname)
             else:
@@ -42,12 +50,14 @@ for dirpath, dirnames, filenames in os.walk(input_dir):
 
 # validate
 assert set(sequences.keys()) == set(labels.keys())
+assert set(sequences.keys()) == set(data_part.keys())
 
 # make dataset
 df = []
 for seq_id in sequences.keys():
     df.append({
         'seq_id': seq_id,
+        'data_partition': data_part[seq_id],
         'seq': sequences[seq_id],
         'len': len(sequences[seq_id]),
         'one_idx': labels[seq_id],
