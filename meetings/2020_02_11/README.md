@@ -10,11 +10,14 @@ See https://github.com/PSI-Lab/alice-sandbox/blob/3eaa5dcbaf72772b4771cacfd8139b
 
 scatter plot is weird.
 
-TODO LR
+- sklearn LR: https://github.com/PSI-Lab/alice-sandbox/blob/ac1412f634bcd4a250316e9e634eeeac6545a1b5/meetings/2020_02_11/d_cell/check_data_lr.ipynb
+some performance, but not great
 
-TODO sklearn NN
+- sklearn NN: https://github.com/PSI-Lab/alice-sandbox/blob/ac1412f634bcd4a250316e9e634eeeac6545a1b5/meetings/2020_02_11/d_cell/check_data_2.ipynb
+some performance, but not great
 
-TODO pytorch NN
+- pytorch NN: https://github.com/PSI-Lab/alice-sandbox/blob/ac1412f634bcd4a250316e9e634eeeac6545a1b5/meetings/2020_02_11/d_cell/check_data.ipynb
+some performance, but not great
 
 ## check their prediction
 
@@ -22,25 +25,22 @@ Focus on data points where their p-val < 0.05.
 
 - ExE - no pred pass 0.05 curoff?
 
-- ExN ~500 data points
+- ExN 504 data points
 
-TODO link
-
-TODO correlation
+Correlation 0.04,
+see https://github.com/PSI-Lab/alice-sandbox/blob/f5f45ab9de527fa243a05a3aa4d8f3089b8b3e56/meetings/2020_02_11/d_cell/data_comparison.ipynb
 
 - NxN 398664 (majority)
 
-TODO link
+Correlation 0.23,
+see https://github.com/PSI-Lab/alice-sandbox/blob/ac1412f634bcd4a250316e9e634eeeac6545a1b5/meetings/2020_02_11/d_cell/data_comparison.ipynb
 
-TODO correlation
 
 - subset to "small dataset"
 
-TODO num data points
+After intersection, 336 data points, correlation 0.16,
+see https://github.com/PSI-Lab/alice-sandbox/blob/ac1412f634bcd4a250316e9e634eeeac6545a1b5/meetings/2020_02_11/d_cell/data_comparison_go.ipynb
 
-TODO link
-
-TODO correlation
 
 
 ## Train on full dataset
@@ -50,12 +50,10 @@ ExE only for now. Take median across strains with same gene but different allele
 Also note that the dynamic range of the values
 
 Performance is really good with fully connected net?
+Suspicious?
 
-TODO link
-
-TODO plot
-
-TODO correlation
+Correlation on 1000 data points from test set 0.91,
+see https://github.com/PSI-Lab/alice-sandbox/blob/ac1412f634bcd4a250316e9e634eeeac6545a1b5/meetings/2020_02_11/d_cell/full_data.ipynb
 
 
 ## TODOs
