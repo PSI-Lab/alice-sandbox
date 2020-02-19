@@ -64,10 +64,10 @@ for seq_id in labels.keys():
                'pred': preds[seq_id],
                'len': seq_lens[seq_id]})
 df = pd.DataFrame(df)
-print(df)
 
 # eval
 eval = EvalMetric(bypass_pairing_check=True)
+df_metric = []
 for _, row in df.iterrows():
     seq_id = row['seq_id']
     seq_len = row['len']
@@ -84,9 +84,12 @@ for _, row in df.iterrows():
     sensitivity = eval.sensitivity(pred, label)
     ppv = eval.ppv(pred, label)
     f_measure = eval.f_measure(sensitivity, ppv)
-    print(seq_id, sensitivity, ppv, f_measure)
-
-
-# TODO combine df (add column)
+    df_metric.append({'seq_id': seq_id,
+                      'len': seq_len,
+                      'sensitivity': sensitivity,
+                      'ppv': ppv,
+                      'f_measure': f_measure})
+df_metric = pd.DataFrame(df_metric)
+print(df_metric.describe())
 
 # report performance, compare with that in the paper
