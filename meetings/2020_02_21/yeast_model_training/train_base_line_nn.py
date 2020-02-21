@@ -108,6 +108,7 @@ def main(path_data, path_result):
     # set up logging
     log_format = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
     root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)
     file_logger = logging.FileHandler(os.path.join(path_result, 'run.log'))
     file_logger.setFormatter(log_format)
     root_logger.addHandler(file_logger)
@@ -161,7 +162,7 @@ def main(path_data, path_result):
     y_tr = np.asarray(df_tr['fitness'].to_list())
     x_ts = np.asarray(df_ts['x'].to_list())
     y_ts = np.asarray(df_ts['fitness'].to_list())
-    print(x_tr.shape, y_tr.shape, x_ts.shape, y_ts.shape)
+    # print(x_tr.shape, y_tr.shape, x_ts.shape, y_ts.shape)
     assert x_tr.shape[0] == y_tr.shape[0]
     assert x_ts.shape[0] == y_ts.shape[0]
 
