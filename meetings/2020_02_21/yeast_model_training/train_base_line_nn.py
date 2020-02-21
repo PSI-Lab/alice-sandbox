@@ -118,7 +118,7 @@ def main(path_data, path_result):
     # load data
     df = []
     for _p in path_data:
-        df.append(load_data(path_data))
+        df.append(load_data(_p))
     df = pd.concat(df)
 
     # extract gene ID
