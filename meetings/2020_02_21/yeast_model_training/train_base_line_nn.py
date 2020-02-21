@@ -108,7 +108,7 @@ def make_model(num_input):
     return model
 
 
-def main(path_data, path_result):
+def main(path_data, path_result, n_epoch):
     # make result dir if non existing
     if not os.path.isdir(path_result):
         os.makedirs(path_result)
@@ -203,7 +203,6 @@ def main(path_data, path_result):
             # just run one batch (otherwise takes too long)
             break
 
-    n_epoch = 20
     for epoch in range(n_epoch):
         # Training
         for x_batch, y_batch in data_tr_loader:
@@ -222,8 +221,8 @@ def main(path_data, path_result):
             for xt, yt in data_ts_loader:
                 yt_pred = model(xt)
                 loss = loss_fn(yt_pred, yt)
-                logging.info('[{}/{}]test loss: {}'.format(epoch, n_epoch, loss.item()))
-                logging.info('[{}/{}]test batch corr: {}'.format(epoch, n_epoch, pearsonr(yt.numpy()[:, 0], yt_pred.numpy()[:, 0])))
+                logging.info('[{}/{}] test batch loss: {}'.format(epoch, n_epoch, loss.item()))
+                logging.info('[{}/{}] test batch corr: {}'.format(epoch, n_epoch, pearsonr(yt.numpy()[:, 0], yt_pred.numpy()[:, 0])))
                 break
 
     logging.info('Done training')
@@ -240,5 +239,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--data', nargs='+', type=str, help='path to training data file')
     parser.add_argument('--result', type=str, help='path to output result')
+    parser.add_argument('--epoch', type=int, help='number of epochs')
     args = parser.parse_args()
-    main(args.data, args.result)
+    main(args.data, args.result, args.epoch)
