@@ -187,7 +187,7 @@ def main(path_data, path_result):
         for xt, yt in data_ts_loader:
             yt_pred = model(xt)
             loss = loss_fn(yt_pred, yt)
-            logging.info('initial test batch loss: ', loss.item())
+            logging.info('initial test batch loss: {}'.format(loss.item()))
             # just run one batch (otherwise takes too long)
             break
 
