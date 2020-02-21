@@ -84,26 +84,18 @@ class MyDataSet(Dataset):
         return self.len
 
 
-# def make_model(num_input):
-#     model = torch.nn.Sequential(
-#         torch.nn.Linear(num_input, 20),
-#         torch.nn.ReLU(),
-#         torch.nn.BatchNorm1d(20),
-#         torch.nn.Linear(20, 10),
-#         torch.nn.ReLU(),
-#         torch.nn.BatchNorm1d(10),
-#         torch.nn.Linear(10, 5),
-#         torch.nn.ReLU(),
-#         torch.nn.BatchNorm1d(5),
-#         torch.nn.Linear(5, 1),
-#     )
-#     return model
-
-
 def make_model(num_input):
-    # LR
     model = torch.nn.Sequential(
-        torch.nn.Linear(num_input, 1),
+        torch.nn.Linear(num_input, 20),
+        torch.nn.ReLU(),
+        torch.nn.BatchNorm1d(20),
+        torch.nn.Linear(20, 10),
+        torch.nn.ReLU(),
+        torch.nn.BatchNorm1d(10),
+        torch.nn.Linear(10, 5),
+        torch.nn.ReLU(),
+        torch.nn.BatchNorm1d(5),
+        torch.nn.Linear(5, 1),
     )
     return model
 

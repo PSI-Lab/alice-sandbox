@@ -7,8 +7,31 @@ unzip and put all files in a `data/` folder.
 
 - Essential x Essential genes
 
-TODO LR performance
+LR performance:
 
-TODO other dataset
+https://github.com/PSI-Lab/alice-sandbox/tree/34476c7663564a49358648781a6d766d4be0c306/meetings/2020_02_21/yeast_model_training
+
+```
+python train_base_line_nn.py --data ~/work/psi-lab-sandbox/meetings/2020_02_11/d_cell/data/training/raw_pair_wise/SGA_ExE.txt --result result/exe_lr --epoch 100
+```
+
+See https://github.com/PSI-Lab/alice-sandbox/blob/e40ee0512fb523ec5b791cb42f6188ada92743ef/meetings/2020_02_21/yeast_model_training/result/exe_lr/run.log
+
+NN performance:
+
+
+
+```
+
+```
+
+- NE x E
+
+
+- NE x NE
+
+
+- All genes
+
 
 
