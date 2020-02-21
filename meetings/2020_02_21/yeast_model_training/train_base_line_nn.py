@@ -117,6 +117,7 @@ def main(path_data, path_result):
     root_logger.addHandler(console_logger)
 
     # load data
+    logging.info("Loading dataset: {}".format(path_data))
     df = []
     for _p in path_data:
         df.append(load_data(_p))
@@ -152,6 +153,7 @@ def main(path_data, path_result):
     # for data encoding
     gene_ids = tuple(genes_intersection)
     num_genes = len(gene_ids)
+    logging.info("Number of genes: {}".format(num_genes))
     # make it faster by create gene_id -> gene_idx mapping
     gene_id2idx = {x: i for i, x in enumerate(gene_ids)}
     df_tr = add_column(df_tr, 'x', ['g1', 'g2'], lambda g1, g2: encode_x(g1, g2, gene_id2idx))
@@ -175,6 +177,7 @@ def main(path_data, path_result):
 
     # model
     model = make_model(num_genes)
+    logging.info("model: \n{}".format(model))
     loss_fn = torch.nn.MSELoss(reduction='mean')
     learning_rate = 1e-4
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
@@ -188,10 +191,12 @@ def main(path_data, path_result):
             yt_pred = model(xt)
             loss = loss_fn(yt_pred, yt)
             logging.info('initial test batch loss: {}'.format(loss.item()))
+            logging.info('initial test batch corr: {}'.format(pearsonr(yt.numpy()[:, 0], yt_pred.numpy()[:, 0])))
             # just run one batch (otherwise takes too long)
             break
 
-    for epoch in range(20):
+    n_epoch = 20
+    for epoch in range(n_epoch):
         # Training
         for x_batch, y_batch in data_tr_loader:
             y_batch_pred = model(x_batch)
@@ -201,27 +206,24 @@ def main(path_data, path_result):
             loss.backward()
             optimizer.step()
         # after epoch
-        logging.info('training batch loss: {}'.format(loss.item()))
-        logging.info('training batch corr')
-        logging.info(pearsonr(y_batch.detach().numpy()[:, 0], y_batch_pred.detach().numpy()[:, 0]))
+        logging.info('[{}/{}] training batch loss: {}'.format(epoch, n_epoch, loss.item()))
+        logging.info('[{}/{}] training batch corr: {}'.format(epoch, n_epoch, pearsonr(y_batch.detach().numpy()[:, 0], y_batch_pred.detach().numpy()[:, 0])))
 
         # test
         with torch.set_grad_enabled(False):
             for xt, yt in data_ts_loader:
                 yt_pred = model(xt)
                 loss = loss_fn(yt_pred, yt)
-                logging.info('test loss: {}'.format(loss.item()))
-                logging.info('test batch corr')
-                logging.info(pearsonr(yt.numpy()[:, 0], yt_pred.numpy()[:, 0]))
+                logging.info('[{}/{}]test loss: {}'.format(epoch, n_epoch, loss.item()))
+                logging.info('[{}/{}]test batch corr: {}'.format(epoch, n_epoch, pearsonr(yt.numpy()[:, 0], yt_pred.numpy()[:, 0])))
                 break
 
-    logging.info('done training')
+    logging.info('Done training')
     logging.info('training batch ({} data points)'.format(batch_size))
     logging.info(pearsonr(y_batch.detach().numpy()[:, 0], y_batch_pred.detach().numpy()[:, 0]))
 
     logging.info('test batch ({} data points)'.format(batch_size))
     logging.info(pearsonr(yt.numpy()[:, 0], yt_pred.numpy()[:, 0]))
-
 
     # TODO make plots
 
