@@ -1,4 +1,5 @@
 import os
+import logging
 import argparse
 import pandas as pd
 import numpy as np
@@ -100,8 +101,25 @@ def make_model(num_input):
 
 
 def main(path_data, path_result):
+    # make result dir if non existing
+    if not os.path.isdir(path_result):
+        os.makedirs(path_result)
+
+    # set up logging
+    log_format = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+    root_logger = logging.getLogger()
+    file_logger = logging.FileHandler(os.path.join(path_result, 'run.log'))
+    file_logger.setFormatter(log_format)
+    root_logger.addHandler(file_logger)
+    console_logger = logging.StreamHandler()
+    console_logger.setFormatter(log_format)
+    root_logger.addHandler(console_logger)
+
     # load data
-    df = load_data(path_data)
+    df = []
+    for _p in path_data:
+        df.append(load_data(path_data))
+    df = pd.concat(df)
 
     # extract gene ID
     df = add_column(df, 'g1', ['s1'], get_gene_id)
@@ -128,7 +146,7 @@ def main(path_data, path_result):
     df_ts = df_ts[df_ts['g1'].isin(genes_intersection)]
     df_ts = df_ts[df_ts['g2'].isin(genes_intersection)]
     # print(len(df_tr), len(df_ts))
-    print("Number of training examples: {}, test: {}".format(len(df_tr), len(df_ts)))
+    logging.info("Number of training examples: {}, test: {}".format(len(df_tr), len(df_ts)))
 
     # for data encoding
     gene_ids = tuple(genes_intersection)
@@ -148,10 +166,11 @@ def main(path_data, path_result):
     assert x_ts.shape[0] == y_ts.shape[0]
 
     # train + test data handler
+    batch_size = 1000
     data_tr_loader = DataLoader(dataset=MyDataSet(x_tr, y_tr, num_genes),
-                                batch_size=200, shuffle=True)
+                                batch_size=batch_size, shuffle=True)
     data_ts_loader = DataLoader(dataset=MyDataSet(x_ts, y_ts, num_genes),
-                                batch_size=1000, shuffle=True)
+                                batch_size=batch_size, shuffle=True)
 
     # model
     model = make_model(num_genes)
@@ -167,7 +186,7 @@ def main(path_data, path_result):
         for xt, yt in data_ts_loader:
             yt_pred = model(xt)
             loss = loss_fn(yt_pred, yt)
-            print('initial test: ', loss.item())
+            logging.info('initial test batch loss: ', loss.item())
             # just run one batch (otherwise takes too long)
             break
 
@@ -176,42 +195,39 @@ def main(path_data, path_result):
         for x_batch, y_batch in data_tr_loader:
             y_batch_pred = model(x_batch)
             loss = loss_fn(y_batch_pred, y_batch)
-            print(epoch, loss.item())
+            # print(epoch, loss.item())
             model.zero_grad()
             loss.backward()
             optimizer.step()
         # after epoch
-        print('training batch corr')
-        print(pearsonr(y_batch.detach().numpy()[:, 0], y_batch_pred.detach().numpy()[:, 0]))
+        logging.info('training batch loss: {}'.format(loss.item()))
+        logging.info('training batch corr')
+        logging.info(pearsonr(y_batch.detach().numpy()[:, 0], y_batch_pred.detach().numpy()[:, 0]))
 
         # test
         with torch.set_grad_enabled(False):
             for xt, yt in data_ts_loader:
                 yt_pred = model(xt)
                 loss = loss_fn(yt_pred, yt)
-                print('test: ', loss.item())
-                print('test batch (1000 data points) corr')
-                print(pearsonr(yt.numpy()[:, 0], yt_pred.numpy()[:, 0]))
-                print('')
+                logging.info('test loss: {}'.format(loss.item()))
+                logging.info('test batch corr')
+                logging.info(pearsonr(yt.numpy()[:, 0], yt_pred.numpy()[:, 0]))
                 break
 
-    print('done training')
-    print('training batch')
-    print(pearsonr(y_batch.detach().numpy()[:, 0], y_batch_pred.detach().numpy()[:, 0]))
+    logging.info('done training')
+    logging.info('training batch ({} data points)'.format(batch_size))
+    logging.info(pearsonr(y_batch.detach().numpy()[:, 0], y_batch_pred.detach().numpy()[:, 0]))
 
-    print('test batch (1000 data points)')
-    print(pearsonr(yt.numpy()[:, 0], yt_pred.numpy()[:, 0]))
+    logging.info('test batch ({} data points)'.format(batch_size))
+    logging.info(pearsonr(yt.numpy()[:, 0], yt_pred.numpy()[:, 0]))
 
-    # make result dir if non existing
-    if not os.path.isdir(path_result):
-        os.mkdir(path_result)
 
     # TODO make plots
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data', type=str, help='path to training data file')
+    parser.add_argument('--data', nargs='+', type=str, help='path to training data file')
     parser.add_argument('--result', type=str, help='path to output result')
     args = parser.parse_args()
     main(args.data, args.result)
