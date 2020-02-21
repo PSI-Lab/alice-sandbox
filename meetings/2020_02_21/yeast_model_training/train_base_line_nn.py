@@ -2,7 +2,7 @@ import os
 import argparse
 import pandas as pd
 import numpy as np
-import tqdm
+# import tqdm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -11,7 +11,7 @@ from scipy.stats import pearsonr
 # TODO also make plots
 
 
-def add_column(df, output_col, input_cols, func, pbar=False):
+def add_column(df, output_col, input_cols, func):
     # make a tuple of values of the requested input columns
     input_values = tuple(df[x].values for x in input_cols)
 
@@ -19,9 +19,9 @@ def add_column(df, output_col, input_cols, func, pbar=False):
     args = zip(*input_values)
 
     # Attach a progress bar if required
-    if pbar:
-        args = tqdm(args, total=len(df))
-        args.set_description("Processing %s" % output_col)
+    # if pbar:
+    #     args = tqdm(args, total=len(df))
+    #     args.set_description("Processing %s" % output_col)
 
     # evaluate the function to generate the values of the new column
     output_values = [func(*x) for x in args]
