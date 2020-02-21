@@ -153,7 +153,23 @@ max      1.000000  568.000000    1.000000     1.000000
 
 (at th=0.003, worse than their model)
 
-see
+see https://github.com/PSI-Lab/alice-sandbox/blob/3dd7dac1f1fdcc146600e8465a69c298f119da23/meetings/2020_02_21/eval_our_model/eval_ours_rfam.py
+
+
+## Yeast model code clean up + performance
+
+https://github.com/PSI-Lab/alice-sandbox/blob/5aca996c3c597e2f34b3c3a4c1417ef9bbe5afab/meetings/2020_02_21/yeast_model_training/README.md
+
+## Re-write RNA SS model in pytorch
+
+TODO
+
+## RNA SS toy dataset
+
+TODO
+
+## Other?
+
 
 - wrap up yeast model training + code debug + pytorch GPU setup
 
