@@ -166,6 +166,7 @@ def main(path_data, path_result, n_epoch, shuffle_label):
         # shuffle training target
         # note that np.random.shuffle() is in-place
         assert len(y_tr.shape) == 1  # make sure it's 1D
+        logging.info("Shuffling training target values")
         np.random.shuffle(y_tr)
 
     x_ts = np.asarray(df_ts['x'].to_list())
