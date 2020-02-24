@@ -21,7 +21,9 @@ performance drop
 
 loss is low? suspicious?
 
-naive guess loss (just avg training target vals)
+naive guess loss (just avg training target vals) - done
+
+target value distribution
 
 still gained some performance in training set
 
