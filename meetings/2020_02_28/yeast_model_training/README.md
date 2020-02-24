@@ -4,7 +4,7 @@
 
 Shuffle target value (for training not for testing), and inspect the performance:
 
-https://github.com/PSI-Lab/alice-sandbox/tree/4782f7007bba6d9a92ac1b15d054ba1192e1e153/meetings/2020_02_28/yeast_model_training
+TODO git link
 
 ```
 python train_base_line_nn.py --data ~/work/psi-lab-sandbox/meetings/2020_02_11/d_cell/data/training/raw_pair_wise/SGA_ExE.txt --result result/exe_shuffle_target --epoch 20 --shuffle_label
@@ -20,6 +20,8 @@ python train_base_line_nn.py --data ~/work/psi-lab-sandbox/meetings/2020_02_11/d
 performance drop
 
 loss is low? suspicious?
+
+naive guess loss (just avg training target vals)
 
 still gained some performance in training set
 

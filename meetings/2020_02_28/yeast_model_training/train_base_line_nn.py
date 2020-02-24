@@ -189,7 +189,15 @@ def main(path_data, path_result, n_epoch, shuffle_label):
     learning_rate = 1e-4
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-    # training
+    # naive guess is the mean of training target value
+    yp_naive = np.mean(y_tr)
+    # calculate loss on naive guess
+    # hard-coded to be MSE
+    loss_naive_training = np.mean((yp_naive - y_tr)**2)
+    loss_naive_test = np.mean((yp_naive - y_ts)**2)
+    logging.info("Naive guess: {}, training loss: {}, test loss: {}".format(yp_naive, loss_naive_training, loss_naive_test))
+
+    # training TODO GPU
     device = torch.device("cpu")
 
     # inital test performance
@@ -236,19 +244,21 @@ def main(path_data, path_result, n_epoch, shuffle_label):
             corr, pval = pearsonr(y_batch.detach().numpy()[:, 0], y_batch_pred.detach().numpy()[:, 0])
             loss_training.append({'loss': loss, 'corr': corr, 'pval': pval})
         loss_training = pd.DataFrame(loss_training)
-        print("Training data performance (summerized across batches):")
-        print(loss_training.describe())
+        logging.info("Training data performance (summerized across batches):")
+        logging.info(loss_training.describe())
+        # FIXME debug
+        logging.info(loss_training.head())
 
         # test batches
-        loss_training = []
+        loss_test = []
         for x_batch, y_batch in data_ts_loader:
             y_batch_pred = model(x_batch)
             loss = loss_fn(y_batch_pred, y_batch)
             corr, pval = pearsonr(y_batch.detach().numpy()[:, 0], y_batch_pred.detach().numpy()[:, 0])
-            loss_training.append({'loss': loss, 'corr': corr, 'pval': pval})
-        loss_training = pd.DataFrame(loss_training)
-        print("Test data performance (summerized across batches):")
-        print(loss_training.describe())
+            loss_test.append({'loss': loss, 'corr': corr, 'pval': pval})
+            loss_test = pd.DataFrame(loss_test)
+        logging.info("Test data performance (summarized across batches):")
+        logging.info(loss_test.describe())
 
     # logging.info('training batch ({} data points)'.format(batch_size))
     # logging.info(pearsonr(y_batch.detach().numpy()[:, 0], y_batch_pred.detach().numpy()[:, 0]))
