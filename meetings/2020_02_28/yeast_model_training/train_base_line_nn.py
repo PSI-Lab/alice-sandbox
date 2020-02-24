@@ -225,11 +225,36 @@ def main(path_data, path_result, n_epoch, shuffle_label):
                 break
 
     logging.info('Done training')
-    logging.info('training batch ({} data points)'.format(batch_size))
-    logging.info(pearsonr(y_batch.detach().numpy()[:, 0], y_batch_pred.detach().numpy()[:, 0]))
 
-    logging.info('test batch ({} data points)'.format(batch_size))
-    logging.info(pearsonr(yt.numpy()[:, 0], yt_pred.numpy()[:, 0]))
+    # re-run all data to compute final loss
+    with torch.set_grad_enabled(False):
+        # training batches
+        loss_training = []
+        for x_batch, y_batch in data_tr_loader:
+            y_batch_pred = model(x_batch)
+            loss = loss_fn(y_batch_pred, y_batch)
+            corr, pval = pearsonr(y_batch.detach().numpy()[:, 0], y_batch_pred.detach().numpy()[:, 0])
+            loss_training.append({'loss': loss, 'corr': corr, 'pval': pval})
+        loss_training = pd.DataFrame(loss_training)
+        print("Training data performance (summerized across batches):")
+        print(loss_training.describe())
+
+        # test batches
+        loss_training = []
+        for x_batch, y_batch in data_ts_loader:
+            y_batch_pred = model(x_batch)
+            loss = loss_fn(y_batch_pred, y_batch)
+            corr, pval = pearsonr(y_batch.detach().numpy()[:, 0], y_batch_pred.detach().numpy()[:, 0])
+            loss_training.append({'loss': loss, 'corr': corr, 'pval': pval})
+        loss_training = pd.DataFrame(loss_training)
+        print("Test data performance (summerized across batches):")
+        print(loss_training.describe())
+
+    # logging.info('training batch ({} data points)'.format(batch_size))
+    # logging.info(pearsonr(y_batch.detach().numpy()[:, 0], y_batch_pred.detach().numpy()[:, 0]))
+
+    # logging.info('test batch ({} data points)'.format(batch_size))
+    # logging.info(pearsonr(yt.numpy()[:, 0], yt_pred.numpy()[:, 0]))
 
     # TODO make plots
 
