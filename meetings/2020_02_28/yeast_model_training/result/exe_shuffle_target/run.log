@@ -1,0 +1,261 @@
+2020-02-24 17:38:13,780 [MainThread  ] [INFO ]  Loading dataset: ['/home/alice/work/psi-lab-sandbox/meetings/2020_02_11/d_cell/data/training/raw_pair_wise/SGA_ExE.txt']
+2020-02-24 17:38:15,204 [MainThread  ] [INFO ]  Number of training examples: 335056, test: 83765
+2020-02-24 17:38:15,204 [MainThread  ] [INFO ]  Number of genes: 855
+2020-02-24 17:38:15,724 [MainThread  ] [INFO ]  model: 
+Sequential(
+  (0): Linear(in_features=855, out_features=20, bias=True)
+  (1): ReLU()
+  (2): BatchNorm1d(20, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (3): Linear(in_features=20, out_features=10, bias=True)
+  (4): ReLU()
+  (5): BatchNorm1d(10, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (6): Linear(in_features=10, out_features=5, bias=True)
+  (7): ReLU()
+  (8): BatchNorm1d(5, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (9): Linear(in_features=5, out_features=1, bias=True)
+)
+2020-02-24 17:38:15,758 [MainThread  ] [INFO ]  initial test batch loss: 0.5291215777397156
+2020-02-24 17:38:15,758 [MainThread  ] [INFO ]  initial test batch corr: (-0.045202191931082804, 0.15318794046239784)
+2020-02-24 17:38:24,933 [MainThread  ] [INFO ]  [0/20] training batch loss: 0.34709668159484863
+2020-02-24 17:38:24,934 [MainThread  ] [INFO ]  [0/20] training batch corr: (-0.1955386922075799, 0.14866647383935136)
+2020-02-24 17:38:24,963 [MainThread  ] [INFO ]  [0/20] test batch loss: 0.30610325932502747
+2020-02-24 17:38:24,964 [MainThread  ] [INFO ]  [0/20] test batch corr: (-0.0013815013659653399, 0.9651975126426918)
+2020-02-24 17:38:34,107 [MainThread  ] [INFO ]  [1/20] training batch loss: 0.24926576018333435
+2020-02-24 17:38:34,108 [MainThread  ] [INFO ]  [1/20] training batch corr: (-0.07889654331571253, 0.5632684688184494)
+2020-02-24 17:38:34,195 [MainThread  ] [INFO ]  [1/20] test batch loss: 0.2255062311887741
+2020-02-24 17:38:34,195 [MainThread  ] [INFO ]  [1/20] test batch corr: (0.049137228077878035, 0.12045892301252684)
+2020-02-24 17:38:43,342 [MainThread  ] [INFO ]  [2/20] training batch loss: 0.16348689794540405
+2020-02-24 17:38:43,343 [MainThread  ] [INFO ]  [2/20] training batch corr: (-0.04520979671961309, 0.7407518988407049)
+2020-02-24 17:38:43,373 [MainThread  ] [INFO ]  [2/20] test batch loss: 0.1655585914850235
+2020-02-24 17:38:43,374 [MainThread  ] [INFO ]  [2/20] test batch corr: (0.007992318044140863, 0.8007108676541488)
+2020-02-24 17:39:06,649 [MainThread  ] [INFO ]  Loading dataset: ['/home/alice/work/psi-lab-sandbox/meetings/2020_02_11/d_cell/data/training/raw_pair_wise/SGA_ExE.txt']
+2020-02-24 17:39:08,082 [MainThread  ] [INFO ]  Number of training examples: 335056, test: 83765
+2020-02-24 17:39:08,082 [MainThread  ] [INFO ]  Number of genes: 855
+2020-02-24 17:39:08,549 [MainThread  ] [INFO ]  Shuffling training target values
+2020-02-24 17:39:08,608 [MainThread  ] [INFO ]  model: 
+Sequential(
+  (0): Linear(in_features=855, out_features=20, bias=True)
+  (1): ReLU()
+  (2): BatchNorm1d(20, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (3): Linear(in_features=20, out_features=10, bias=True)
+  (4): ReLU()
+  (5): BatchNorm1d(10, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (6): Linear(in_features=10, out_features=5, bias=True)
+  (7): ReLU()
+  (8): BatchNorm1d(5, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (9): Linear(in_features=5, out_features=1, bias=True)
+)
+2020-02-24 17:39:08,640 [MainThread  ] [INFO ]  initial test batch loss: 1.3739296197891235
+2020-02-24 17:39:08,641 [MainThread  ] [INFO ]  initial test batch corr: (0.002972709041240095, 0.9251981683841259)
+2020-02-24 17:39:17,848 [MainThread  ] [INFO ]  [0/20] training batch loss: 1.0982394218444824
+2020-02-24 17:39:17,849 [MainThread  ] [INFO ]  [0/20] training batch corr: (-0.13096359735642976, 0.3360045795307534)
+2020-02-24 17:39:17,878 [MainThread  ] [INFO ]  [0/20] test batch loss: 1.0899732112884521
+2020-02-24 17:39:17,879 [MainThread  ] [INFO ]  [0/20] test batch corr: (0.020635495338514664, 0.5145270383178044)
+2020-02-24 17:39:26,591 [MainThread  ] [INFO ]  [1/20] training batch loss: 0.9199239611625671
+2020-02-24 17:39:26,591 [MainThread  ] [INFO ]  [1/20] training batch corr: (-0.07230971126479026, 0.5963851941217413)
+2020-02-24 17:39:26,674 [MainThread  ] [INFO ]  [1/20] test batch loss: 0.9431197047233582
+2020-02-24 17:39:26,674 [MainThread  ] [INFO ]  [1/20] test batch corr: (0.01301178445417827, 0.6810934193454402)
+2020-02-24 17:39:35,862 [MainThread  ] [INFO ]  [2/20] training batch loss: 0.7904403209686279
+2020-02-24 17:39:35,862 [MainThread  ] [INFO ]  [2/20] training batch corr: (-0.0003382987210336884, 0.9980256399315504)
+2020-02-24 17:39:35,891 [MainThread  ] [INFO ]  [2/20] test batch loss: 0.7935410737991333
+2020-02-24 17:39:35,892 [MainThread  ] [INFO ]  [2/20] test batch corr: (0.007164625677727914, 0.82097984831823)
+2020-02-24 17:39:45,066 [MainThread  ] [INFO ]  [3/20] training batch loss: 0.6473973989486694
+2020-02-24 17:39:45,067 [MainThread  ] [INFO ]  [3/20] training batch corr: (-0.07543405364014938, 0.5805694213688358)
+2020-02-24 17:39:45,096 [MainThread  ] [INFO ]  [3/20] test batch loss: 0.6177176833152771
+2020-02-24 17:39:45,097 [MainThread  ] [INFO ]  [3/20] test batch corr: (-0.02629018417527625, 0.406271772746274)
+2020-02-24 17:39:54,287 [MainThread  ] [INFO ]  [4/20] training batch loss: 0.45071375370025635
+2020-02-24 17:39:54,287 [MainThread  ] [INFO ]  [4/20] training batch corr: (-0.1100599418563665, 0.41938164367008657)
+2020-02-24 17:39:54,317 [MainThread  ] [INFO ]  [4/20] test batch loss: 0.4558897614479065
+2020-02-24 17:39:54,317 [MainThread  ] [INFO ]  [4/20] test batch corr: (0.0825252657207841, 0.009031259287096905)
+2020-02-24 17:40:03,378 [MainThread  ] [INFO ]  [5/20] training batch loss: 0.2928965091705322
+2020-02-24 17:40:03,379 [MainThread  ] [INFO ]  [5/20] training batch corr: (0.09472130482348959, 0.48742773133591305)
+2020-02-24 17:40:03,404 [MainThread  ] [INFO ]  [5/20] test batch loss: 0.31754037737846375
+2020-02-24 17:40:03,404 [MainThread  ] [INFO ]  [5/20] test batch corr: (0.09991063801425834, 0.001559280651579039)
+2020-02-24 17:40:12,142 [MainThread  ] [INFO ]  [6/20] training batch loss: 0.22885961830615997
+2020-02-24 17:40:12,142 [MainThread  ] [INFO ]  [6/20] training batch corr: (-0.004879056814217991, 0.9715309670101661)
+2020-02-24 17:40:12,171 [MainThread  ] [INFO ]  [6/20] test batch loss: 0.20200727880001068
+2020-02-24 17:40:12,171 [MainThread  ] [INFO ]  [6/20] test batch corr: (0.007608521005525568, 0.8100937324188336)
+2020-02-24 17:40:21,381 [MainThread  ] [INFO ]  [7/20] training batch loss: 0.13565663993358612
+2020-02-24 17:40:21,382 [MainThread  ] [INFO ]  [7/20] training batch corr: (-0.21627727095023877, 0.10938141099304435)
+2020-02-24 17:40:21,411 [MainThread  ] [INFO ]  [7/20] test batch loss: 0.13457395136356354
+2020-02-24 17:40:21,411 [MainThread  ] [INFO ]  [7/20] test batch corr: (-0.002905883689790105, 0.9268749216971199)
+2020-02-24 17:40:30,703 [MainThread  ] [INFO ]  [8/20] training batch loss: 0.08620008826255798
+2020-02-24 17:40:30,703 [MainThread  ] [INFO ]  [8/20] training batch corr: (-0.23789647123545227, 0.07747211356303392)
+2020-02-24 17:40:30,733 [MainThread  ] [INFO ]  [8/20] test batch loss: 0.08260615170001984
+2020-02-24 17:40:30,733 [MainThread  ] [INFO ]  [8/20] test batch corr: (0.06694783145483277, 0.034276516238356515)
+2020-02-24 17:40:40,013 [MainThread  ] [INFO ]  [9/20] training batch loss: 0.05721734091639519
+2020-02-24 17:40:40,014 [MainThread  ] [INFO ]  [9/20] training batch corr: (0.061558091816814334, 0.6522082621946407)
+2020-02-24 17:40:40,043 [MainThread  ] [INFO ]  [9/20] test batch loss: 0.05480758845806122
+2020-02-24 17:40:40,044 [MainThread  ] [INFO ]  [9/20] test batch corr: (0.001652455210114926, 0.9583773798350711)
+2020-02-24 17:40:49,297 [MainThread  ] [INFO ]  [10/20] training batch loss: 0.04018688574433327
+2020-02-24 17:40:49,298 [MainThread  ] [INFO ]  [10/20] training batch corr: (0.06361919862577216, 0.6413464171835132)
+2020-02-24 17:40:49,327 [MainThread  ] [INFO ]  [10/20] test batch loss: 0.03989991173148155
+2020-02-24 17:40:49,328 [MainThread  ] [INFO ]  [10/20] test batch corr: (0.017165134897852333, 0.5877012157389081)
+2020-02-24 17:40:58,604 [MainThread  ] [INFO ]  [11/20] training batch loss: 0.03628230839967728
+2020-02-24 17:40:58,604 [MainThread  ] [INFO ]  [11/20] training batch corr: (0.07590393427990179, 0.5782074517860295)
+2020-02-24 17:40:58,634 [MainThread  ] [INFO ]  [11/20] test batch loss: 0.03902161866426468
+2020-02-24 17:40:58,634 [MainThread  ] [INFO ]  [11/20] test batch corr: (0.016401740260944882, 0.6044201008015437)
+2020-02-24 17:41:07,955 [MainThread  ] [INFO ]  [12/20] training batch loss: 0.03919384628534317
+2020-02-24 17:41:07,956 [MainThread  ] [INFO ]  [12/20] training batch corr: (0.11868355278236796, 0.3836451355709391)
+2020-02-24 17:41:07,985 [MainThread  ] [INFO ]  [12/20] test batch loss: 0.03734176605939865
+2020-02-24 17:41:07,986 [MainThread  ] [INFO ]  [12/20] test batch corr: (0.01832110228476844, 0.5627996655273828)
+2020-02-24 17:41:17,267 [MainThread  ] [INFO ]  [13/20] training batch loss: 0.03842473402619362
+2020-02-24 17:41:17,268 [MainThread  ] [INFO ]  [13/20] training batch corr: (0.15766010520068696, 0.245851324543946)
+2020-02-24 17:41:17,297 [MainThread  ] [INFO ]  [13/20] test batch loss: 0.035483211278915405
+2020-02-24 17:41:17,298 [MainThread  ] [INFO ]  [13/20] test batch corr: (0.061106177960577594, 0.05339215240539407)
+2020-02-24 17:41:26,566 [MainThread  ] [INFO ]  [14/20] training batch loss: 0.03742267191410065
+2020-02-24 17:41:26,567 [MainThread  ] [INFO ]  [14/20] training batch corr: (-0.16434803448769567, 0.22613318706438737)
+2020-02-24 17:41:26,596 [MainThread  ] [INFO ]  [14/20] test batch loss: 0.037486135959625244
+2020-02-24 17:41:26,596 [MainThread  ] [INFO ]  [14/20] test batch corr: (0.006819652332216231, 0.8294639510214953)
+2020-02-24 17:41:35,918 [MainThread  ] [INFO ]  [15/20] training batch loss: 0.04705905169248581
+2020-02-24 17:41:35,919 [MainThread  ] [INFO ]  [15/20] training batch corr: (0.15648014015431613, 0.24944819864052187)
+2020-02-24 17:41:35,948 [MainThread  ] [INFO ]  [15/20] test batch loss: 0.037937670946121216
+2020-02-24 17:41:35,949 [MainThread  ] [INFO ]  [15/20] test batch corr: (0.030663881913675133, 0.33269884339403244)
+2020-02-24 17:41:45,220 [MainThread  ] [INFO ]  [16/20] training batch loss: 0.033128347247838974
+2020-02-24 17:41:45,220 [MainThread  ] [INFO ]  [16/20] training batch corr: (0.11690576231565811, 0.3908600411457464)
+2020-02-24 17:41:45,250 [MainThread  ] [INFO ]  [16/20] test batch loss: 0.035339295864105225
+2020-02-24 17:41:45,250 [MainThread  ] [INFO ]  [16/20] test batch corr: (0.02032098919793083, 0.5209584652026346)
+2020-02-24 17:41:54,523 [MainThread  ] [INFO ]  [17/20] training batch loss: 0.032438669353723526
+2020-02-24 17:41:54,524 [MainThread  ] [INFO ]  [17/20] training batch corr: (0.008521876889541261, 0.9502963353889572)
+2020-02-24 17:41:54,554 [MainThread  ] [INFO ]  [17/20] test batch loss: 0.036369290202856064
+2020-02-24 17:41:54,554 [MainThread  ] [INFO ]  [17/20] test batch corr: (0.031250598115375026, 0.3235270523645008)
+2020-02-24 17:42:03,825 [MainThread  ] [INFO ]  [18/20] training batch loss: 0.03832726180553436
+2020-02-24 17:42:03,826 [MainThread  ] [INFO ]  [18/20] training batch corr: (0.1293859285206251, 0.34190876229746997)
+2020-02-24 17:42:03,913 [MainThread  ] [INFO ]  [18/20] test batch loss: 0.038336381316185
+2020-02-24 17:42:03,914 [MainThread  ] [INFO ]  [18/20] test batch corr: (0.01487766464105942, 0.6384188605022304)
+2020-02-24 17:42:13,195 [MainThread  ] [INFO ]  [19/20] training batch loss: 0.040762677788734436
+2020-02-24 17:42:13,195 [MainThread  ] [INFO ]  [19/20] training batch corr: (0.23656905145910725, 0.07919028982901953)
+2020-02-24 17:42:13,224 [MainThread  ] [INFO ]  [19/20] test batch loss: 0.034967321902513504
+2020-02-24 17:42:13,225 [MainThread  ] [INFO ]  [19/20] test batch corr: (-0.004589878867842505, 0.8847393408872005)
+2020-02-24 17:42:13,225 [MainThread  ] [INFO ]  Done training
+2020-02-24 17:42:13,225 [MainThread  ] [INFO ]  training batch (1000 data points)
+2020-02-24 17:42:13,226 [MainThread  ] [INFO ]  (0.23656905145910725, 0.07919028982901953)
+2020-02-24 17:42:13,226 [MainThread  ] [INFO ]  test batch (1000 data points)
+2020-02-24 17:42:13,226 [MainThread  ] [INFO ]  (-0.004589878867842505, 0.8847393408872005)
+2020-02-24 18:20:46,363 [MainThread  ] [INFO ]  Loading dataset: ['/home/alice/work/psi-lab-sandbox/meetings/2020_02_11/d_cell/data/training/raw_pair_wise/SGA_ExE.txt']
+2020-02-24 18:20:47,798 [MainThread  ] [INFO ]  Number of training examples: 335056, test: 83765
+2020-02-24 18:20:47,798 [MainThread  ] [INFO ]  Number of genes: 855
+2020-02-24 18:20:48,270 [MainThread  ] [INFO ]  Shuffling training target values
+2020-02-24 18:20:48,328 [MainThread  ] [INFO ]  model: 
+Sequential(
+  (0): Linear(in_features=855, out_features=20, bias=True)
+  (1): ReLU()
+  (2): BatchNorm1d(20, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (3): Linear(in_features=20, out_features=10, bias=True)
+  (4): ReLU()
+  (5): BatchNorm1d(10, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (6): Linear(in_features=10, out_features=5, bias=True)
+  (7): ReLU()
+  (8): BatchNorm1d(5, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (9): Linear(in_features=5, out_features=1, bias=True)
+)
+2020-02-24 18:20:48,330 [MainThread  ] [INFO ]  Naive guess: 0.6931855922592043, training loss: 0.03541830542502767, test loss: 0.03537642385033136
+2020-02-24 18:20:48,357 [MainThread  ] [INFO ]  initial test batch loss: 1.3553417921066284
+2020-02-24 18:20:48,357 [MainThread  ] [INFO ]  initial test batch corr: (0.06869126530535646, 0.02985131319762505)
+2020-02-24 18:20:57,527 [MainThread  ] [INFO ]  [0/20] training batch loss: 0.8590575456619263
+2020-02-24 18:20:57,528 [MainThread  ] [INFO ]  [0/20] training batch corr: (0.2845085049672008, 0.03357145375706967)
+2020-02-24 18:20:57,557 [MainThread  ] [INFO ]  [0/20] test batch loss: 0.866848349571228
+2020-02-24 18:20:57,558 [MainThread  ] [INFO ]  [0/20] test batch corr: (-0.00882070235385355, 0.7805582214779447)
+2020-02-24 18:21:06,689 [MainThread  ] [INFO ]  [1/20] training batch loss: 0.7349669933319092
+2020-02-24 18:21:06,690 [MainThread  ] [INFO ]  [1/20] training batch corr: (-0.354160979825822, 0.007407954669061553)
+2020-02-24 18:21:06,773 [MainThread  ] [INFO ]  [1/20] test batch loss: 0.7118295431137085
+2020-02-24 18:21:06,773 [MainThread  ] [INFO ]  [1/20] test batch corr: (0.027785297769065787, 0.38009635106037776)
+2020-02-24 18:21:15,885 [MainThread  ] [INFO ]  [2/20] training batch loss: 0.5582191944122314
+2020-02-24 18:21:15,886 [MainThread  ] [INFO ]  [2/20] training batch corr: (0.018337972282025383, 0.8932879730990899)
+2020-02-24 18:21:15,916 [MainThread  ] [INFO ]  [2/20] test batch loss: 0.6016610264778137
+2020-02-24 18:21:15,916 [MainThread  ] [INFO ]  [2/20] test batch corr: (-0.0497020735135286, 0.11624709544292997)
+2020-02-24 18:21:24,997 [MainThread  ] [INFO ]  [3/20] training batch loss: 0.46589064598083496
+2020-02-24 18:21:24,998 [MainThread  ] [INFO ]  [3/20] training batch corr: (-0.07611065379733672, 0.5771697188483969)
+2020-02-24 18:21:25,026 [MainThread  ] [INFO ]  [3/20] test batch loss: 0.4613721966743469
+2020-02-24 18:21:25,027 [MainThread  ] [INFO ]  [3/20] test batch corr: (-0.016629339705318866, 0.5994132323196303)
+2020-02-24 18:21:34,128 [MainThread  ] [INFO ]  [4/20] training batch loss: 0.30812451243400574
+2020-02-24 18:21:34,128 [MainThread  ] [INFO ]  [4/20] training batch corr: (0.11680584817265942, 0.3912678909271441)
+2020-02-24 18:21:34,158 [MainThread  ] [INFO ]  [4/20] test batch loss: 0.34149500727653503
+2020-02-24 18:21:34,158 [MainThread  ] [INFO ]  [4/20] test batch corr: (0.04577012441405029, 0.14808574160867063)
+2020-02-24 18:21:43,321 [MainThread  ] [INFO ]  [5/20] training batch loss: 0.262419730424881
+2020-02-24 18:21:43,322 [MainThread  ] [INFO ]  [5/20] training batch corr: (-0.1175772202148068, 0.38812566496172546)
+2020-02-24 18:21:43,352 [MainThread  ] [INFO ]  [5/20] test batch loss: 0.2238837629556656
+2020-02-24 18:21:43,352 [MainThread  ] [INFO ]  [5/20] test batch corr: (-0.044725375984549856, 0.15757374486212153)
+2020-02-24 18:21:52,476 [MainThread  ] [INFO ]  [6/20] training batch loss: 0.13445976376533508
+2020-02-24 18:21:52,477 [MainThread  ] [INFO ]  [6/20] training batch corr: (-0.05936057199842537, 0.6638684393614167)
+2020-02-24 18:21:52,506 [MainThread  ] [INFO ]  [6/20] test batch loss: 0.14358477294445038
+2020-02-24 18:21:52,506 [MainThread  ] [INFO ]  [6/20] test batch corr: (0.03593116644578036, 0.2562962661713008)
+2020-02-24 18:22:01,630 [MainThread  ] [INFO ]  [7/20] training batch loss: 0.09933792799711227
+2020-02-24 18:22:01,630 [MainThread  ] [INFO ]  [7/20] training batch corr: (-0.019879181131216617, 0.8843782958918175)
+2020-02-24 18:22:01,660 [MainThread  ] [INFO ]  [7/20] test batch loss: 0.09130880981683731
+2020-02-24 18:22:01,661 [MainThread  ] [INFO ]  [7/20] test batch corr: (0.0064708907409716885, 0.8380614493166291)
+2020-02-24 18:22:10,864 [MainThread  ] [INFO ]  [8/20] training batch loss: 0.08707080781459808
+2020-02-24 18:22:10,864 [MainThread  ] [INFO ]  [8/20] training batch corr: (-0.07558947308697514, 0.5797876816318721)
+2020-02-24 18:22:10,893 [MainThread  ] [INFO ]  [8/20] test batch loss: 0.057760827243328094
+2020-02-24 18:22:10,893 [MainThread  ] [INFO ]  [8/20] test batch corr: (0.00455838100000977, 0.8855248523134235)
+2020-02-24 18:22:19,712 [MainThread  ] [INFO ]  [9/20] training batch loss: 0.03945615515112877
+2020-02-24 18:22:19,713 [MainThread  ] [INFO ]  [9/20] training batch corr: (-0.011410093599161564, 0.9334840464203452)
+2020-02-24 18:22:19,742 [MainThread  ] [INFO ]  [9/20] test batch loss: 0.045520830899477005
+2020-02-24 18:22:19,743 [MainThread  ] [INFO ]  [9/20] test batch corr: (0.008759760793829589, 0.7820359611916557)
+2020-02-24 18:22:28,595 [MainThread  ] [INFO ]  [10/20] training batch loss: 0.05795605853199959
+2020-02-24 18:22:28,596 [MainThread  ] [INFO ]  [10/20] training batch corr: (-0.06198002924124374, 0.6499787514456341)
+2020-02-24 18:22:28,621 [MainThread  ] [INFO ]  [10/20] test batch loss: 0.03910691663622856
+2020-02-24 18:22:28,622 [MainThread  ] [INFO ]  [10/20] test batch corr: (0.037860570259029745, 0.23162328092689163)
+2020-02-24 18:22:36,811 [MainThread  ] [INFO ]  [11/20] training batch loss: 0.03920773044228554
+2020-02-24 18:22:36,812 [MainThread  ] [INFO ]  [11/20] training batch corr: (0.14658994366756667, 0.2810008331002776)
+2020-02-24 18:22:36,839 [MainThread  ] [INFO ]  [11/20] test batch loss: 0.038252655416727066
+2020-02-24 18:22:36,839 [MainThread  ] [INFO ]  [11/20] test batch corr: (-0.048489170855042736, 0.12543712025139783)
+2020-02-24 18:22:45,215 [MainThread  ] [INFO ]  [12/20] training batch loss: 0.050408706068992615
+2020-02-24 18:22:45,215 [MainThread  ] [INFO ]  [12/20] training batch corr: (0.019433496581753154, 0.8869533728326753)
+2020-02-24 18:22:45,241 [MainThread  ] [INFO ]  [12/20] test batch loss: 0.034589484333992004
+2020-02-24 18:22:45,241 [MainThread  ] [INFO ]  [12/20] test batch corr: (0.03039706485932193, 0.3369247565490179)
+2020-02-24 18:22:53,756 [MainThread  ] [INFO ]  [13/20] training batch loss: 0.04273297265172005
+2020-02-24 18:22:53,757 [MainThread  ] [INFO ]  [13/20] training batch corr: (0.14029812204719086, 0.3023874377891612)
+2020-02-24 18:22:53,782 [MainThread  ] [INFO ]  [13/20] test batch loss: 0.0366613008081913
+2020-02-24 18:22:53,782 [MainThread  ] [INFO ]  [13/20] test batch corr: (-0.04329173072203112, 0.17133278951832065)
+2020-02-24 18:23:02,059 [MainThread  ] [INFO ]  [14/20] training batch loss: 0.049294862896203995
+2020-02-24 18:23:02,060 [MainThread  ] [INFO ]  [14/20] training batch corr: (-0.003157168191482207, 0.9815758849827159)
+2020-02-24 18:23:02,086 [MainThread  ] [INFO ]  [14/20] test batch loss: 0.03651349991559982
+2020-02-24 18:23:02,086 [MainThread  ] [INFO ]  [14/20] test batch corr: (-0.047855559421900895, 0.13045770851034225)
+2020-02-24 18:23:10,741 [MainThread  ] [INFO ]  [15/20] training batch loss: 0.02582745999097824
+2020-02-24 18:23:10,741 [MainThread  ] [INFO ]  [15/20] training batch corr: (0.023402028185303306, 0.8640678474158003)
+2020-02-24 18:23:10,767 [MainThread  ] [INFO ]  [15/20] test batch loss: 0.035865139216184616
+2020-02-24 18:23:10,768 [MainThread  ] [INFO ]  [15/20] test batch corr: (0.00897884973600891, 0.7767270915158501)
+2020-02-24 18:23:19,785 [MainThread  ] [INFO ]  [16/20] training batch loss: 0.05322673171758652
+2020-02-24 18:23:19,786 [MainThread  ] [INFO ]  [16/20] training batch corr: (-0.03460995106357895, 0.8000893476224362)
+2020-02-24 18:23:19,815 [MainThread  ] [INFO ]  [16/20] test batch loss: 0.035234931856393814
+2020-02-24 18:23:19,816 [MainThread  ] [INFO ]  [16/20] test batch corr: (-0.0252551653757222, 0.42500581762294587)
+2020-02-24 18:23:28,510 [MainThread  ] [INFO ]  [17/20] training batch loss: 0.03012917749583721
+2020-02-24 18:23:28,511 [MainThread  ] [INFO ]  [17/20] training batch corr: (0.10380941512590783, 0.446431381879954)
+2020-02-24 18:23:28,541 [MainThread  ] [INFO ]  [17/20] test batch loss: 0.033827994018793106
+2020-02-24 18:23:28,541 [MainThread  ] [INFO ]  [17/20] test batch corr: (-0.01579700276547496, 0.6178136002898859)
+2020-02-24 18:23:37,607 [MainThread  ] [INFO ]  [18/20] training batch loss: 0.04093601554632187
+2020-02-24 18:23:37,608 [MainThread  ] [INFO ]  [18/20] training batch corr: (-0.09227250323977627, 0.49880229994048453)
+2020-02-24 18:23:37,690 [MainThread  ] [INFO ]  [18/20] test batch loss: 0.03853015974164009
+2020-02-24 18:23:37,690 [MainThread  ] [INFO ]  [18/20] test batch corr: (-0.029460246380808006, 0.3520338142494547)
+2020-02-24 18:23:46,173 [MainThread  ] [INFO ]  [19/20] training batch loss: 0.03911080211400986
+2020-02-24 18:23:46,173 [MainThread  ] [INFO ]  [19/20] training batch corr: (-0.16102292432393617, 0.23579500764319383)
+2020-02-24 18:23:46,203 [MainThread  ] [INFO ]  [19/20] test batch loss: 0.03541507571935654
+2020-02-24 18:23:46,203 [MainThread  ] [INFO ]  [19/20] test batch corr: (0.0014093930395913355, 0.9644953302299504)
+2020-02-24 18:23:46,204 [MainThread  ] [INFO ]  Done training
+2020-02-24 18:23:52,877 [MainThread  ] [INFO ]  Training data performance (summarized across batches):
+2020-02-24 18:23:52,884 [MainThread  ] [INFO ]               loss        corr          pval
+count  336.000000  336.000000  3.360000e+02
+mean     0.035361    0.088743  5.435889e-02
+std      0.001905    0.032420  1.382907e-01
+min      0.031278   -0.006491  5.513645e-11
+25%      0.034202    0.065888  3.732242e-04
+50%      0.035362    0.091256  3.875433e-03
+75%      0.036476    0.112309  3.725545e-02
+max      0.051583    0.205373  9.621314e-01
+2020-02-24 18:23:52,892 [MainThread  ] [INFO ]         loss      corr      pval
+0  0.037193  0.032573  0.303459
+1  0.034959  0.118976  0.000163
+2  0.035469  0.077262  0.014531
+3  0.033631  0.127635  0.000052
+4  0.034258  0.064243  0.042246
+2020-02-24 18:23:54,563 [MainThread  ] [INFO ]  Test data performance (summarized across batches):
+2020-02-24 18:23:54,570 [MainThread  ] [INFO ]              loss       corr       pval
+count  84.000000  84.000000  84.000000
+mean    0.036279   0.001100   0.540511
+std     0.001604   0.031610   0.301416
+min     0.033243  -0.102992   0.001108
+25%     0.035213  -0.014588   0.266138
+50%     0.036261   0.002338   0.600905
+75%     0.037306   0.023525   0.812910
+max     0.040807   0.071444   0.994980
