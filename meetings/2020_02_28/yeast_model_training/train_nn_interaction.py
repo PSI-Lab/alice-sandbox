@@ -38,7 +38,7 @@ def load_data(f_name):
     df = pd.read_csv(f_name,
                      sep='\t')[['Query Strain ID', 'Array Strain ID',
                                 'Query single mutant fitness (SMF)', 'Array SMF',
-                                'Double mutant fitness']].rename(columns={
+                                'Genetic interaction score (ε)']].rename(columns={
         'Query Strain ID': 's1',
         'Array Strain ID': 's2',
         'Query single mutant fitness (SMF)': 'f1',
