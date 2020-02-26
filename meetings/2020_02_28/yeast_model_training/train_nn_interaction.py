@@ -97,7 +97,11 @@ def make_model(num_input, hid_sizes):
     return model
 
 
-def set_up_logging():
+def set_up_logging(path_result):
+    # make result dir if non existing
+    if not os.path.isdir(path_result):
+        os.makedirs(path_result)
+
     log_format = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.DEBUG)
@@ -109,11 +113,7 @@ def set_up_logging():
     root_logger.addHandler(console_logger)
 
 
-def main(path_data, path_result, hid_sizes, n_epoch, shuffle_label):
-    # make result dir if non existing
-    if not os.path.isdir(path_result):
-        os.makedirs(path_result)
-
+def main(path_data, hid_sizes, n_epoch, shuffle_label):
     # load data
     logging.info("Loading dataset: {}".format(path_data))
     df = []
@@ -278,6 +278,6 @@ if __name__ == "__main__":
     parser.add_argument('--epoch', type=int, help='number of epochs')
     parser.add_argument('--shuffle_label', default=False, action='store_true', help='whether to shuffle training target values, this is a debugging option')
     args = parser.parse_args()
-    set_up_logging()
+    set_up_logging(args.result)
     logging.debug(args)
-    main(args.data, args.result, args.hid_sizes, args.epoch, args.shuffle_label)
+    main(args.data, args.hid_sizes, args.epoch, args.shuffle_label)
