@@ -210,11 +210,14 @@ def main(path_data, path_result, n_epoch, shuffle_label):
     logging.info("Naive guess: {}, training loss: {}, test loss: {}".format(yp_naive, loss_naive_training, loss_naive_test))
 
     # training TODO GPU
-    device = torch.device("cpu")
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = model.to(device)
 
     # inital test performance
     with torch.set_grad_enabled(False):
         for xt, yt in data_ts_loader:
+            xt = xt.to(device)
+            yt = yt.to(device)
             yt_pred = model(xt)
             loss = loss_fn(yt_pred, yt)
             logging.info('initial test batch loss: {}'.format(loss.item()))
@@ -225,6 +228,8 @@ def main(path_data, path_result, n_epoch, shuffle_label):
     for epoch in range(n_epoch):
         # Training
         for x_batch, y_batch in data_tr_loader:
+            x_batch = x_batch.to(device)
+            x_batch = x_batch.to(device)
             y_batch_pred = model(x_batch)
             loss = loss_fn(y_batch_pred, y_batch)
             # print(epoch, loss.item())
@@ -238,6 +243,8 @@ def main(path_data, path_result, n_epoch, shuffle_label):
         # test
         with torch.set_grad_enabled(False):
             for xt, yt in data_ts_loader:
+                xt = xt.to(device)
+                yt = yt.to(device)
                 yt_pred = model(xt)
                 loss = loss_fn(yt_pred, yt)
                 logging.info('[{}/{}] test batch loss: {}'.format(epoch, n_epoch, loss.item()))
@@ -251,6 +258,8 @@ def main(path_data, path_result, n_epoch, shuffle_label):
         # training batches
         loss_training = []
         for x_batch, y_batch in data_tr_loader:
+            x_batch = x_batch.to(device)
+            x_batch = x_batch.to(device)
             y_batch_pred = model(x_batch)
             loss = loss_fn(y_batch_pred, y_batch)
             corr, pval = pearsonr(y_batch.detach().numpy()[:, 0], y_batch_pred.detach().numpy()[:, 0])
@@ -264,6 +273,8 @@ def main(path_data, path_result, n_epoch, shuffle_label):
         # test batches
         loss_test = []
         for x_batch, y_batch in data_ts_loader:
+            x_batch = x_batch.to(device)
+            x_batch = x_batch.to(device)
             y_batch_pred = model(x_batch)
             loss = loss_fn(y_batch_pred, y_batch)
             corr, pval = pearsonr(y_batch.detach().numpy()[:, 0], y_batch_pred.detach().numpy()[:, 0])
