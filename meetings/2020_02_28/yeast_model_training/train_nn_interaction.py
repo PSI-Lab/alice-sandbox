@@ -259,7 +259,7 @@ def main(path_data, path_result, n_epoch, shuffle_label):
         loss_training = []
         for x_batch, y_batch in data_tr_loader:
             x_batch = x_batch.to(device)
-            x_batch = x_batch.to(device)
+            y_batch = y_batch.to(device)
             y_batch_pred = model(x_batch)
             loss = loss_fn(y_batch_pred, y_batch)
             corr, pval = pearsonr(y_batch.detach().cpu().numpy()[:, 0], y_batch_pred.detach().cpu().numpy()[:, 0])
@@ -274,7 +274,7 @@ def main(path_data, path_result, n_epoch, shuffle_label):
         loss_test = []
         for x_batch, y_batch in data_ts_loader:
             x_batch = x_batch.to(device)
-            x_batch = x_batch.to(device)
+            y_batch = y_batch.to(device)
             y_batch_pred = model(x_batch)
             loss = loss_fn(y_batch_pred, y_batch)
             corr, pval = pearsonr(y_batch.detach().cpu().numpy()[:, 0], y_batch_pred.detach().cpu().numpy()[:, 0])
