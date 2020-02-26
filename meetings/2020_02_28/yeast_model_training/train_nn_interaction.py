@@ -182,7 +182,7 @@ def main(path_data, path_result, n_epoch, shuffle_label):
         np.random.shuffle(y_tr)
 
     x_ts = np.asarray(df_ts['x'].to_list())
-    y_ts = np.asarray(df_ts['fitness'].to_list())
+    y_ts = np.asarray(df_ts['interaction'].to_list())
     # print(x_tr.shape, y_tr.shape, x_ts.shape, y_ts.shape)
     assert x_tr.shape[0] == y_tr.shape[0]
     assert x_ts.shape[0] == y_ts.shape[0]
