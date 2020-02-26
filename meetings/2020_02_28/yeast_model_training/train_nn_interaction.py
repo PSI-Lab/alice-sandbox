@@ -84,40 +84,20 @@ class MyDataSet(Dataset):
         return self.len
 
 
-def make_model(num_input):
-    model = torch.nn.Sequential(
-        torch.nn.Linear(num_input, 200),
-        torch.nn.ReLU(),
-        torch.nn.BatchNorm1d(200),
-        torch.nn.Linear(200, 200),
-        torch.nn.ReLU(),
-        torch.nn.BatchNorm1d(200),
-        torch.nn.Linear(200, 200),
-        torch.nn.ReLU(),
-        torch.nn.BatchNorm1d(200),
-        torch.nn.Linear(200, 200),
-        torch.nn.ReLU(),
-        torch.nn.BatchNorm1d(200),
-        torch.nn.Linear(200, 100),
-        torch.nn.ReLU(),
-        torch.nn.BatchNorm1d(100),
-        torch.nn.Linear(100, 50),
-        torch.nn.ReLU(),
-        torch.nn.BatchNorm1d(50),
-        torch.nn.Linear(50, 10),
-        torch.nn.ReLU(),
-        torch.nn.BatchNorm1d(10),
-        torch.nn.Linear(10, 1),
-    )
+def make_model(num_input, hid_sizes):
+    modules = []
+    sizes = [num_input] + hid_sizes
+    for last_size, this_size in zip(sizes[:-1], sizes[1:]):
+        modules.append(torch.nn.Linear(last_size, this_size))
+        modules.append(torch.nn.LeakyReLU())
+        modules.append(torch.nn.BatchNorm1d(this_size))
+    # add last layer
+    modules.append(torch.nn.Linear(sizes[-1], 1))
+    model = nn.Sequential(*modules)
     return model
 
 
-def main(path_data, path_result, n_epoch, shuffle_label):
-    # make result dir if non existing
-    if not os.path.isdir(path_result):
-        os.makedirs(path_result)
-
-    # set up logging
+def set_up_logging():
     log_format = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.DEBUG)
@@ -127,6 +107,12 @@ def main(path_data, path_result, n_epoch, shuffle_label):
     console_logger = logging.StreamHandler()
     console_logger.setFormatter(log_format)
     root_logger.addHandler(console_logger)
+
+
+def main(path_data, path_result, hid_sizes, n_epoch, shuffle_label):
+    # make result dir if non existing
+    if not os.path.isdir(path_result):
+        os.makedirs(path_result)
 
     # load data
     logging.info("Loading dataset: {}".format(path_data))
@@ -195,7 +181,7 @@ def main(path_data, path_result, n_epoch, shuffle_label):
                                 batch_size=batch_size, shuffle=True)
 
     # model
-    model = make_model(num_genes)
+    model = make_model(num_genes, hid_sizes)
     logging.info("model: \n{}".format(model))
     loss_fn = torch.nn.MSELoss(reduction='mean')
     learning_rate = 1e-4
@@ -267,8 +253,6 @@ def main(path_data, path_result, n_epoch, shuffle_label):
         loss_training = pd.DataFrame(loss_training)
         logging.info("Training data performance (summarized across batches):")
         logging.info(loss_training.describe())
-        # FIXME debug
-        logging.info(loss_training.head())
 
         # test batches
         loss_test = []
@@ -283,12 +267,6 @@ def main(path_data, path_result, n_epoch, shuffle_label):
         logging.info("Test data performance (summarized across batches):")
         logging.info(loss_test.describe())
 
-    # logging.info('training batch ({} data points)'.format(batch_size))
-    # logging.info(pearsonr(y_batch.detach().numpy()[:, 0], y_batch_pred.detach().numpy()[:, 0]))
-
-    # logging.info('test batch ({} data points)'.format(batch_size))
-    # logging.info(pearsonr(yt.numpy()[:, 0], yt_pred.numpy()[:, 0]))
-
     # TODO make plots
 
 
@@ -296,7 +274,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--data', nargs='+', type=str, help='path to training data file')
     parser.add_argument('--result', type=str, help='path to output result')
+    parser.add_argument('--hid_sizes', nargs='+', type=int, help='hidden layer sizes, does not include first (input) and last (output) layer.')
     parser.add_argument('--epoch', type=int, help='number of epochs')
     parser.add_argument('--shuffle_label', default=False, action='store_true', help='whether to shuffle training target values, this is a debugging option')
     args = parser.parse_args()
-    main(args.data, args.result, args.epoch, args.shuffle_label)
+    set_up_logging()
+    logging.debug(args)
+    main(args.data, args.result, args.hid_sizes, args.epoch, args.shuffle_label)
