@@ -229,7 +229,7 @@ def main(path_data, path_result, n_epoch, shuffle_label):
         # Training
         for x_batch, y_batch in data_tr_loader:
             x_batch = x_batch.to(device)
-            x_batch = x_batch.to(device)
+            y_batch = y_batch.to(device)
             y_batch_pred = model(x_batch)
             loss = loss_fn(y_batch_pred, y_batch)
             # print(epoch, loss.item())
