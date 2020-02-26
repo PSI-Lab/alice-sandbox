@@ -221,7 +221,7 @@ def main(path_data, path_result, n_epoch, shuffle_label):
             yt_pred = model(xt)
             loss = loss_fn(yt_pred, yt)
             logging.info('initial test batch loss: {}'.format(loss.item()))
-            logging.info('initial test batch corr: {}'.format(pearsonr(yt.numpy()[:, 0], yt_pred.numpy()[:, 0])))
+            logging.info('initial test batch corr: {}'.format(pearsonr(yt.cpu().numpy()[:, 0], yt_pred.cpu().numpy()[:, 0])))
             # just run one batch (otherwise takes too long)
             break
 
@@ -238,7 +238,7 @@ def main(path_data, path_result, n_epoch, shuffle_label):
             optimizer.step()
         # after epoch
         logging.info('[{}/{}] training batch loss: {}'.format(epoch, n_epoch, loss.item()))
-        logging.info('[{}/{}] training batch corr: {}'.format(epoch, n_epoch, pearsonr(y_batch.detach().numpy()[:, 0], y_batch_pred.detach().numpy()[:, 0])))
+        logging.info('[{}/{}] training batch corr: {}'.format(epoch, n_epoch, pearsonr(y_batch.detach().cpu().numpy()[:, 0], y_batch_pred.detach().cpu().numpy()[:, 0])))
 
         # test
         with torch.set_grad_enabled(False):
@@ -248,7 +248,7 @@ def main(path_data, path_result, n_epoch, shuffle_label):
                 yt_pred = model(xt)
                 loss = loss_fn(yt_pred, yt)
                 logging.info('[{}/{}] test batch loss: {}'.format(epoch, n_epoch, loss.item()))
-                logging.info('[{}/{}] test batch corr: {}'.format(epoch, n_epoch, pearsonr(yt.numpy()[:, 0], yt_pred.numpy()[:, 0])))
+                logging.info('[{}/{}] test batch corr: {}'.format(epoch, n_epoch, pearsonr(yt.cpu().numpy()[:, 0], yt_pred.cpu().numpy()[:, 0])))
                 break
 
     logging.info('Done training')
@@ -262,8 +262,8 @@ def main(path_data, path_result, n_epoch, shuffle_label):
             x_batch = x_batch.to(device)
             y_batch_pred = model(x_batch)
             loss = loss_fn(y_batch_pred, y_batch)
-            corr, pval = pearsonr(y_batch.detach().numpy()[:, 0], y_batch_pred.detach().numpy()[:, 0])
-            loss_training.append({'loss': float(loss.detach().numpy()), 'corr': corr, 'pval': pval})
+            corr, pval = pearsonr(y_batch.detach().cpu().numpy()[:, 0], y_batch_pred.detach().cpu().numpy()[:, 0])
+            loss_training.append({'loss': float(loss.detach().cpu().numpy()), 'corr': corr, 'pval': pval})
         loss_training = pd.DataFrame(loss_training)
         logging.info("Training data performance (summarized across batches):")
         logging.info(loss_training.describe())
@@ -277,8 +277,8 @@ def main(path_data, path_result, n_epoch, shuffle_label):
             x_batch = x_batch.to(device)
             y_batch_pred = model(x_batch)
             loss = loss_fn(y_batch_pred, y_batch)
-            corr, pval = pearsonr(y_batch.detach().numpy()[:, 0], y_batch_pred.detach().numpy()[:, 0])
-            loss_test.append({'loss': float(loss.detach().numpy()), 'corr': corr, 'pval': pval})
+            corr, pval = pearsonr(y_batch.detach().cpu().numpy()[:, 0], y_batch_pred.detach().cpu().numpy()[:, 0])
+            loss_test.append({'loss': float(loss.detach().cpu().numpy()), 'corr': corr, 'pval': pval})
         loss_test = pd.DataFrame(loss_test)
         logging.info("Test data performance (summarized across batches):")
         logging.info(loss_test.describe())
