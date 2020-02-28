@@ -29,23 +29,45 @@ performance drop to that similar of a naive solution
  should be pointing towards the naive solution),
 and it's consistent between training and testing
 
+## New findings
 
-TODO read their paper again: how did process the data? were they not trying to predict the raw values?
--> didn't find anythung useful
+After chatting with Andrew, we realized that the 0.5 correlation reported in the paper
+was from predicting interaction, not fitness.
+Our performance dropped significantly after switching to training on gene interaction as target.
+Our test performance is around 0.4 right now (haven't done extensive hyperparameter tuning).
+So it's kind of in line with the paper.
+
+According to Albi from DG, people typically calculate interaction score
+as: fitness_ab - fitness_a * fitness_b (need to read original paper to confirm),
+so it's very different than predicting just a double KO fitness.
+We need to at least be able to also predict single KO fitness.
+Albi also mentioned that, a better CV split should be by gene pairs, e,g, A & B in training, C & D in validation
+(how can the model generalize in this case? needs further discussion).
 
 
-target value distribution
 
-try on a bigger dataset
+## TODOs
 
-visualize network?
+- understand why gene interaction is more difficult (& important) than fitness
 
-anyone has time to help with some code review?
+- hyperparam tuning to match their performance
 
-train/test on single deletion
+- multitask: predict fitness and interaction?
 
-TODO: make GPU version code
+- incorporate other prior information to improve performance
 
-where is the bigger (8M) dataset? ref 15
+- check correlation between gene interaction and prediction:
+http://chianti.ucsd.edu/~kono/ci/data/deep-cell/predictions/prediction.tar.gz
+
+- read cell map paper, make sure we understand how gene interaction were calculated,
+and why it is more important than fitness
+
+
+- dataset target value distribution, correlation between reps
+
+- try prediction fitness of single gene KO
+
+- KO v.s. KD, different alleles
+
 
 
