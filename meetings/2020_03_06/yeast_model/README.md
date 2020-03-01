@@ -22,6 +22,8 @@ Verified that interaction score was calculated as:
 f1, f2, fd: fd - f1 * f2
 ```
 
+see https://github.com/PSI-Lab/alice-sandbox/blob/879b6d151ce0f949cb5386b4ef3eb3cdba1dc577/meetings/2020_03_06/yeast_model/investigate_data.ipynb
+
 TODO how did they compute the std?
 
 ## Check D-cell performance on interaction
@@ -50,6 +52,7 @@ df_dcell_pred['pred'].corr(df_dcell_pred['fd'])
 0.21512434519724072
 ```
 
+see https://github.com/PSI-Lab/alice-sandbox/blob/879b6d151ce0f949cb5386b4ef3eb3cdba1dc577/meetings/2020_03_06/yeast_model/investigate_data.ipynb
 
 ## Check correlation between fitness and interaction in raw data
 
@@ -59,13 +62,49 @@ df['interaction'].corr(df['fd'])
 0.2743129604320869
 ```
 
+see https://github.com/PSI-Lab/alice-sandbox/blob/879b6d151ce0f949cb5386b4ef3eb3cdba1dc577/meetings/2020_03_06/yeast_model/investigate_data.ipynb
+
+## Train NN to predict all 3 fitness scores
+
+This doesn't make sense.
+If we provide double and single fitness score as training targets,
+then the training dataset will contain all single fitness scores,
+then the NN can learn to memorize those,
+which makes everything trivial, and is kinda of cheating.
+
 ## Can we prediction single KO fitness?
 
 Does learning fitness on gene A, B, C tell us anything about gene D, E, F?
 
+Ill-posed problem? Since D, E, F will be constant input in training set,
+NN will ignore them.
+
+Seems to be an impossible problem without extra information.
+
+Is it possible to learn a structure so that it generalizes?
 
 
-## Train NN to predict all 3 fitness scores
+
+Hmm, if NN jointly predicts fitness and interaction,
+does it mean it somewhat has access to all 3 fitness scores?
+Is it possible it can memorize all single fitness?
+If that's the case then the problem might be trivial?
+- maybe not
+
+## Multi-task learning without providing single fitness
+
+Train model to predict too targets,
+double fitness and interaction score.
+Internally the NN has 3 parallel modules, with shared weights,
+takes input double KO, single KO a, single KO b, and
+predicting double fitness, single fitness a, single fitness b, respectively.
+One loss function connects double fitness to the fitness target.
+On the other hand, one extra layer with hard-coded logic and no parameter
+compute gi = fd - fa * fb, on top of which we compute the loss between predicted and target gi.
+Such setup does not provide single ko fitness (no cheating),
+but still encourage to learn something in common.
+
+Does this work?
 
 
 TODO how can one gene generalize to another?
@@ -91,5 +130,7 @@ and why it is more important than fitness
 
 - KO v.s. KD, different alleles
 
+
+TODO is 0/1 encoding the best? try 1/-1??
 
 
