@@ -38,7 +38,7 @@ def load_data(f_name):
     df = pd.read_csv(f_name,
                      sep='\t')[['Query Strain ID', 'Array Strain ID',
                                 'Query single mutant fitness (SMF)', 'Array SMF',
-                                'Genetic interaction score (ε)']].rename(columns={
+                                'Genetic interaction score (ε)', 'Double mutant fitness']].rename(columns={
         'Query Strain ID': 's1',
         'Array Strain ID': 's2',
         'Query single mutant fitness (SMF)': 'f1',
@@ -98,8 +98,8 @@ class MyDataSet(Dataset):
         # else:
         #     self.y = y
         assert y.shape[1] == 2  # 2 outputs
-        self.y_gi = y[:, 0]
-        self.y_fitness = y[:, 1]
+        self.y_fitness = y[:, 0]
+        self.y_gi = y[:, 1]
 
     def __getitem__(self, index):
         _x = self.x[index, :]
@@ -161,7 +161,8 @@ def main(path_data, hid_sizes, n_epoch):
     df = add_column(df, 'g2', ['s2'], get_gene_id)
 
     # take median of examples with the same gene pair, so that we don't have duplicates
-    df = df[['g1', 'g2', 'interaction', 'fitness']].groupby(by=['g1', 'g2'], as_index=False).agg('median')
+    # df = df[['g1', 'g2', 'interaction', 'fitness']].groupby(by=['g1', 'g2'], as_index=False).agg('median')
+    df = df[['g1', 'g2', 'fitness', 'interaction']].groupby(by=['g1', 'g2'], as_index=False).agg('median')
     # gene pair should be unique now
     # TODO check it
 
@@ -194,10 +195,12 @@ def main(path_data, hid_sizes, n_epoch):
 
     # get data
     x_tr = np.asarray(df_tr['x'].to_list())
-    y_tr = np.asarray(df_tr[['interaction', 'fitness']].to_list())
+    # y_tr = np.asarray(df_tr[['interaction', 'fitness']].to_list())
+    y_tr = df_tr[['fitness', 'interaction']].to_numpy()
 
     x_ts = np.asarray(df_ts['x'].to_list())
-    y_ts = np.asarray(df_ts[['interaction', 'fitness']].to_list())
+    # y_ts = np.asarray(df_ts[['interaction', 'fitness']].to_list())
+    y_ts = df_ts[['fitness', 'interaction']].to_numpy()
     # print(x_tr.shape, y_tr.shape, x_ts.shape, y_ts.shape)
     assert x_tr.shape[0] == y_tr.shape[0]
     assert x_ts.shape[0] == y_ts.shape[0]
@@ -217,12 +220,13 @@ def main(path_data, hid_sizes, n_epoch):
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     # naive guess is the mean of training target value
-    yp_naive = np.mean(y_tr)
+    yp_naive = np.mean(y_tr, axis=0)
     # calculate loss on naive guess
     # hard-coded to be MSE
-    loss_naive_training = np.mean((yp_naive - y_tr)**2)
-    loss_naive_test = np.mean((yp_naive - y_ts)**2)
-    logging.info("Naive guess: {}, training loss: {}, test loss: {}".format(yp_naive, loss_naive_training, loss_naive_test))
+    for i, target_name in enumerate(['fitness', 'gi']):   # slice 0 fitness, slice 1 gi
+        loss_naive_training = np.mean((yp_naive[i] - y_tr[:, i])**2)
+        loss_naive_test = np.mean((yp_naive[i] - y_ts[:, i])**2)
+        logging.info("[{}] Naive guess: {}, training loss: {}, test loss: {}".format(target_name, yp_naive[i], loss_naive_training, loss_naive_test))
 
     # training TODO GPU
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
