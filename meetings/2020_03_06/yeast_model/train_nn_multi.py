@@ -3,7 +3,7 @@ import logging
 import argparse
 import pandas as pd
 import numpy as np
-# import tqdm
+import tqdm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -200,7 +200,7 @@ def main(path_data, hid_sizes, n_epoch):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # train + test data handler
-    batch_size = 1000
+    batch_size = 2000
     data_tr_loader = DataLoader(dataset=MyDataSet(x_tr, y_tr, num_genes),
                                 batch_size=batch_size, shuffle=True, num_workers=8)
     data_ts_loader = DataLoader(dataset=MyDataSet(x_ts, y_ts, num_genes),
@@ -225,7 +225,7 @@ def main(path_data, hid_sizes, n_epoch):
     # training
     model = model.to(device)
 
-    # inital test performance
+    # initial test performance
     with torch.set_grad_enabled(False):
         for xd, x1, x2, yd, ygi in data_ts_loader:
             xd, x1, x2, yd, ygi = to_device(xd, x1, x2, yd, ygi, device)
@@ -236,18 +236,20 @@ def main(path_data, hid_sizes, n_epoch):
 
     for epoch in range(n_epoch):
         # Training
-        for xd, x1, x2, yd, ygi in data_tr_loader:
+        for idx, (xd, x1, x2, yd, ygi) in tqdm.tqdm(enumerate(data_tr_loader)):
             xd, x1, x2, yd, ygi = to_device(xd, x1, x2, yd, ygi, device)
+            # print if last minibatch
             loss, loss_fitness, loss_gi = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True,
-                                                    compute_corr=False, verbose=False)
+                                                    compute_corr=False,
+                                                    verbose=True if idx == len(data_tr_loader) - 1 else False)
             # print(epoch, loss.item())
             model.zero_grad()
             loss.backward()
             optimizer.step()
-        # after epoch
-        logging.info("Training")  # TODO report per-epoch running loss
-        logging.info('[{}/{}] training batch loss: {} {} {}'.format(epoch, n_epoch, loss.item(), loss_fitness.item(),
-                                                                    loss_gi.item()))
+        # # after epoch
+        # logging.info("Training")  # TODO report per-epoch running loss
+        # logging.info('[{}/{}] training batch loss: {} {} {}'.format(epoch, n_epoch, loss.item(), loss_fitness.item(),
+        #                                                             loss_gi.item()))
         # TODO how can we check whether current minibatch is the last so we can print using m_wrapper?
         # TODO or maybe we can use next() to get the first minibatch, and report on first, instead of last
         # logging.info('[{}/{}] training batch corr: {}'.format(epoch, n_epoch, pearsonr(y_batch.detach().cpu().numpy()[:, 0], y_batch_pred.detach().cpu().numpy()[:, 0])))
@@ -272,7 +274,7 @@ def main(path_data, hid_sizes, n_epoch):
     with torch.set_grad_enabled(False):
         # training batches
         loss_training = []
-        for xd, x1, x2, yd, ygi in data_tr_loader:
+        for xd, x1, x2, yd, ygi in tqdm.tqdm(data_tr_loader):
             xd, x1, x2, yd, ygi = to_device(xd, x1, x2, yd, ygi, device)
             loss, loss_fitness, loss_gi = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True,
                                                     compute_corr=False, verbose=False)
@@ -288,7 +290,7 @@ def main(path_data, hid_sizes, n_epoch):
 
         # test batches
         loss_test = []
-        for xd, x1, x2, yd, ygi in data_ts_loader:
+        for xd, x1, x2, yd, ygi in tqdm.tqdm(data_ts_loader):
             xd, x1, x2, yd, ygi = to_device(xd, x1, x2, yd, ygi, device)
             loss, loss_fitness, loss_gi = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True,
                                                     compute_corr=False, verbose=False)
