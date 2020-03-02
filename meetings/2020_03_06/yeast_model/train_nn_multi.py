@@ -264,20 +264,20 @@ def main(path_data, hid_sizes, n_epoch):
 
     # inital test performance
     with torch.set_grad_enabled(False):
-        for xd, x1, x2, xd, ygi in data_ts_loader:
-            _ = m_wrapper(model, xd, x1, x2, xd, ygi, loss_fn=loss_fn, compute_loss=True, compute_corr=True,
+        for xd, x1, x2, yd, ygi in data_ts_loader:
+            _ = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True, compute_corr=True,
                           verbose=True)
             # just run one batch (otherwise takes too long)
             break
 
     for epoch in range(n_epoch):
         # Training
-        for xd, x1, x2, xd, ygi in data_tr_loader:
+        for xd, x1, x2, yd, ygi in data_tr_loader:
             # x_batch = x_batch.to(device)
             # y_batch = y_batch.to(device)
             # y_batch_pred = model(x_batch)
             # loss = loss_fn(y_batch_pred, y_batch)
-            loss, loss_fitness, loss_gi = m_wrapper(model, xd, x1, x2, xd, ygi, loss_fn=loss_fn, compute_loss=True,
+            loss, loss_fitness, loss_gi = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True,
                                                     compute_corr=False, verbose=False)
             # print(epoch, loss.item())
             model.zero_grad()
@@ -292,8 +292,8 @@ def main(path_data, hid_sizes, n_epoch):
 
         # test
         with torch.set_grad_enabled(False):
-            for xd, x1, x2, xd, ygi in data_ts_loader:   # TODO shall we use next()?
-                _ = m_wrapper(model, xd, x1, x2, xd, ygi, loss_fn=loss_fn, compute_loss=True, compute_corr=True,
+            for xd, x1, x2, yd, ygi in data_ts_loader:   # TODO shall we use next()?
+                _ = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True, compute_corr=True,
                               verbose=True)
                 # xt = xt.to(device)
                 # yt = yt.to(device)
@@ -312,8 +312,8 @@ def main(path_data, hid_sizes, n_epoch):
     with torch.set_grad_enabled(False):
         # training batches
         loss_training = []
-        for xd, x1, x2, xd, ygi in data_tr_loader:
-            loss, loss_fitness, loss_gi = m_wrapper(model, xd, x1, x2, xd, ygi, loss_fn=loss_fn, compute_loss=True,
+        for xd, x1, x2, yd, ygi in data_tr_loader:
+            loss, loss_fitness, loss_gi = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True,
                                                     compute_corr=False, verbose=False)
             loss_training.append({
                 'total': loss,
@@ -333,8 +333,8 @@ def main(path_data, hid_sizes, n_epoch):
 
         # test batches
         loss_test = []
-        for xd, x1, x2, xd, ygi in data_ts_loader:
-            loss, loss_fitness, loss_gi = m_wrapper(model, xd, x1, x2, xd, ygi, loss_fn=loss_fn, compute_loss=True,
+        for xd, x1, x2, yd, ygi in data_ts_loader:
+            loss, loss_fitness, loss_gi = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True,
                                                     compute_corr=False, verbose=False)
             loss_test.append({
                 'total': loss,
