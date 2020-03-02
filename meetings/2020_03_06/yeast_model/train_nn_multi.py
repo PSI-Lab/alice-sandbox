@@ -275,9 +275,9 @@ def main(path_data, hid_sizes, n_epoch):
             loss, loss_fitness, loss_gi = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True,
                                                     compute_corr=False, verbose=False)
             loss_training.append({
-                'total': loss,
-                'fitness': loss_fitness,
-                'gi': loss_gi,
+                'total': float(loss.detach().cpu().numpy()),
+                'fitness': float(loss_fitness.detach().cpu().numpy()),
+                'gi': float(loss_gi.detach().cpu().numpy()),
             })
             # TODO collect prediction and calculate global corr
         loss_training = pd.DataFrame(loss_training)
@@ -291,9 +291,9 @@ def main(path_data, hid_sizes, n_epoch):
             loss, loss_fitness, loss_gi = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True,
                                                     compute_corr=False, verbose=False)
             loss_test.append({
-                'total': loss,
-                'fitness': loss_fitness,
-                'gi': loss_gi,
+                'total': float(loss.detach().cpu().numpy()),
+                'fitness': float(loss_fitness.detach().cpu().numpy()),
+                'gi': float(loss_gi.detach().cpu().numpy()),
             })
         loss_test = pd.DataFrame(loss_test)
         logging.info("Test data performance (summarized across batches):")
