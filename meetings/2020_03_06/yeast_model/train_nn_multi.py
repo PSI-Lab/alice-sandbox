@@ -3,7 +3,7 @@ import logging
 import argparse
 import pandas as pd
 import numpy as np
-import tqdm
+# import tqdm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -236,7 +236,7 @@ def main(path_data, hid_sizes, n_epoch):
 
     for epoch in range(n_epoch):
         # Training
-        for idx, (xd, x1, x2, yd, ygi) in tqdm.tqdm(enumerate(data_tr_loader)):
+        for idx, (xd, x1, x2, yd, ygi) in enumerate(data_tr_loader):
             xd, x1, x2, yd, ygi = to_device(xd, x1, x2, yd, ygi, device)
             # print if last minibatch
             loss, loss_fitness, loss_gi = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True,
@@ -274,7 +274,7 @@ def main(path_data, hid_sizes, n_epoch):
     with torch.set_grad_enabled(False):
         # training batches
         loss_training = []
-        for xd, x1, x2, yd, ygi in tqdm.tqdm(data_tr_loader):
+        for xd, x1, x2, yd, ygi in data_tr_loader:
             xd, x1, x2, yd, ygi = to_device(xd, x1, x2, yd, ygi, device)
             loss, loss_fitness, loss_gi = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True,
                                                     compute_corr=False, verbose=False)
@@ -290,7 +290,7 @@ def main(path_data, hid_sizes, n_epoch):
 
         # test batches
         loss_test = []
-        for xd, x1, x2, yd, ygi in tqdm.tqdm(data_ts_loader):
+        for xd, x1, x2, yd, ygi in data_ts_loader:
             xd, x1, x2, yd, ygi = to_device(xd, x1, x2, yd, ygi, device)
             loss, loss_fitness, loss_gi = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True,
                                                     compute_corr=False, verbose=False)
