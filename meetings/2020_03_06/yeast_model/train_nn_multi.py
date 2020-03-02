@@ -245,6 +245,7 @@ def main(path_data, hid_sizes, n_epoch):
             loss.backward()
             optimizer.step()
         # after epoch
+        logging.info("Training")  # TODO report per-epoch running loss
         logging.info('[{}/{}] training batch loss: {} {} {}'.format(epoch, n_epoch, loss.item(), loss_fitness.item(),
                                                                     loss_gi.item()))
         # TODO how can we check whether current minibatch is the last so we can print using m_wrapper?
@@ -255,6 +256,7 @@ def main(path_data, hid_sizes, n_epoch):
         with torch.set_grad_enabled(False):
             for xd, x1, x2, yd, ygi in data_ts_loader:   # TODO shall we use next()?
                 xd, x1, x2, yd, ygi = to_device(xd, x1, x2, yd, ygi, device)
+                logging.info("Testing")
                 _ = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True, compute_corr=True,
                               verbose=True)
                 # logging.info('[{}/{}] test batch loss: {}'.format(epoch, n_epoch, loss.item()))
