@@ -239,9 +239,13 @@ def main(path_data, hid_sizes, n_epoch):
         for idx, (xd, x1, x2, yd, ygi) in enumerate(data_tr_loader):
             xd, x1, x2, yd, ygi = to_device(xd, x1, x2, yd, ygi, device)
             # print if last minibatch
-            loss, loss_fitness, loss_gi = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True,
-                                                    compute_corr=False,
-                                                    verbose=True if idx == len(data_tr_loader) - 1 else False)
+            if idx == len(data_tr_loader) - 1:
+                logging.info("[{}/{}] Training last mini batch".format(epoch, n_epoch))
+                loss, loss_fitness, loss_gi = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True,
+                                                        compute_corr=True, verbose=True)
+            else:
+                loss, loss_fitness, loss_gi = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True,
+                                                        compute_corr=False, verbose=False)
             # print(epoch, loss.item())
             model.zero_grad()
             loss.backward()
