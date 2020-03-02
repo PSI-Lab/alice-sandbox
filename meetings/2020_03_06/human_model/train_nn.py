@@ -152,8 +152,14 @@ def main(path_data, hid_sizes, n_epoch):
     for _p in path_data:
         df.append(pd.read_csv(_p))
     df = pd.concat(df)
-    df = df.rename({'k562_rep_avg_gi': 'k562',
+    df = df.rename(columns={'k562_rep_avg_gi': 'k562',
                     'jurkat_rep_avg_gi': 'jurkat'})
+
+    # drop missing rows with val
+    df = df.dropna()
+
+    # TODO drop negative controls
+    
 
     # take median of examples with the same gene pair, so that we don't have duplicates
     # df = df[['g1', 'g2', 'interaction', 'fitness']].groupby(by=['g1', 'g2'], as_index=False).agg('median')
