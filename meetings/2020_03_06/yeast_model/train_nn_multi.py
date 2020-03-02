@@ -98,9 +98,10 @@ class MyDataSet(Dataset):
         # else:
         #     self.y = y
         assert y.shape[1] == 2  # 2 outputs
-        self.y_fitness = y[:, 0]
-        self.y_gi = y[:, 1]
+        self.y_fitness = y[:, [0]]
+        self.y_gi = y[:, [1]]
         self.device = device
+
 
     def __getitem__(self, index):
         _x = self.x[index, :]
