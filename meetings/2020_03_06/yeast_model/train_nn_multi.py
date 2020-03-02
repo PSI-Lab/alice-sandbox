@@ -19,11 +19,6 @@ def add_column(df, output_col, input_cols, func):
     # transpose to make a list of value tuples, one per row
     args = zip(*input_values)
 
-    # Attach a progress bar if required
-    # if pbar:
-    #     args = tqdm(args, total=len(df))
-    #     args.set_description("Processing %s" % output_col)
-
     # evaluate the function to generate the values of the new column
     output_values = [func(*x) for x in args]
 
@@ -59,32 +54,6 @@ def encode_x(g1, g2, gene_id2idx):
     return [gene_id2idx[g1], gene_id2idx[g2]]
 
 
-# class MyDataSet(Dataset):
-#
-#     def __init__(self, x, y, num_genes):
-#         self.num_genes = num_genes
-#         assert x.shape[0] == y.shape[0]
-#         self.len = x.shape[0]
-#         self.x = x
-#         # add new axis if needed
-#         if len(y.shape) == 1:
-#             self.y = y[:, np.newaxis]
-#         else:
-#             self.y = y
-#
-#     def __getitem__(self, index):
-#         _x = self.x[index, :]
-#         assert len(_x) == 2
-#         # encode
-#         x = np.ones(self.num_genes)
-#         x[_x[0]] = 0
-#         x[_x[1]] = 0
-#         return torch.from_numpy(x).float(), torch.from_numpy(self.y[index]).float()
-#
-#     def __len__(self):
-#         return self.len
-
-
 class MyDataSet(Dataset):
 
     def __init__(self, x, y, num_genes, device):
@@ -92,11 +61,6 @@ class MyDataSet(Dataset):
         assert x.shape[0] == y.shape[0]
         self.len = x.shape[0]
         self.x = x
-        # # add new axis if needed
-        # if len(y.shape) == 1:
-        #     self.y = y[:, np.newaxis]
-        # else:
-        #     self.y = y
         assert y.shape[1] == 2  # 2 outputs
         self.y_fitness = y[:, [0]]
         self.y_gi = y[:, [1]]
@@ -223,13 +187,10 @@ def main(path_data, hid_sizes, n_epoch):
 
     # get data
     x_tr = np.asarray(df_tr['x'].to_list())
-    # y_tr = np.asarray(df_tr[['interaction', 'fitness']].to_list())
     y_tr = df_tr[['fitness', 'interaction']].to_numpy()
 
     x_ts = np.asarray(df_ts['x'].to_list())
-    # y_ts = np.asarray(df_ts[['interaction', 'fitness']].to_list())
     y_ts = df_ts[['fitness', 'interaction']].to_numpy()
-    # print(x_tr.shape, y_tr.shape, x_ts.shape, y_ts.shape)
     assert x_tr.shape[0] == y_tr.shape[0]
     assert x_ts.shape[0] == y_ts.shape[0]
 
@@ -239,9 +200,9 @@ def main(path_data, hid_sizes, n_epoch):
     # train + test data handler
     batch_size = 1000
     data_tr_loader = DataLoader(dataset=MyDataSet(x_tr, y_tr, num_genes, device),
-                                batch_size=batch_size, shuffle=True)
+                                batch_size=batch_size, shuffle=True, num_workers=8)
     data_ts_loader = DataLoader(dataset=MyDataSet(x_ts, y_ts, num_genes, device),
-                                batch_size=batch_size, shuffle=True)
+                                batch_size=batch_size, shuffle=True, num_workers=8)
 
     # model
     model = make_model(num_genes, hid_sizes)
@@ -273,10 +234,6 @@ def main(path_data, hid_sizes, n_epoch):
     for epoch in range(n_epoch):
         # Training
         for xd, x1, x2, yd, ygi in data_tr_loader:
-            # x_batch = x_batch.to(device)
-            # y_batch = y_batch.to(device)
-            # y_batch_pred = model(x_batch)
-            # loss = loss_fn(y_batch_pred, y_batch)
             loss, loss_fitness, loss_gi = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True,
                                                     compute_corr=False, verbose=False)
             # print(epoch, loss.item())
@@ -295,10 +252,6 @@ def main(path_data, hid_sizes, n_epoch):
             for xd, x1, x2, yd, ygi in data_ts_loader:   # TODO shall we use next()?
                 _ = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True, compute_corr=True,
                               verbose=True)
-                # xt = xt.to(device)
-                # yt = yt.to(device)
-                # yt_pred = model(xt)
-                # loss = loss_fn(yt_pred, yt)
                 # logging.info('[{}/{}] test batch loss: {}'.format(epoch, n_epoch, loss.item()))
                 # logging.info('[{}/{}] test batch corr: {}'.format(epoch, n_epoch, pearsonr(yt.cpu().numpy()[:, 0], yt_pred.cpu().numpy()[:, 0])))
 
@@ -321,12 +274,6 @@ def main(path_data, hid_sizes, n_epoch):
                 'gi': loss_gi,
             })
             # TODO collect prediction and calculate global corr
-            # x_batch = x_batch.to(device)
-            # y_batch = y_batch.to(device)
-            # y_batch_pred = model(x_batch)
-            # loss = loss_fn(y_batch_pred, y_batch)
-            # corr, pval = pearsonr(y_batch.detach().cpu().numpy()[:, 0], y_batch_pred.detach().cpu().numpy()[:, 0])
-            # loss_training.append({'loss': float(loss.detach().cpu().numpy()), 'corr': corr, 'pval': pval})
         loss_training = pd.DataFrame(loss_training)
         logging.info("Training data performance (summarized across batches):")
         logging.info(loss_training.describe())
@@ -341,12 +288,6 @@ def main(path_data, hid_sizes, n_epoch):
                 'fitness': loss_fitness,
                 'gi': loss_gi,
             })
-            # x_batch = x_batch.to(device)
-            # y_batch = y_batch.to(device)
-            # y_batch_pred = model(x_batch)
-            # loss = loss_fn(y_batch_pred, y_batch)
-            # corr, pval = pearsonr(y_batch.detach().cpu().numpy()[:, 0], y_batch_pred.detach().cpu().numpy()[:, 0])
-            # loss_test.append({'loss': float(loss.detach().cpu().numpy()), 'corr': corr, 'pval': pval})
         loss_test = pd.DataFrame(loss_test)
         logging.info("Test data performance (summarized across batches):")
         logging.info(loss_test.describe())
@@ -360,9 +301,7 @@ if __name__ == "__main__":
     parser.add_argument('--result', type=str, help='path to output result')
     parser.add_argument('--hid_sizes', nargs='+', type=int, help='hidden layer sizes, does not include first (input) and last (output) layer.')
     parser.add_argument('--epoch', type=int, help='number of epochs')
-    # parser.add_argument('--shuffle_label', default=False, action='store_true', help='whether to shuffle training target values, this is a debugging option')
     args = parser.parse_args()
     set_up_logging(args.result)
     logging.debug(args)
-    # main(args.data, args.hid_sizes, args.epoch, args.shuffle_label)
     main(args.data, args.hid_sizes, args.epoch)
