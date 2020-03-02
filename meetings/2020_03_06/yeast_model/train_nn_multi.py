@@ -234,11 +234,14 @@ def main(path_data, hid_sizes, n_epoch):
     assert x_tr.shape[0] == y_tr.shape[0]
     assert x_ts.shape[0] == y_ts.shape[0]
 
+    # device
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
     # train + test data handler
     batch_size = 1000
-    data_tr_loader = DataLoader(dataset=MyDataSet(x_tr, y_tr, num_genes),
+    data_tr_loader = DataLoader(dataset=MyDataSet(x_tr, y_tr, num_genes, device),
                                 batch_size=batch_size, shuffle=True)
-    data_ts_loader = DataLoader(dataset=MyDataSet(x_ts, y_ts, num_genes),
+    data_ts_loader = DataLoader(dataset=MyDataSet(x_ts, y_ts, num_genes, device),
                                 batch_size=batch_size, shuffle=True)
 
     # model
@@ -257,8 +260,7 @@ def main(path_data, hid_sizes, n_epoch):
         loss_naive_test = np.mean((yp_naive[i] - y_ts[:, i])**2)
         logging.info("[{}] Naive guess: {}, training loss: {}, test loss: {}".format(target_name, yp_naive[i], loss_naive_training, loss_naive_test))
 
-    # training TODO GPU
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # training
     model = model.to(device)
 
     # inital test performance
