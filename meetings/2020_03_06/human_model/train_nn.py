@@ -248,10 +248,10 @@ def main(path_data, hid_sizes, n_epoch):
             # print if last minibatch
             if idx == len(data_tr_loader) - 1:
                 logging.info("[{}/{}] Training last mini batch".format(epoch, n_epoch))
-                loss, loss_fitness, loss_gi = m_wrapper(model, x, y, loss_fn=loss_fn, compute_loss=True,
+                loss = m_wrapper(model, x, y, loss_fn=loss_fn, compute_loss=True,
                                                         compute_corr=True, verbose=True)
             else:
-                loss, loss_fitness, loss_gi = m_wrapper(model, x, y, loss_fn=loss_fn, compute_loss=True,
+                loss = m_wrapper(model, x, y, loss_fn=loss_fn, compute_loss=True,
                                                         compute_corr=False, verbose=False)
             # print(epoch, loss.item())
             model.zero_grad()
@@ -277,12 +277,12 @@ def main(path_data, hid_sizes, n_epoch):
         loss_training = []
         for x, y in data_tr_loader:
             x, y = to_device(x, y, device)
-            loss, loss_fitness, loss_gi = m_wrapper(model, x, y, loss_fn=loss_fn, compute_loss=True,
+            loss = m_wrapper(model, x, y, loss_fn=loss_fn, compute_loss=True,
                                                     compute_corr=False, verbose=False)
             loss_training.append({
-                'total': float(loss.detach().cpu().numpy()),
-                'fitness': float(loss_fitness.detach().cpu().numpy()),
-                'gi': float(loss_gi.detach().cpu().numpy()),
+                'loss': float(loss.detach().cpu().numpy()),
+                # 'fitness': float(loss_fitness.detach().cpu().numpy()),
+                # 'gi': float(loss_gi.detach().cpu().numpy()),
             })
             # TODO collect prediction and calculate global corr
         loss_training = pd.DataFrame(loss_training)
@@ -293,12 +293,12 @@ def main(path_data, hid_sizes, n_epoch):
         loss_test = []
         for x, y in data_ts_loader:
             x, y = to_device(x, y, device)
-            loss, loss_fitness, loss_gi = m_wrapper(model, x, y, loss_fn=loss_fn, compute_loss=True,
+            loss = m_wrapper(model, x, y, loss_fn=loss_fn, compute_loss=True,
                                                     compute_corr=False, verbose=False)
             loss_test.append({
-                'total': float(loss.detach().cpu().numpy()),
-                'fitness': float(loss_fitness.detach().cpu().numpy()),
-                'gi': float(loss_gi.detach().cpu().numpy()),
+                'loss': float(loss.detach().cpu().numpy()),
+                # 'fitness': float(loss_fitness.detach().cpu().numpy()),
+                # 'gi': float(loss_gi.detach().cpu().numpy()),
             })
         loss_test = pd.DataFrame(loss_test)
         logging.info("Test data performance (summarized across batches):")
