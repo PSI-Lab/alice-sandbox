@@ -102,7 +102,6 @@ class MyDataSet(Dataset):
         self.y_gi = y[:, [1]]
         self.device = device
 
-
     def __getitem__(self, index):
         _x = self.x[index, :]
         assert len(_x) == 2
@@ -265,84 +264,89 @@ def main(path_data, hid_sizes, n_epoch):
 
     # inital test performance
     with torch.set_grad_enabled(False):
-        for xtd, xt1, xt2, ytd, ytgi in data_ts_loader:
-            # # xtd = xtd.to(device)
-            # # xt1 = xt1.to(device)
-            # # xt2 = xt2.to(device)
-            # # ytd = ytd.to(device)
-            # # ytgi = ytgi.to(device)
-            # # double fitness
-            # ytd_pred = model(xtd)
-            # # single fitness & gi
-            # ytgi_pred = torch.add(ytd_pred, - torch.mul(model(xt1), model(xt2)))
-            # # yt_pred = model(xtd, xt1, xt2)
-            # loss_fitness = loss_fn(ytd, ytd_pred)
-            # loss_gi = loss_fn(ytgi, ytgi_pred)
-            # loss = loss_fitness + loss_gi
-            # logging.info('initial test batch loss: total {} fitness {} gi {}'.format(loss.item(), loss_fitness.item(),
-            #                                                                          loss_gi.item()))
-            # logging.info(
-            #     'initial test batch fitness corr: {}'.format(
-            #         pearsonr(ytd.cpu().numpy()[:, 0], ytd_pred.cpu().numpy()[:, 0])))
-            # logging.info(
-            #     'initial test batch gi corr: {}'.format(
-            #         pearsonr(ytgi.cpu().numpy()[:, 0], ytgi_pred.cpu().numpy()[:, 0])))
-            _ = m_wrapper(model, xtd, xt1, xt2, ytd, ytgi, loss_fn=loss_fn, compute_loss=True, compute_corr=True, verbose=True)
+        for xd, x1, x2, xd, ygi in data_ts_loader:
+            _ = m_wrapper(model, xd, x1, x2, xd, ygi, loss_fn=loss_fn, compute_loss=True, compute_corr=True,
+                          verbose=True)
             # just run one batch (otherwise takes too long)
             break
 
     for epoch in range(n_epoch):
         # Training
-        for x_batch, y_batch in data_tr_loader:
-            x_batch = x_batch.to(device)
-            y_batch = y_batch.to(device)
-            y_batch_pred = model(x_batch)
-            loss = loss_fn(y_batch_pred, y_batch)
+        for xd, x1, x2, xd, ygi in data_tr_loader:
+            # x_batch = x_batch.to(device)
+            # y_batch = y_batch.to(device)
+            # y_batch_pred = model(x_batch)
+            # loss = loss_fn(y_batch_pred, y_batch)
+            loss, loss_fitness, loss_gi = m_wrapper(model, xd, x1, x2, xd, ygi, loss_fn=loss_fn, compute_loss=True,
+                                                    compute_corr=False, verbose=False)
             # print(epoch, loss.item())
             model.zero_grad()
             loss.backward()
             optimizer.step()
         # after epoch
-        logging.info('[{}/{}] training batch loss: {}'.format(epoch, n_epoch, loss.item()))
-        logging.info('[{}/{}] training batch corr: {}'.format(epoch, n_epoch, pearsonr(y_batch.detach().cpu().numpy()[:, 0], y_batch_pred.detach().cpu().numpy()[:, 0])))
+        logging.info('[{}/{}] training batch loss: {} {} {}'.format(epoch, n_epoch, loss.item(), loss_fitness.item(),
+                                                                    loss_gi.item()))
+        # TODO how can we check whether current minibatch is the last so we can print using m_wrapper?
+        # TODO or maybe we can use next() to get the first minibatch, and report on first, instead of last
+        # logging.info('[{}/{}] training batch corr: {}'.format(epoch, n_epoch, pearsonr(y_batch.detach().cpu().numpy()[:, 0], y_batch_pred.detach().cpu().numpy()[:, 0])))
 
         # test
         with torch.set_grad_enabled(False):
-            for xt, yt in data_ts_loader:
-                xt = xt.to(device)
-                yt = yt.to(device)
-                yt_pred = model(xt)
-                loss = loss_fn(yt_pred, yt)
-                logging.info('[{}/{}] test batch loss: {}'.format(epoch, n_epoch, loss.item()))
-                logging.info('[{}/{}] test batch corr: {}'.format(epoch, n_epoch, pearsonr(yt.cpu().numpy()[:, 0], yt_pred.cpu().numpy()[:, 0])))
+            for xd, x1, x2, xd, ygi in data_ts_loader:   # TODO shall we use next()?
+                _ = m_wrapper(model, xd, x1, x2, xd, ygi, loss_fn=loss_fn, compute_loss=True, compute_corr=True,
+                              verbose=True)
+                # xt = xt.to(device)
+                # yt = yt.to(device)
+                # yt_pred = model(xt)
+                # loss = loss_fn(yt_pred, yt)
+                # logging.info('[{}/{}] test batch loss: {}'.format(epoch, n_epoch, loss.item()))
+                # logging.info('[{}/{}] test batch corr: {}'.format(epoch, n_epoch, pearsonr(yt.cpu().numpy()[:, 0], yt_pred.cpu().numpy()[:, 0])))
+
                 break
 
     logging.info('Done training')
+
+    # TODO report global correlation, since it's not additive
 
     # re-run all data to compute final loss
     with torch.set_grad_enabled(False):
         # training batches
         loss_training = []
-        for x_batch, y_batch in data_tr_loader:
-            x_batch = x_batch.to(device)
-            y_batch = y_batch.to(device)
-            y_batch_pred = model(x_batch)
-            loss = loss_fn(y_batch_pred, y_batch)
-            corr, pval = pearsonr(y_batch.detach().cpu().numpy()[:, 0], y_batch_pred.detach().cpu().numpy()[:, 0])
-            loss_training.append({'loss': float(loss.detach().cpu().numpy()), 'corr': corr, 'pval': pval})
+        for xd, x1, x2, xd, ygi in data_tr_loader:
+            loss, loss_fitness, loss_gi = m_wrapper(model, xd, x1, x2, xd, ygi, loss_fn=loss_fn, compute_loss=True,
+                                                    compute_corr=False, verbose=False)
+            loss_training.append({
+                'total': loss,
+                'fitness': loss_fitness,
+                'gi': loss_gi,
+            })
+            # TODO collect prediction and calculate global corr
+            # x_batch = x_batch.to(device)
+            # y_batch = y_batch.to(device)
+            # y_batch_pred = model(x_batch)
+            # loss = loss_fn(y_batch_pred, y_batch)
+            # corr, pval = pearsonr(y_batch.detach().cpu().numpy()[:, 0], y_batch_pred.detach().cpu().numpy()[:, 0])
+            # loss_training.append({'loss': float(loss.detach().cpu().numpy()), 'corr': corr, 'pval': pval})
         loss_training = pd.DataFrame(loss_training)
         logging.info("Training data performance (summarized across batches):")
         logging.info(loss_training.describe())
 
         # test batches
         loss_test = []
-        for x_batch, y_batch in data_ts_loader:
-            x_batch = x_batch.to(device)
-            y_batch = y_batch.to(device)
-            y_batch_pred = model(x_batch)
-            loss = loss_fn(y_batch_pred, y_batch)
-            corr, pval = pearsonr(y_batch.detach().cpu().numpy()[:, 0], y_batch_pred.detach().cpu().numpy()[:, 0])
-            loss_test.append({'loss': float(loss.detach().cpu().numpy()), 'corr': corr, 'pval': pval})
+        for xd, x1, x2, xd, ygi in data_ts_loader:
+            loss, loss_fitness, loss_gi = m_wrapper(model, xd, x1, x2, xd, ygi, loss_fn=loss_fn, compute_loss=True,
+                                                    compute_corr=False, verbose=False)
+            loss_test.append({
+                'total': loss,
+                'fitness': loss_fitness,
+                'gi': loss_gi,
+            })
+            # x_batch = x_batch.to(device)
+            # y_batch = y_batch.to(device)
+            # y_batch_pred = model(x_batch)
+            # loss = loss_fn(y_batch_pred, y_batch)
+            # corr, pval = pearsonr(y_batch.detach().cpu().numpy()[:, 0], y_batch_pred.detach().cpu().numpy()[:, 0])
+            # loss_test.append({'loss': float(loss.detach().cpu().numpy()), 'corr': corr, 'pval': pval})
         loss_test = pd.DataFrame(loss_test)
         logging.info("Test data performance (summarized across batches):")
         logging.info(loss_test.describe())
