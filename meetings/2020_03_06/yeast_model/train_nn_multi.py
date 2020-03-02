@@ -56,7 +56,7 @@ def encode_x(g1, g2, gene_id2idx):
 
 class MyDataSet(Dataset):
 
-    def __init__(self, x, y, num_genes, device):
+    def __init__(self, x, y, num_genes):
         self.num_genes = num_genes
         assert x.shape[0] == y.shape[0]
         self.len = x.shape[0]
@@ -64,7 +64,6 @@ class MyDataSet(Dataset):
         assert y.shape[1] == 2  # 2 outputs
         self.y_fitness = y[:, [0]]
         self.y_gi = y[:, [1]]
-        self.device = device
 
     def __getitem__(self, index):
         _x = self.x[index, :]
@@ -77,12 +76,15 @@ class MyDataSet(Dataset):
         xd[_x[1]] = 0  # 2-hot encoding for double KO
         x1[_x[0]] = 0  # 1-hot encoding for first gene KO
         x2[_x[1]] = 0  # 1-hot encoding for second gene KO
-        return torch.from_numpy(xd).float().to(self.device), torch.from_numpy(x1).float().to(
-            self.device), torch.from_numpy(x2).float().to(self.device), torch.from_numpy(
-            self.y_fitness[index]).float().to(self.device), torch.from_numpy(self.y_gi[index]).float().to(self.device)
+        return torch.from_numpy(xd).float(), torch.from_numpy(x1).float(), torch.from_numpy(x2).float(), torch.from_numpy(
+            self.y_fitness[index]).float(), torch.from_numpy(self.y_gi[index]).float()
 
     def __len__(self):
         return self.len
+
+
+def to_device(xd, x1, x2, yd, ygi, device):
+    return xd.to(device), x1.to(device), x2.to(device), yd.to(device), ygi.to(device)
 
 
 def make_model(num_input, hid_sizes):
@@ -199,9 +201,9 @@ def main(path_data, hid_sizes, n_epoch):
 
     # train + test data handler
     batch_size = 1000
-    data_tr_loader = DataLoader(dataset=MyDataSet(x_tr, y_tr, num_genes, device),
+    data_tr_loader = DataLoader(dataset=MyDataSet(x_tr, y_tr, num_genes),
                                 batch_size=batch_size, shuffle=True, num_workers=8)
-    data_ts_loader = DataLoader(dataset=MyDataSet(x_ts, y_ts, num_genes, device),
+    data_ts_loader = DataLoader(dataset=MyDataSet(x_ts, y_ts, num_genes),
                                 batch_size=batch_size, shuffle=True, num_workers=8)
 
     # model
@@ -226,6 +228,7 @@ def main(path_data, hid_sizes, n_epoch):
     # inital test performance
     with torch.set_grad_enabled(False):
         for xd, x1, x2, yd, ygi in data_ts_loader:
+            xd, x1, x2, yd, ygi = to_device(xd, x1, x2, yd, ygi, device)
             _ = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True, compute_corr=True,
                           verbose=True)
             # just run one batch (otherwise takes too long)
@@ -234,6 +237,7 @@ def main(path_data, hid_sizes, n_epoch):
     for epoch in range(n_epoch):
         # Training
         for xd, x1, x2, yd, ygi in data_tr_loader:
+            xd, x1, x2, yd, ygi = to_device(xd, x1, x2, yd, ygi, device)
             loss, loss_fitness, loss_gi = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True,
                                                     compute_corr=False, verbose=False)
             # print(epoch, loss.item())
@@ -250,6 +254,7 @@ def main(path_data, hid_sizes, n_epoch):
         # test
         with torch.set_grad_enabled(False):
             for xd, x1, x2, yd, ygi in data_ts_loader:   # TODO shall we use next()?
+                xd, x1, x2, yd, ygi = to_device(xd, x1, x2, yd, ygi, device)
                 _ = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True, compute_corr=True,
                               verbose=True)
                 # logging.info('[{}/{}] test batch loss: {}'.format(epoch, n_epoch, loss.item()))
@@ -266,6 +271,7 @@ def main(path_data, hid_sizes, n_epoch):
         # training batches
         loss_training = []
         for xd, x1, x2, yd, ygi in data_tr_loader:
+            xd, x1, x2, yd, ygi = to_device(xd, x1, x2, yd, ygi, device)
             loss, loss_fitness, loss_gi = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True,
                                                     compute_corr=False, verbose=False)
             loss_training.append({
@@ -281,6 +287,7 @@ def main(path_data, hid_sizes, n_epoch):
         # test batches
         loss_test = []
         for xd, x1, x2, yd, ygi in data_ts_loader:
+            xd, x1, x2, yd, ygi = to_device(xd, x1, x2, yd, ygi, device)
             loss, loss_fitness, loss_gi = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True,
                                                     compute_corr=False, verbose=False)
             loss_test.append({
