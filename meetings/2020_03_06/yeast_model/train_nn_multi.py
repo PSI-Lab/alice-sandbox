@@ -134,8 +134,8 @@ def m_wrapper(model, xd, x1, x2, yd=None, ygi=None, loss_fn=None, compute_loss=T
         loss_fitness = None
         loss_gi = None
     if compute_corr:
-        corr_f, pval_f = pearsonr(yd.cpu().numpy()[:, 0], yd_pred.cpu().numpy()[:, 0])
-        corr_gi, pval_gi = pearsonr(ygi.cpu().numpy()[:, 0], ygi_pred.cpu().numpy()[:, 0])
+        corr_f, pval_f = pearsonr(yd.detach().cpu().numpy()[:, 0], yd_pred.detach().cpu().numpy()[:, 0])
+        corr_gi, pval_gi = pearsonr(ygi.detach().cpu().numpy()[:, 0], ygi_pred.detach().cpu().numpy()[:, 0])
         if verbose:
             logging.info('[fitness] corr: {:.2f} ({:.2e})'.format(corr_f, pval_f))
             logging.info('[gi] corr: {:.2f} ({:.2e})'.format(corr_gi, pval_gi))
