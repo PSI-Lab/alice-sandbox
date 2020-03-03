@@ -311,6 +311,10 @@ def main(path_data, hid_sizes, n_epoch):
                 'fitness': float(loss_fitness.detach().cpu().numpy()),
                 'gi': float(loss_gi.detach().cpu().numpy()),
             })
+            yd_all.append(yd.detach().cpu().numpy())
+            yd_pred_all.append(yd_pred.detach().cpu().numpy())
+            ygi_all.append(ygi.detach().cpu().numpy())
+            ygi_pred_all.append(ygi_pred.detach().cpu().numpy())
         loss_test = pd.DataFrame(loss_test)
         logging.info("Test data performance (summarized across batches):")
         logging.info(loss_test.describe())
