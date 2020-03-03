@@ -142,7 +142,7 @@ def m_wrapper(model, x, y=None, loss_fn=None, compute_loss=True, compute_corr=Fa
         if verbose:
             logging.info('[k562] corr: {:.2f} ({:.2e})'.format(corr_1, pval_1))
             logging.info('[jurkat] corr: {:.2f} ({:.2e})'.format(corr_2, pval_2))
-    return loss
+    return loss, y_pred
 
 
 def main(path_data, hid_sizes, n_epoch):
@@ -248,10 +248,10 @@ def main(path_data, hid_sizes, n_epoch):
             # print if last minibatch
             if idx == len(data_tr_loader) - 1:
                 logging.info("[{}/{}] Training last mini batch".format(epoch, n_epoch))
-                loss = m_wrapper(model, x, y, loss_fn=loss_fn, compute_loss=True,
+                loss, _ = m_wrapper(model, x, y, loss_fn=loss_fn, compute_loss=True,
                                                         compute_corr=True, verbose=True)
             else:
-                loss = m_wrapper(model, x, y, loss_fn=loss_fn, compute_loss=True,
+                loss, _ = m_wrapper(model, x, y, loss_fn=loss_fn, compute_loss=True,
                                                         compute_corr=False, verbose=False)
             # print(epoch, loss.item())
             model.zero_grad()
@@ -275,34 +275,51 @@ def main(path_data, hid_sizes, n_epoch):
     with torch.set_grad_enabled(False):
         # training batches
         loss_training = []
+        y_all = []
+        y_pred_all = []
         for x, y in data_tr_loader:
             x, y = to_device(x, y, device)
-            loss = m_wrapper(model, x, y, loss_fn=loss_fn, compute_loss=True,
+            loss, y_pred = m_wrapper(model, x, y, loss_fn=loss_fn, compute_loss=True,
                                                     compute_corr=False, verbose=False)
             loss_training.append({
                 'loss': float(loss.detach().cpu().numpy()),
                 # 'fitness': float(loss_fitness.detach().cpu().numpy()),
                 # 'gi': float(loss_gi.detach().cpu().numpy()),
             })
-            # TODO collect prediction and calculate global corr
+            y_all.append(y.detach().cpu().numpy())
+            y_pred_all.append(y_pred.detach().cpu().numpy())
         loss_training = pd.DataFrame(loss_training)
         logging.info("Training data performance (summarized across batches):")
         logging.info(loss_training.describe())
+        y_all = np.concatenate(y_all, axis=0)
+        y_pred_all = np.concatenate(y_pred_all, axis=0)
+        logging.info("correlation")
+        logging.info(pearsonr(y_all, y_pred_all))
 
         # test batches
         loss_test = []
+        y_all = []
+        y_pred_all = []
         for x, y in data_ts_loader:
             x, y = to_device(x, y, device)
-            loss = m_wrapper(model, x, y, loss_fn=loss_fn, compute_loss=True,
+            loss, y_pred = m_wrapper(model, x, y, loss_fn=loss_fn, compute_loss=True,
                                                     compute_corr=False, verbose=False)
             loss_test.append({
                 'loss': float(loss.detach().cpu().numpy()),
                 # 'fitness': float(loss_fitness.detach().cpu().numpy()),
                 # 'gi': float(loss_gi.detach().cpu().numpy()),
             })
+            y_all.append(y.detach().cpu().numpy())
+            y_pred_all.append(y_pred.detach().cpu().numpy())
         loss_test = pd.DataFrame(loss_test)
         logging.info("Test data performance (summarized across batches):")
         logging.info(loss_test.describe())
+        y_all = np.concatenate(y_all, axis=0)
+        y_pred_all = np.concatenate(y_pred_all, axis=0)
+        logging.info("correlation")
+        logging.info(pearsonr(y_all, y_pred_all))
+
+        # TODO overall correlation
 
     # TODO make plots
 
