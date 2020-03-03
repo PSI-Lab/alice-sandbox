@@ -302,7 +302,7 @@ def main(path_data, hid_sizes, n_epoch):
         yd_pred_all = []
         ygi_all = []
         ygi_pred_all = []
-        for xd, x1, x2, yd, ygi, yd_pred, ygi_pred in data_ts_loader:
+        for xd, x1, x2, yd, ygi in data_ts_loader:
             xd, x1, x2, yd, ygi = to_device(xd, x1, x2, yd, ygi, device)
             loss, loss_fitness, loss_gi, yd_pred, ygi_pred = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True,
                                                     compute_corr=False, verbose=False)
