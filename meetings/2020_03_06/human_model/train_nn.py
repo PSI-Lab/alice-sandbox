@@ -293,8 +293,10 @@ def main(path_data, hid_sizes, n_epoch):
         logging.info(loss_training.describe())
         y_all = np.concatenate(y_all, axis=0)
         y_pred_all = np.concatenate(y_pred_all, axis=0)
-        logging.info("correlation")
-        logging.info(pearsonr(y_all, y_pred_all))
+        logging.info("correlation k562")
+        logging.info(pearsonr(y_all[:, 0], y_pred_all[:, 0]))
+        logging.info("correlation jurkat")
+        logging.info(pearsonr(y_all[:, 1], y_pred_all[:, 1]))
 
         # test batches
         loss_test = []
@@ -316,8 +318,10 @@ def main(path_data, hid_sizes, n_epoch):
         logging.info(loss_test.describe())
         y_all = np.concatenate(y_all, axis=0)
         y_pred_all = np.concatenate(y_pred_all, axis=0)
-        logging.info("correlation")
-        logging.info(pearsonr(y_all, y_pred_all))
+        logging.info("correlation k562")
+        logging.info(pearsonr(y_all[:, 0], y_pred_all[:, 0]))
+        logging.info("correlation jurkat")
+        logging.info(pearsonr(y_all[:, 1], y_pred_all[:, 1]))
 
         # TODO overall correlation
 
