@@ -292,9 +292,9 @@ def main(path_data, hid_sizes, n_epoch):
         ygi_all = np.concatenate(ygi_all, axis=0)
         ygi_pred_all = np.concatenate(ygi_pred_all, axis=0)
         logging.info("correlation (fitness)")
-        logging.info(pearsonr(yd_all, yd_pred_all))
+        logging.info(pearsonr(yd_all[:, 0], yd_pred_all[:, 0]))
         logging.info("correlation (gi)")
-        logging.info(pearsonr(ygi_all, ygi_pred_all))
+        logging.info(pearsonr(ygi_all[:, 0], ygi_pred_all[:, 0]))
 
         # test batches
         loss_test = []
@@ -319,9 +319,9 @@ def main(path_data, hid_sizes, n_epoch):
         ygi_all = np.concatenate(ygi_all, axis=0)
         ygi_pred_all = np.concatenate(ygi_pred_all, axis=0)
         logging.info("correlation (fitness)")
-        logging.info(pearsonr(yd_all, yd_pred_all))
+        logging.info(pearsonr(yd_all[:, 0], yd_pred_all[:, 0]))
         logging.info("correlation (gi)")
-        logging.info(pearsonr(ygi_all, ygi_pred_all))
+        logging.info(pearsonr(ygi_all[:, 0], ygi_pred_all[:, 0]))
 
     # TODO make plots
 
