@@ -139,7 +139,7 @@ def m_wrapper(model, xd, x1, x2, yd=None, ygi=None, loss_fn=None, compute_loss=T
         if verbose:
             logging.info('[fitness] corr: {:.2f} ({:.2e})'.format(corr_f, pval_f))
             logging.info('[gi] corr: {:.2f} ({:.2e})'.format(corr_gi, pval_gi))
-    return loss, loss_fitness, loss_gi
+    return loss, loss_fitness, loss_gi, yd_pred, ygi_pred
 
 
 def main(path_data, hid_sizes, n_epoch):
@@ -241,23 +241,15 @@ def main(path_data, hid_sizes, n_epoch):
             # print if last minibatch
             if idx == len(data_tr_loader) - 1:
                 logging.info("[{}/{}] Training last mini batch".format(epoch, n_epoch))
-                loss, loss_fitness, loss_gi = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True,
+                loss, loss_fitness, loss_gi, _, _ = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True,
                                                         compute_corr=True, verbose=True)
             else:
-                loss, loss_fitness, loss_gi = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True,
+                loss, loss_fitness, loss_gi, _, _ = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True,
                                                         compute_corr=False, verbose=False)
             # print(epoch, loss.item())
             model.zero_grad()
             loss.backward()
             optimizer.step()
-        # # after epoch
-        # logging.info("Training")  # TODO report per-epoch running loss
-        # logging.info('[{}/{}] training batch loss: {} {} {}'.format(epoch, n_epoch, loss.item(), loss_fitness.item(),
-        #                                                             loss_gi.item()))
-        # TODO how can we check whether current minibatch is the last so we can print using m_wrapper?
-        # TODO or maybe we can use next() to get the first minibatch, and report on first, instead of last
-        # logging.info('[{}/{}] training batch corr: {}'.format(epoch, n_epoch, pearsonr(y_batch.detach().cpu().numpy()[:, 0], y_batch_pred.detach().cpu().numpy()[:, 0])))
-
         # test
         with torch.set_grad_enabled(False):
             for xd, x1, x2, yd, ygi in data_ts_loader:   # TODO shall we use next()?
@@ -265,9 +257,6 @@ def main(path_data, hid_sizes, n_epoch):
                 logging.info("Testing")
                 _ = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True, compute_corr=True,
                               verbose=True)
-                # logging.info('[{}/{}] test batch loss: {}'.format(epoch, n_epoch, loss.item()))
-                # logging.info('[{}/{}] test batch corr: {}'.format(epoch, n_epoch, pearsonr(yt.cpu().numpy()[:, 0], yt_pred.cpu().numpy()[:, 0])))
-
                 break
 
     logging.info('Done training')
@@ -278,25 +267,44 @@ def main(path_data, hid_sizes, n_epoch):
     with torch.set_grad_enabled(False):
         # training batches
         loss_training = []
+        yd_all = []
+        yd_pred_all = []
+        ygi_all = []
+        ygi_pred_all = []
         for xd, x1, x2, yd, ygi in data_tr_loader:
             xd, x1, x2, yd, ygi = to_device(xd, x1, x2, yd, ygi, device)
-            loss, loss_fitness, loss_gi = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True,
+            loss, loss_fitness, loss_gi, yd_pred, ygi_pred = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True,
                                                     compute_corr=False, verbose=False)
             loss_training.append({
                 'total': float(loss.detach().cpu().numpy()),
                 'fitness': float(loss_fitness.detach().cpu().numpy()),
                 'gi': float(loss_gi.detach().cpu().numpy()),
             })
-            # TODO collect prediction and calculate global corr
+            yd_all.append(yd.detach().cpu().numpy())
+            yd_pred_all.append(yd_pred.detach().cpu().numpy())
+            ygi_all.append(ygi.detach().cpu().numpy())
+            ygi_pred_all.append(ygi_pred.detach().cpu().numpy())
         loss_training = pd.DataFrame(loss_training)
         logging.info("Training data performance (summarized across batches):")
         logging.info(loss_training.describe())
+        yd_all = np.concatenate(yd_all, axis=0)
+        yd_pred_all = np.concatenate(yd_pred_all, axis=0)
+        ygi_all = np.concatenate(ygi_all, axis=0)
+        ygi_pred_all = np.concatenate(ygi_pred_all, axis=0)
+        logging.info("correlation (fitness)")
+        logging.info(pearsonr(yd_all, yd_pred_all))
+        logging.info("correlation (gi)")
+        logging.info(pearsonr(ygi_all, ygi_pred_all))
 
         # test batches
         loss_test = []
-        for xd, x1, x2, yd, ygi in data_ts_loader:
+        yd_all = []
+        yd_pred_all = []
+        ygi_all = []
+        ygi_pred_all = []
+        for xd, x1, x2, yd, ygi, yd_pred, ygi_pred in data_ts_loader:
             xd, x1, x2, yd, ygi = to_device(xd, x1, x2, yd, ygi, device)
-            loss, loss_fitness, loss_gi = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True,
+            loss, loss_fitness, loss_gi, yd_pred, ygi_pred = m_wrapper(model, xd, x1, x2, yd, ygi, loss_fn=loss_fn, compute_loss=True,
                                                     compute_corr=False, verbose=False)
             loss_test.append({
                 'total': float(loss.detach().cpu().numpy()),
@@ -306,6 +314,14 @@ def main(path_data, hid_sizes, n_epoch):
         loss_test = pd.DataFrame(loss_test)
         logging.info("Test data performance (summarized across batches):")
         logging.info(loss_test.describe())
+        yd_all = np.concatenate(yd_all, axis=0)
+        yd_pred_all = np.concatenate(yd_pred_all, axis=0)
+        ygi_all = np.concatenate(ygi_all, axis=0)
+        ygi_pred_all = np.concatenate(ygi_pred_all, axis=0)
+        logging.info("correlation (fitness)")
+        logging.info(pearsonr(yd_all, yd_pred_all))
+        logging.info("correlation (gi)")
+        logging.info(pearsonr(ygi_all, ygi_pred_all))
 
     # TODO make plots
 
