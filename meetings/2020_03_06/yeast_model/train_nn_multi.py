@@ -334,7 +334,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--data', nargs='+', type=str, help='path to training data file')
     parser.add_argument('--result', type=str, help='path to output result')
-    parser.add_argument('--hid_sizes', nargs='+', type=int, help='hidden layer sizes, does not include first (input) and last (output) layer.')
+    parser.add_argument('--hid_sizes', nargs='*', type=int, help='hidden layer sizes, does not include first (input) and last (output) layer.')
     parser.add_argument('--epoch', type=int, help='number of epochs')
     args = parser.parse_args()
     set_up_logging(args.result)
