@@ -24,7 +24,7 @@ f1, f2, fd: fd - f1 * f2
 
 see https://github.com/PSI-Lab/alice-sandbox/blob/879b6d151ce0f949cb5386b4ef3eb3cdba1dc577/meetings/2020_03_06/yeast_model/investigate_data.ipynb
 
-TODO how did they compute the std?
+Question: how did they compute the std?
 
 ## Check D-cell performance on interaction
 
@@ -61,6 +61,7 @@ NxN:
 df['interaction'].corr(df['fd'])
 0.2743129604320869
 ```
+Basically any model that predicts double fitness exactly already achieves 0.27 correlation w.r.t interaction score.
 
 see https://github.com/PSI-Lab/alice-sandbox/blob/879b6d151ce0f949cb5386b4ef3eb3cdba1dc577/meetings/2020_03_06/yeast_model/investigate_data.ipynb
 
@@ -85,15 +86,15 @@ Is it possible to learn a structure so that it generalizes?
 
 
 
-Hmm, if NN jointly predicts fitness and interaction,
-does it mean it somewhat has access to all 3 fitness scores?
-Is it possible it can memorize all single fitness?
-If that's the case then the problem might be trivial?
-- maybe not
+<!--Hmm, if NN jointly predicts fitness and interaction,-->
+<!--does it mean it somewhat has access to all 3 fitness scores?-->
+<!--Is it possible it can memorize all single fitness?-->
+<!--If that's the case then the problem might be trivial?-->
+<!--- maybe not-->
 
 ## Multi-task learning without providing single fitness
 
-Train model to predict too targets,
+Train model to predict 2 targets,
 double fitness and interaction score.
 Internally the NN has 3 parallel modules, with shared weights,
 takes input double KO, single KO a, single KO b, and
@@ -104,8 +105,15 @@ compute gi = fd - fa * fb, on top of which we compute the loss between predicted
 Such setup does not provide single ko fitness (no cheating),
 but still encourage to learn something in common.
 
-Does this work?
+Does this work? - kind of, results:
 
+TODO result
+
+TODO check whether this indirect training can also reconstruct single KO fitness (will be interesting if it does)
+
+TODO set up hyperparam tuning
+
+TODO match D-cell paper NN structure and performance (add residual connection if go deeper?)
 
 TODO how can one gene generalize to another?
 
@@ -132,5 +140,7 @@ and why it is more important than fitness
 
 
 TODO is 0/1 encoding the best? try 1/-1??
+
+
 
 
