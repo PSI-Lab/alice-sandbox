@@ -154,7 +154,7 @@ def m_wrapper(model, xd, x1, x2, yd=None, ygi=None, yf1=None, yf2=None, loss_fn=
     return loss, loss_fitness, loss_gi, yd_pred, ygi_pred, yf1_pred, yf2_pred
 
 
-def main(path_data, hid_sizes, n_epoch):
+def main(path_data, hid_sizes, n_epoch, out_dir):
     # load data
     logging.info("Loading dataset: {}".format(path_data))
     df = []
@@ -199,6 +199,9 @@ def main(path_data, hid_sizes, n_epoch):
     logging.info("Number of genes: {}".format(num_genes))
     # make it faster by create gene_id -> gene_idx mapping
     gene_id2idx = {x: i for i, x in enumerate(gene_ids)}
+    # # also create a reverse mapping, useful for mapping back to IDs for debugging after training
+    # assert len(set(gene_id2idx.values())) == len(gene_id2idx)
+    # gene_idx2id = {v: k for k, v in gene_id2idx.iteritems()}
     df_tr = add_column(df_tr, 'x', ['g1', 'g2'], lambda g1, g2: encode_x(g1, g2, gene_id2idx))
     df_ts = add_column(df_ts, 'x', ['g1', 'g2'], lambda g1, g2: encode_x(g1, g2, gene_id2idx))
 
@@ -282,6 +285,8 @@ def main(path_data, hid_sizes, n_epoch):
     with torch.set_grad_enabled(False):
         # training batches
         loss_training = []
+        gene1_id_all = []
+        gene2_id_all = []
         yd_all = []
         yd_pred_all = []
         ygi_all = []
@@ -299,6 +304,8 @@ def main(path_data, hid_sizes, n_epoch):
                 'fitness': float(loss_fitness.detach().cpu().numpy()),
                 'gi': float(loss_gi.detach().cpu().numpy()),
             })
+            gene1_id_all.extend(np.take(gene_ids, x1.argmax(1)).tolist())  # map idx back to IDs
+            gene2_id_all.extend(np.take(gene_ids, x1.argmax(1)).tolist())
             yd_all.append(yd.detach().cpu().numpy())
             yd_pred_all.append(yd_pred.detach().cpu().numpy())
             ygi_all.append(ygi.detach().cpu().numpy())
@@ -326,9 +333,25 @@ def main(path_data, hid_sizes, n_epoch):
         logging.info(pearsonr(yf1_all[:, 0], yf1_pred_all[:, 0]))
         logging.info("correlation (f2 indirect)")
         logging.info(pearsonr(yf2_all[:, 0], yf2_pred_all[:, 0]))
+        # df for exporting
+        df_train_pred = pd.DataFrame({
+            'g1': gene1_id_all,
+            'g2': gene2_id_all,
+            'yd': yd_all,
+            'yd_pred': yd_pred_all,
+            'ygi': ygi_all,
+            'ygi_pred': ygi_pred_all,
+            'yf1': yf1_all,
+            'yf1_pred': yf1_pred_all,
+            'yf2': yf1_all,
+            'yf2_pred': yf1_pred_all,
+        })
+        df_train_pred.to_csv(os.path.join(out_dir, 'pred_train.csv'), index=False)
 
         # test batches
         loss_test = []
+        gene1_id_all = []
+        gene2_id_all = []
         yd_all = []
         yd_pred_all = []
         ygi_all = []
@@ -346,6 +369,8 @@ def main(path_data, hid_sizes, n_epoch):
                 'fitness': float(loss_fitness.detach().cpu().numpy()),
                 'gi': float(loss_gi.detach().cpu().numpy()),
             })
+            gene1_id_all.extend(np.take(gene_ids, x1.argmax(1)).tolist())  # map idx back to IDs
+            gene2_id_all.extend(np.take(gene_ids, x1.argmax(1)).tolist())
             yd_all.append(yd.detach().cpu().numpy())
             yd_pred_all.append(yd_pred.detach().cpu().numpy())
             ygi_all.append(ygi.detach().cpu().numpy())
@@ -373,8 +398,20 @@ def main(path_data, hid_sizes, n_epoch):
         logging.info(pearsonr(yf1_all[:, 0], yf1_pred_all[:, 0]))
         logging.info("correlation (f2 indirect)")
         logging.info(pearsonr(yf2_all[:, 0], yf2_pred_all[:, 0]))
-
-    # TODO make plots
+        # df for exporting
+        df_test_pred = pd.DataFrame({
+            'g1': gene1_id_all,
+            'g2': gene2_id_all,
+            'yd': yd_all,
+            'yd_pred': yd_pred_all,
+            'ygi': ygi_all,
+            'ygi_pred': ygi_pred_all,
+            'yf1': yf1_all,
+            'yf1_pred': yf1_pred_all,
+            'yf2': yf1_all,
+            'yf2_pred': yf1_pred_all,
+        })
+        df_test_pred.to_csv(os.path.join(out_dir, 'pred_test.csv'), index=False)
 
 
 if __name__ == "__main__":
@@ -386,4 +423,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     set_up_logging(args.result)
     logging.debug(args)
-    main(args.data, args.hid_sizes, args.epoch)
+    main(args.data, args.hid_sizes, args.epoch, args.result)
