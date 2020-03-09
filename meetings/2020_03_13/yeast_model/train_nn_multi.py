@@ -61,7 +61,7 @@ class MyDataSet(Dataset):
         assert x.shape[0] == y.shape[0]
         self.len = x.shape[0]
         self.x = x
-        assert y.shape[1] == 2  # 2 outputs
+        assert y.shape[1] == 4  # 2 outputs + 2 extra values for indirect evaluation
         self.y_fitness = y[:, [0]]
         self.y_gi = y[:, [1]]
         # extra target value (single fitness, do not used for training)
@@ -165,6 +165,9 @@ def main(path_data, hid_sizes, n_epoch):
     # extract gene ID
     df = add_column(df, 'g1', ['s1'], get_gene_id)
     df = add_column(df, 'g2', ['s2'], get_gene_id)
+
+    # since we're loading f1 and f2 and some might be NaN, let's drop those rows for now
+    df = df.dropna()
 
     # take median of examples with the same gene pair, so that we don't have duplicates
     # df = df[['g1', 'g2', 'interaction', 'fitness']].groupby(by=['g1', 'g2'], as_index=False).agg('median')
