@@ -337,14 +337,14 @@ def main(path_data, hid_sizes, n_epoch, out_dir):
         df_train_pred = pd.DataFrame({
             'g1': gene1_id_all,
             'g2': gene2_id_all,
-            'yd': yd_all,
-            'yd_pred': yd_pred_all,
-            'ygi': ygi_all,
-            'ygi_pred': ygi_pred_all,
-            'yf1': yf1_all,
-            'yf1_pred': yf1_pred_all,
-            'yf2': yf1_all,
-            'yf2_pred': yf1_pred_all,
+            'yd': yd_all[:, 0],
+            'yd_pred': yd_pred_all[:, 0],
+            'ygi': ygi_all[:, 0],
+            'ygi_pred': ygi_pred_all[:, 0],
+            'yf1': yf1_all[:, 0],
+            'yf1_pred': yf1_pred_all[:, 0],
+            'yf2': yf1_all[:, 0],
+            'yf2_pred': yf1_pred_all[:, 0],
         })
         df_train_pred.to_csv(os.path.join(out_dir, 'pred_train.csv'), index=False)
 
@@ -402,14 +402,14 @@ def main(path_data, hid_sizes, n_epoch, out_dir):
         df_test_pred = pd.DataFrame({
             'g1': gene1_id_all,
             'g2': gene2_id_all,
-            'yd': yd_all,
-            'yd_pred': yd_pred_all,
-            'ygi': ygi_all,
-            'ygi_pred': ygi_pred_all,
-            'yf1': yf1_all,
-            'yf1_pred': yf1_pred_all,
-            'yf2': yf1_all,
-            'yf2_pred': yf1_pred_all,
+            'yd': yd_all[:, 0],
+            'yd_pred': yd_pred_all[:, 0],
+            'ygi': ygi_all[:, 0],
+            'ygi_pred': ygi_pred_all[:, 0],
+            'yf1': yf1_all[:, 0],
+            'yf1_pred': yf1_pred_all[:, 0],
+            'yf2': yf1_all[:, 0],
+            'yf2_pred': yf1_pred_all[:, 0],
         })
         df_test_pred.to_csv(os.path.join(out_dir, 'pred_test.csv'), index=False)
 
