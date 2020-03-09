@@ -304,8 +304,8 @@ def main(path_data, hid_sizes, n_epoch, out_dir):
                 'fitness': float(loss_fitness.detach().cpu().numpy()),
                 'gi': float(loss_gi.detach().cpu().numpy()),
             })
-            gene1_id_all.extend(np.take(gene_ids, x1.argmax(1)).tolist())  # map idx back to IDs
-            gene2_id_all.extend(np.take(gene_ids, x1.argmax(1)).tolist())
+            gene1_id_all.extend(np.take(gene_ids, x1.detach().cpu().numpy().argmax(1)).tolist())  # map idx back to IDs
+            gene2_id_all.extend(np.take(gene_ids, x2.detach().cpu().numpy().argmax(1)).tolist())
             yd_all.append(yd.detach().cpu().numpy())
             yd_pred_all.append(yd_pred.detach().cpu().numpy())
             ygi_all.append(ygi.detach().cpu().numpy())
@@ -369,8 +369,8 @@ def main(path_data, hid_sizes, n_epoch, out_dir):
                 'fitness': float(loss_fitness.detach().cpu().numpy()),
                 'gi': float(loss_gi.detach().cpu().numpy()),
             })
-            gene1_id_all.extend(np.take(gene_ids, x1.argmax(1)).tolist())  # map idx back to IDs
-            gene2_id_all.extend(np.take(gene_ids, x1.argmax(1)).tolist())
+            gene1_id_all.extend(np.take(gene_ids, x1.detach().cpu().numpy().argmax(1)).tolist())  # map idx back to IDs
+            gene2_id_all.extend(np.take(gene_ids, x2.detach().cpu().numpy().argmax(1)).tolist())
             yd_all.append(yd.detach().cpu().numpy())
             yd_pred_all.append(yd_pred.detach().cpu().numpy())
             ygi_all.append(ygi.detach().cpu().numpy())
