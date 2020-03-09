@@ -76,9 +76,9 @@ class MyDataSet(Dataset):
         x1 = np.ones(self.num_genes)
         x2 = np.ones(self.num_genes)
         xd[_x[0]] = 0
-        xd[_x[1]] = 0  # 2-hot encoding for double KO
-        x1[_x[0]] = 0  # 1-hot encoding for first gene KO
-        x2[_x[1]] = 0  # 1-hot encoding for second gene KO
+        xd[_x[1]] = 0  # 2-cold encoding for double KO
+        x1[_x[0]] = 0  # 1-cold encoding for first gene KO
+        x2[_x[1]] = 0  # 1-cold encoding for second gene KO
         return torch.from_numpy(xd).float(), torch.from_numpy(x1).float(), torch.from_numpy(
             x2).float(), torch.from_numpy(
             self.y_fitness[index]).float(), torch.from_numpy(self.y_gi[index]).float(), torch.from_numpy(
@@ -304,8 +304,8 @@ def main(path_data, hid_sizes, n_epoch, out_dir):
                 'fitness': float(loss_fitness.detach().cpu().numpy()),
                 'gi': float(loss_gi.detach().cpu().numpy()),
             })
-            gene1_id_all.extend(np.take(gene_ids, x1.detach().cpu().numpy().argmax(1)).tolist())  # map idx back to IDs
-            gene2_id_all.extend(np.take(gene_ids, x2.detach().cpu().numpy().argmax(1)).tolist())
+            gene1_id_all.extend(np.take(gene_ids, x1.detach().cpu().numpy().argmin(1)).tolist())  # map idx back to IDs
+            gene2_id_all.extend(np.take(gene_ids, x2.detach().cpu().numpy().argmin(1)).tolist())
             yd_all.append(yd.detach().cpu().numpy())
             yd_pred_all.append(yd_pred.detach().cpu().numpy())
             ygi_all.append(ygi.detach().cpu().numpy())
@@ -369,8 +369,8 @@ def main(path_data, hid_sizes, n_epoch, out_dir):
                 'fitness': float(loss_fitness.detach().cpu().numpy()),
                 'gi': float(loss_gi.detach().cpu().numpy()),
             })
-            gene1_id_all.extend(np.take(gene_ids, x1.detach().cpu().numpy().argmax(1)).tolist())  # map idx back to IDs
-            gene2_id_all.extend(np.take(gene_ids, x2.detach().cpu().numpy().argmax(1)).tolist())
+            gene1_id_all.extend(np.take(gene_ids, x1.detach().cpu().numpy().argmin(1)).tolist())  # map idx back to IDs
+            gene2_id_all.extend(np.take(gene_ids, x2.detach().cpu().numpy().argmin(1)).tolist())
             yd_all.append(yd.detach().cpu().numpy())
             yd_pred_all.append(yd_pred.detach().cpu().numpy())
             ygi_all.append(ygi.detach().cpu().numpy())
