@@ -420,7 +420,7 @@ if __name__ == "__main__":
     parser.add_argument('--result', type=str, help='path to output result')
     parser.add_argument('--hid_sizes', nargs='*', type=int, help='hidden layer sizes, does not include first (input) and last (output) layer.')
     parser.add_argument('--epoch', type=int, help='number of epochs')
-    parser.add_argument('--wd', type=int, help='L2 weight decay')
+    parser.add_argument('--wd', type=float, help='L2 weight decay')
     args = parser.parse_args()
     set_up_logging(args.result)
     logging.debug(args)
