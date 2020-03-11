@@ -58,6 +58,30 @@ Although one would imagine that NN should be able to learn gi once converged on 
 Would it possible that those are also more noisy?
 Since they represent "no difference" than expected. But how close to the origin is close?
 
+## Bigger NN + add regularization
+
+D-cell paper
+
+any data pre-processing?
+
+they also applied loss function to intermediate layers, right?
+
+12 layers, 2-hot input (we used 2-cold), batch norm after tanh, L2 regularization, intermediate loss (*0.3), mb size 15,000
+
+how complex is their GO-derived architecture?
+(two different ontology data source: GO: 97181 neurons, CliXO: 22,167 neurons)
+
+residual?
+
+dropout?
+
+## Add one more layer for gi
+
+
+## treat as 3-class: no diff, larger, smaller?
+
+reweight training examples based on gi p-val
+
 
 ## Carry-over from last week
 
