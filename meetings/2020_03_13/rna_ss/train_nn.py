@@ -184,11 +184,12 @@ class ResNet(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.res_layers = []
 
-        # for nf, ns in zip(num_filters, num_stacks):
-        #     self.res_layers.append(self.make_layer(block, nf, ns))
-        self.res_layer1 = self.make_layer(block, 16, 2)
-        self.res_layer2 = self.make_layer(block, 32, 2)
-        self.res_layer3 = self.make_layer(block, 64, 2)
+        for nf, ns in zip(num_filters, num_stacks):
+            self.res_layers.append(self.make_layer(block, nf, ns))
+        self.res_layers = nn.ModuleList(self.res_layers)
+        # self.res_layer1 = self.make_layer(block, 16, 2)
+        # self.res_layer2 = self.make_layer(block, 32, 2)
+        # self.res_layer3 = self.make_layer(block, 64, 2)
 
         self.fc = nn.Conv2d(64, 1, kernel_size=1)
         self.sigmoid = nn.Sigmoid()
@@ -210,11 +211,11 @@ class ResNet(nn.Module):
         out = self.conv(x)
         out = self.bn(out)
 
-        # for layer in self.res_layers:
-        #     out = layer(out)
-        out = self.res_layer1(out)
-        out = self.res_layer2(out)
-        out = self.res_layer3(out)
+        for layer in self.res_layers:
+            out = layer(out)
+        # out = self.res_layer1(out)
+        # out = self.res_layer2(out)
+        # out = self.res_layer3(out)
 
         out = self.sigmoid(self.fc(out))
         return out
