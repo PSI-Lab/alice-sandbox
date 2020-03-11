@@ -183,8 +183,13 @@ class ResNet(nn.Module):
         self.bn = nn.BatchNorm2d(num_filters[0])
         self.relu = nn.ReLU(inplace=True)
         self.res_layers = []
-        for nf, ns in zip(num_filters, num_stacks):
-            self.res_layers.append(self.make_layer(block, nf, ns))
+
+        # for nf, ns in zip(num_filters, num_stacks):
+        #     self.res_layers.append(self.make_layer(block, nf, ns))
+        self.res_layer1 = self.make_layer(block, 16, 2)
+        self.res_layer2 = self.make_layer(block, 32, 2)
+        self.res_layer3 = self.make_layer(block, 64, 2)
+
         self.fc = nn.Conv2d(64, 1, kernel_size=1)
         self.sigmoid = nn.Sigmoid()
 
@@ -204,8 +209,13 @@ class ResNet(nn.Module):
     def forward(self, x):
         out = self.conv(x)
         out = self.bn(out)
-        for layer in self.res_layers:
-            out = layer(out)
+
+        # for layer in self.res_layers:
+        #     out = layer(out)
+        out = self.res_layer1(out)
+        out = self.res_layer2(out)
+        out = self.res_layer3(out)
+
         out = self.sigmoid(self.fc(out))
         return out
 
