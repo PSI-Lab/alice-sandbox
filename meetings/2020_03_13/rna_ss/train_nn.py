@@ -1,3 +1,6 @@
+import os
+import logging
+import argparse
 import numpy as np
 import pandas as pd
 import torch
@@ -6,11 +9,21 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from torch.utils.data import Dataset, DataLoader
 
-# debug data
-in_file = '/Users/alicegao/work/psi-lab-sandbox/rna_ss/data_processing/rnafold_mini_data/data/rand_seqs_var_len_5_20_10.pkl.gz'
-df = pd.read_pickle(in_file)
-df = df.iloc[[0,4]]
-# print(df)
+
+def set_up_logging(path_result):
+    # make result dir if non existing
+    if not os.path.isdir(path_result):
+        os.makedirs(path_result)
+
+    log_format = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)
+    file_logger = logging.FileHandler(os.path.join(path_result, 'run.log'))
+    file_logger.setFormatter(log_format)
+    root_logger.addHandler(file_logger)
+    console_logger = logging.StreamHandler()
+    console_logger.setFormatter(log_format)
+    root_logger.addHandler(console_logger)
 
 
 class MyDataSet(Dataset):
@@ -79,22 +92,6 @@ class MyDataSet(Dataset):
 
     def __len__(self):
         return self.len
-
-
-# class SequenceTile(nn.Module):
-#     # tile 1D seq (b x L x k) into 2D array (b x L x L x 2k)
-#     def __init__(self):
-#         super(SequenceTile, self).__init__()
-#         self.a = nn.Parameter(torch.zeros(1))
-#         self.b = nn.Parameter(torch.zeros(1))
-#         self.c = nn.Parameter(torch.zeros(1))
-#
-#     def forward(self, x):
-#         # unfortunately we don't have automatic broadcasting yet
-#         a = self.a.expand_as(x)
-#         b = self.b.expand_as(x)
-#         c = self.c.expand_as(x)
-#         return a * torch.exp((x - b)**2 / c)
 
 
 def pad_tensor(vec, pad, dim):
@@ -177,15 +174,17 @@ class ResidualBlock(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, block, layers):
+    def __init__(self, block, num_filters, num_stacks):
+        assert len(num_filters) == len(num_stacks)
+        assert len(num_filters) > 0
         super(ResNet, self).__init__()
-        self.in_channels = 16
-        self.conv = conv3x3(8, 16)
-        self.bn = nn.BatchNorm2d(16)
+        self.in_channels = num_filters[0]
+        self.conv = conv3x3(8, num_filters[0])
+        self.bn = nn.BatchNorm2d(num_filters[0])
         self.relu = nn.ReLU(inplace=True)
-        self.layer1 = self.make_layer(block, 16, layers[0])
-        self.layer2 = self.make_layer(block, 32, layers[0])
-        self.layer3 = self.make_layer(block, 64, layers[1])
+        self.res_layers = []
+        for nf, ns in zip(num_filters, num_stacks):
+            self.res_layers.append(self.make_layer(block, nf, ns))
         self.fc = nn.Conv2d(64, 1, kernel_size=1)
         self.sigmoid = nn.Sigmoid()
 
@@ -205,24 +204,10 @@ class ResNet(nn.Module):
     def forward(self, x):
         out = self.conv(x)
         out = self.bn(out)
-        out = self.layer1(out)
-        out = self.layer2(out)
-        out = self.layer3(out)
+        for layer in self.res_layers:
+            out = layer(out)
         out = self.sigmoid(self.fc(out))
         return out
-
-
-# def make_model():
-#     modules = []
-#     modules.append(torch.nn.Conv2d(8, 32, 5, padding=2))
-#     modules.append(torch.nn.LeakyReLU())
-#     modules.append(torch.nn.BatchNorm2d(32))
-#     modules.append(torch.nn.Conv2d(32, 32, 5, padding=2))
-#     modules.append(torch.nn.LeakyReLU())
-#     modules.append(torch.nn.Conv2d(32, 1, 1))
-#     modules.append(torch.nn.Sigmoid())
-#     model = nn.Sequential(*modules)
-#     return model
 
 
 def masked_loss(x, y, m):
@@ -235,33 +220,55 @@ def to_device(x, y, m, device):
     return x.to(device), y.to(device), m.to(device)
 
 
-model = ResNet(ResidualBlock, [2, 2, 2])
-print(model)
+def main(path_data, num_filters, num_stacks, n_epoch, batch_size, out_dir, n_cpu):
+    logging.info("Loading dataset: {}".format(path_data))
+    df = []
+    for _p in path_data:
+        df.append(pd.read_pickle(_p))
+    df = pd.concat(df)
+    model = ResNet(ResidualBlock, num_filters, num_stacks)
+    print(model)
 
-# device
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # device
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-model = model.to(device)
+    model = model.to(device)
 
-learning_rate = 1e-4
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    learning_rate = 1e-4
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-dataset = MyDataSet(df)
-train_loader = DataLoader(dataset, batch_size=2,
-                          shuffle=True, num_workers=1,
-                          collate_fn=PadCollate2D())
+    dataset = MyDataSet(df)
+    train_loader = DataLoader(dataset, batch_size=batch_size,
+                              shuffle=True, num_workers=n_cpu,
+                              collate_fn=PadCollate2D())
 
-for epoch in range(10):
-    for x, y, m in train_loader:
-        x, y, m = to_device(x, y, m, device)
-        yp = model(x)
-        # print(y.shape, yp.shape, m.shape)
-        # print(y[0, 0, :])
-        # print(yp[0, 0, :])
-        loss = masked_loss(yp, y, m)  # order: pred, target, mask
-        print(loss)
-        model.zero_grad()
-        loss.backward()
-        optimizer.step()
+    for epoch in range(n_epoch):
+        for x, y, m in train_loader:
+            x, y, m = to_device(x, y, m, device)
+            yp = model(x)
+            # print(y.shape, yp.shape, m.shape)
+            # print(y[0, 0, :])
+            # print(yp[0, 0, :])
+            loss = masked_loss(yp, y, m)  # order: pred, target, mask
+            print(loss)
+            model.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--data', nargs='+', type=str, help='Path to training data file')
+    parser.add_argument('--result', type=str, help='Path to output result')
+    parser.add_argument('--num_filters', nargs='*', type=int, help='Number of conv filters per each res block.')
+    parser.add_argument('--num_stacks', nargs='*', type=int, help='Number of stacks per each res block.')
+    parser.add_argument('--epoch', type=int, help='Number of epochs')
+    parser.add_argument('--batch_size', type=int, help='Mini batch size')
+    parser.add_argument('--cpu', type=int, help='Number of CPU workers per data loader')
+    args = parser.parse_args()
+    set_up_logging(args.result)
+    logging.debug(args)
+    main(args.data, args.num_filters, args.num_stacks, args.epoch, args.batch_size, args.result, args.cpu)
+
 
 
