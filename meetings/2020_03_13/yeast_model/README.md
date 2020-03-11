@@ -60,6 +60,12 @@ Since they represent "no difference" than expected. But how close to the origin 
 
 ## Bigger NN + add regularization
 
+### Add L2 regularization
+
+```
+python train_nn_multi_2.py --data ~/work/psi-lab-sandbox/meetings/2020_02_11/d_cell/data/training/raw_pair_wise/SGA_ExE.txt ~/work/psi-lab-sandbox/meetings/2020_02_11/d_cell/data/training/raw_pair_wise/SGA_ExN_NxE.txt ~/work/psi-lab-sandbox/meetings/2020_02_11/d_cell/data/training/raw_pair_wise/SGA_NxN.txt --result result/run_2 --epoch 50 --hid_sizes 100 100 100 100 50 50 20 10
+```
+
 D-cell paper
 
 any data pre-processing?

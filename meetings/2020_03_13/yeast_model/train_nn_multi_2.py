@@ -154,7 +154,7 @@ def m_wrapper(model, xd, x1, x2, yd=None, ygi=None, yf1=None, yf2=None, loss_fn=
     return loss, loss_fitness, loss_gi, yd_pred, ygi_pred, yf1_pred, yf2_pred
 
 
-def main(path_data, hid_sizes, n_epoch, out_dir):
+def main(path_data, hid_sizes, n_epoch, wd, out_dir):
     # load data
     logging.info("Loading dataset: {}".format(path_data))
     df = []
@@ -229,8 +229,7 @@ def main(path_data, hid_sizes, n_epoch, out_dir):
     logging.info("model: \n{}".format(model))
     loss_fn = torch.nn.MSELoss(reduction='mean')
     learning_rate = 1e-4
-    weight_decay = 1e-3
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=wd)
 
     # naive guess is the mean of training target value
     yp_naive = np.mean(y_tr, axis=0)
@@ -421,7 +420,8 @@ if __name__ == "__main__":
     parser.add_argument('--result', type=str, help='path to output result')
     parser.add_argument('--hid_sizes', nargs='*', type=int, help='hidden layer sizes, does not include first (input) and last (output) layer.')
     parser.add_argument('--epoch', type=int, help='number of epochs')
+    parser.add_argument('--wd', type=int, help='L2 weight decay')
     args = parser.parse_args()
     set_up_logging(args.result)
     logging.debug(args)
-    main(args.data, args.hid_sizes, args.epoch, args.result)
+    main(args.data, args.hid_sizes, args.epoch, args.wd, args.result)
