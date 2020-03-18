@@ -305,7 +305,7 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, out_dir, n_cpu
         auprc_naive_tr.extend(_p)
     logging.info("Training: loss {} au-ROC {} au-PRC {}".format(torch.mean(torch.stack(loss_naive_tr)),
                                                                 np.mean(np.stack(auroc_naive_tr)),
-                                                                np.mean(np.stack(auroc_naive_tr))))
+                                                                np.mean(np.stack(auprc_naive_tr))))
     # validation
     loss_naive_va = []
     auroc_naive_va = []
