@@ -4,7 +4,7 @@ import logging
 import argparse
 import numpy as np
 import pandas as pd
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, average_precision_score
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -227,7 +227,7 @@ def to_device(x, y, m, device):
     return x.to(device), y.to(device), m.to(device)
 
 
-def compute_auc(x, y, m):
+def compute_metrics(x, y, m):
     # x : true label, y: pred, m: binary mask, where 1 indicate valid
     # x, y, m are both torch tensors with batch x channel=1 x H x W
     assert x.shape[1] == 1
@@ -236,7 +236,8 @@ def compute_auc(x, y, m):
     for dim in [0, 1, 2]:
         assert x.shape[dim] == y.shape[dim]
         assert x.shape[dim] == m.shape[dim]
-    aucs = []
+    aurocs = []
+    auprcs = []
     for idx_batch in range(x.shape[0]):
         # use mask to select non-zero entries
         _x = x[idx_batch, 0, :, :]
@@ -247,8 +248,9 @@ def compute_auc(x, y, m):
         _y2 = _y.masked_select(mask_bool).flatten().detach().cpu().numpy()
         # do not compute if there's only one class
         if not np.all(_x2 == _x2[0]):
-            aucs.append(roc_auc_score(_x2, _y2))
-    return aucs
+            aurocs.append(roc_auc_score(_x2, _y2))
+            auprcs.append(average_precision_score(_x2, _y2))
+    return aurocs, auprcs
 
 
 def main(path_data, num_filters, num_stacks, n_epoch, batch_size, out_dir, n_cpu):
@@ -291,62 +293,74 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, out_dir, n_cpu
     # calculate loss using naive guess
     logging.info("Naive guess performance")
     # training
-    # loss_naive_tr = torch.mean(
-    #     torch.stack([masked_loss(torch.ones_like(y) * yp_naive, y, m) for _, y, m in data_loader_tr]))
     loss_naive_tr = []
-    auc_naive_tr = []
+    auroc_naive_tr = []
+    auprc_naive_tr = []
     for x, y, m in data_loader_tr:
         x, y, m = to_device(x, y, m, device)
         yp = torch.ones_like(y) * yp_naive
         loss_naive_tr.append(masked_loss(yp, y, m))
-        auc_naive_tr.extend(compute_auc(y, yp, m))
-    logging.info("Training: loss {} AUC {}".format(torch.mean(torch.stack(loss_naive_tr)),
-                                                   np.mean(np.stack(auc_naive_tr))))
+        _r, _p = compute_metrics(y, yp, m)
+        auroc_naive_tr.extend(_r)
+        auprc_naive_tr.extend(_p)
+    logging.info("Training: loss {} au-ROC {} au-PRC {}".format(torch.mean(torch.stack(loss_naive_tr)),
+                                                                np.mean(np.stack(auroc_naive_tr)),
+                                                                np.mean(np.stack(auroc_naive_tr))))
     # validation
-    # loss_naive_va = torch.mean(
-    #     torch.stack([masked_loss(torch.ones_like(y) * yp_naive, y, m) for _, y, m in data_loader_va]))
     loss_naive_va = []
-    auc_naive_va = []
+    auroc_naive_va = []
+    auprc_naive_va = []
     for x, y, m in data_loader_va:
         x, y, m = to_device(x, y, m, device)
         yp = torch.ones_like(y) * yp_naive
         loss_naive_va.append(masked_loss(yp, y, m))
-        auc_naive_va.extend(compute_auc(y, yp, m))
-    logging.info("Validation: loss {} AUC {}".format(torch.mean(torch.stack(loss_naive_va)),
-                                                   np.mean(np.stack(auc_naive_va))))
-
-    # logging.info("Naive guess loss: training {} validation {}".format(loss_naive_tr, loss_naive_va))
+        _r, _p = compute_metrics(y, yp, m)
+        auroc_naive_va.extend(_r)
+        auprc_naive_va.extend(_p)
+    logging.info("Validation: loss {} au-ROC {} au-PRC {}".format(torch.mean(torch.stack(loss_naive_va)),
+                                                                  np.mean(np.stack(auroc_naive_va)),
+                                                                  np.mean(np.stack(auprc_naive_va))))
 
     for epoch in range(n_epoch):
         running_loss_tr = []
-        running_auc_tr = []
+        running_auroc_tr = []
+        running_auprc_tr = []
         for x, y, m in data_loader_tr:
             x, y, m = to_device(x, y, m, device)
             yp = model(x)
             loss = masked_loss(yp, y, m)  # order: pred, target, mask
             running_loss_tr.append(loss)
-            running_auc_tr.extend(compute_auc(y, yp, m))
+            _r, _p = compute_metrics(y, yp, m)
+            running_auroc_tr.extend(_r)
+            running_auprc_tr.extend(_p)
             model.zero_grad()
             loss.backward()
             optimizer.step()
         # report training loss
         logging.info(
-            "Epoch {}/{}, training loss (running) {}, AUC {}".format(epoch, n_epoch,
-                                                                     torch.mean(torch.stack(running_loss_tr)),
-                                                                     np.mean(np.stack(running_auc_tr))))
+            "Epoch {}/{}, training loss (running) {}, au-ROC {}, au-PRC {}".format(epoch, n_epoch,
+                                                                                   torch.mean(
+                                                                                       torch.stack(running_loss_tr)),
+                                                                                   np.mean(np.stack(running_auroc_tr)),
+                                                                                   np.mean(np.stack(running_auprc_tr))))
 
         # report validation loss
         running_loss_va = []
-        running_auc_va = []
+        running_auroc_va = []
+        running_auprc_va = []
         for x, y, m in data_loader_va:
             x, y, m = to_device(x, y, m, device)
             yp = model(x)
             loss = masked_loss(yp, y, m)
             running_loss_va.append(loss)
-            running_auc_va.extend(compute_auc(y, yp, m))
+            _r, _p = compute_metrics(y, yp, m)
+            running_auroc_va.extend(_r)
+            running_auprc_va.extend(_p)
         logging.info(
-            "Epoch {}/{}, validation loss {}, AUC {}".format(epoch, n_epoch, torch.mean(torch.stack(running_loss_tr)),
-                                                             np.mean(np.stack(running_auc_va))))
+            "Epoch {}/{}, validation loss {}, au-ROC {}, au-PRC {}".format(epoch, n_epoch,
+                                                                           torch.mean(torch.stack(running_loss_tr)),
+                                                                           np.mean(np.stack(running_auroc_va)),
+                                                                           np.mean(np.stack(running_auprc_va))))
 
 
 if __name__ == "__main__":
