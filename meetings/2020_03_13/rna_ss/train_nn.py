@@ -4,6 +4,7 @@ import logging
 import argparse
 import numpy as np
 import pandas as pd
+from sklearn.metrics import roc_auc_score
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -226,6 +227,28 @@ def to_device(x, y, m, device):
     return x.to(device), y.to(device), m.to(device)
 
 
+def compute_auc(x, y, m):
+    # x : true label, y: pred, m: binary mask, where 1 indicate valid
+    # x, y, m are both torch tensors with batch x channel=1 x H x W
+    assert x.shape[1] == 1
+    assert y.shape[1] == 1
+    assert m.shape[1] == 1
+    for dim in [0, 1, 2]:
+        assert x.shape[dim] == y.shape[dim]
+        assert x.shape[dim] == m.shape[dim]
+    aucs = []
+    for idx_batch in range(x.shape[0]):
+        # use mask to select non-zero entries
+        _x = x[idx_batch, 0, :, :]
+        _y = y[idx_batch, 0, :, :]
+        _m = m[idx_batch, 0, :, :]
+        mask_bool = _m.eq(1)
+        _x2 = _x.masked_select(mask_bool).flatten().detach().cpu().numpy()
+        _y2 = _y.masked_select(mask_bool).flatten().detach().cpu().numpy()
+        aucs.append(roc_auc_score(_x2, _y2))
+    return aucs
+
+
 def main(path_data, num_filters, num_stacks, n_epoch, batch_size, out_dir, n_cpu):
     logging.info("Loading dataset: {}".format(path_data))
     df = []
@@ -273,27 +296,34 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, out_dir, n_cpu
 
     for epoch in range(n_epoch):
         running_loss_tr = []
+        running_auc_tr = []
         for x, y, m in data_loader_tr:
             x, y, m = to_device(x, y, m, device)
             yp = model(x)
             loss = masked_loss(yp, y, m)  # order: pred, target, mask
             running_loss_tr.append(loss)
+            running_auc_tr.extend(compute_auc(y, yp, m))
             model.zero_grad()
             loss.backward()
             optimizer.step()
         # report training loss
         logging.info(
-            "Epoch {}/{}, training loss (running) {}".format(epoch, n_epoch, torch.mean(torch.stack(running_loss_tr))))
+            "Epoch {}/{}, training loss (running) {}, AUC {}".format(epoch, n_epoch,
+                                                                     torch.mean(torch.stack(running_loss_tr)),
+                                                                     np.mean(np.stack(running_auc_tr))))
 
         # report validation loss
         running_loss_va = []
+        running_auc_va = []
         for x, y, m in data_loader_va:
             x, y, m = to_device(x, y, m, device)
             yp = model(x)
             loss = masked_loss(yp, y, m)
             running_loss_va.append(loss)
+            running_auc_va.extend(compute_auc(y, yp, m))
         logging.info(
-            "Epoch {}/{}, validation loss {}".format(epoch, n_epoch, torch.mean(torch.stack(running_loss_tr))))
+            "Epoch {}/{}, validation loss {}, AUC {}".format(epoch, n_epoch, torch.mean(torch.stack(running_loss_tr)),
+                                                             np.mean(np.stack(running_auc_va))))
 
 
 if __name__ == "__main__":
