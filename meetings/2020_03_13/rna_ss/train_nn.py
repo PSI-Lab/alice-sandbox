@@ -336,6 +336,12 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, out_dir, n_cpu
             model.zero_grad()
             loss.backward()
             optimizer.step()
+
+        # save model
+        _model_path = os.path.join(out_dir, 'model_ckpt_ep_{}.pth')
+        torch.save(model.state_dict(), _model_path)
+        logging.info("Model checkpoint saved at: {}".format(_model_path))
+
         # report training loss
         logging.info(
             "Epoch {}/{}, training loss (running) {}, au-ROC {}, au-PRC {}".format(epoch, n_epoch,
