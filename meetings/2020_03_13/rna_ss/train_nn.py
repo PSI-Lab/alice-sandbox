@@ -258,7 +258,11 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, out_dir, n_cpu
                                 collate_fn=PadCollate2D())
 
     # naive guess is the mean of training target value
-    yp_naive = np.mean([np.mean(y) for _, y, _ in data_loader_tr], axis=0)
+    # debug
+    #for _, y, _ in data_loader_tr:
+    #    print(y.shape)
+    #    print(np.mean(y))
+    yp_naive = torch.mean(torch.stack([torch.mean(y) for _, y, _ in data_loader_tr]))
     logging.info("Naive guess: {}".format(yp_naive))
     # calculate loss using naive guess
     # training
