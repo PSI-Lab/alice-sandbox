@@ -287,12 +287,33 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, out_dir, n_cpu
     yp_naive = torch.mean(torch.stack([torch.mean(y) for _, y, _ in data_loader_tr]))
     logging.info("Naive guess: {}".format(yp_naive))
     # calculate loss using naive guess
+    logging.info("Naive guess performance")
     # training
-    loss_naive_tr = torch.mean(
-        torch.stack([masked_loss(torch.ones_like(y) * yp_naive, y, m) for _, y, m in data_loader_tr]))
-    loss_naive_va = torch.mean(
-        torch.stack([masked_loss(torch.ones_like(y) * yp_naive, y, m) for _, y, m in data_loader_va]))
-    logging.info("Naive guess loss: training {} validation {}".format(loss_naive_tr, loss_naive_va))
+    # loss_naive_tr = torch.mean(
+    #     torch.stack([masked_loss(torch.ones_like(y) * yp_naive, y, m) for _, y, m in data_loader_tr]))
+    loss_naive_tr = []
+    auc_naive_tr = []
+    for x, y, m in data_loader_tr:
+        x, y, m = to_device(x, y, m, device)
+        yp = torch.ones_like(y) * yp_naive
+        loss_naive_tr.append(masked_loss(yp, y, m))
+        auc_naive_tr.extend(compute_auc(y, yp, m))
+    logging.info("Training: loss {} AUC {}".format(torch.mean(torch.stack(loss_naive_tr)),
+                                                   np.mean(np.stack(auc_naive_tr))))
+    # validation
+    # loss_naive_va = torch.mean(
+    #     torch.stack([masked_loss(torch.ones_like(y) * yp_naive, y, m) for _, y, m in data_loader_va]))
+    loss_naive_va = []
+    auc_naive_va = []
+    for x, y, m in data_loader_va:
+        x, y, m = to_device(x, y, m, device)
+        yp = torch.ones_like(y) * yp_naive
+        loss_naive_va.append(masked_loss(yp, y, m))
+        auc_naive_va.extend(compute_auc(y, yp, m))
+    logging.info("Validation: loss {} AUC {}".format(torch.mean(torch.stack(loss_naive_va)),
+                                                   np.mean(np.stack(auc_naive_va))))
+
+    # logging.info("Naive guess loss: training {} validation {}".format(loss_naive_tr, loss_naive_va))
 
     for epoch in range(n_epoch):
         running_loss_tr = []
