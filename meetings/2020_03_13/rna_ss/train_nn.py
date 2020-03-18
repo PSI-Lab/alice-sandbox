@@ -1,4 +1,5 @@
 import os
+import subprocess
 import logging
 import argparse
 import numpy as np
@@ -246,7 +247,9 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, out_dir, n_cpu
     # shuffle rows
     df = df.sample(frac=1).reset_index(drop=True)
     # subset
-    _n_tr = int(len(df) * 0.8)
+    tr_prop = 0.9
+    logging.info("Using {} data for training".format(tr_prop))
+    _n_tr = int(len(df) * tr_prop)
     df_tr = df[:_n_tr]
     df_va = df[_n_tr:]
     # data loaders
@@ -258,10 +261,6 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, out_dir, n_cpu
                                 collate_fn=PadCollate2D())
 
     # naive guess is the mean of training target value
-    # debug
-    #for _, y, _ in data_loader_tr:
-    #    print(y.shape)
-    #    print(np.mean(y))
     yp_naive = torch.mean(torch.stack([torch.mean(y) for _, y, _ in data_loader_tr]))
     logging.info("Naive guess: {}".format(yp_naive))
     # calculate loss using naive guess
@@ -273,14 +272,28 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, out_dir, n_cpu
     logging.info("Naive guess loss: training {} validation {}".format(loss_naive_tr, loss_naive_va))
 
     for epoch in range(n_epoch):
+        running_loss_tr = []
         for x, y, m in data_loader_tr:
             x, y, m = to_device(x, y, m, device)
             yp = model(x)
             loss = masked_loss(yp, y, m)  # order: pred, target, mask
-            print(loss)
+            running_loss_tr.append(loss)
             model.zero_grad()
             loss.backward()
             optimizer.step()
+        # report training loss
+        logging.info(
+            "Epoch {}/{}, training loss (running) {}".format(epoch, n_epoch, torch.mean(torch.stack(running_loss_tr))))
+
+        # report validation loss
+        running_loss_va = []
+        for x, y, m in data_loader_va:
+            x, y, m = to_device(x, y, m, device)
+            yp = model(x)
+            loss = masked_loss(yp, y, m)
+            running_loss_va.append(loss)
+        logging.info(
+            "Epoch {}/{}, validation loss {}".format(epoch, n_epoch, torch.mean(torch.stack(running_loss_tr))))
 
 
 if __name__ == "__main__":
@@ -293,8 +306,14 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', type=int, help='Mini batch size')
     parser.add_argument('--cpu', type=int, help='Number of CPU workers per data loader')
     args = parser.parse_args()
+
+    # some basic logging
     set_up_logging(args.result)
-    logging.debug(args)
+    logging.debug("Cmd: {}".format(args))  # cmd args
+    git_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip()
+    cur_dir = os.path.dirname(os.path.realpath(__file__))
+    logging.debug("Current dir: {}, git hash: {}".format(cur_dir, git_hash))
+    # training
     main(args.data, args.num_filters, args.num_stacks, args.epoch, args.batch_size, args.result, args.cpu)
 
 
