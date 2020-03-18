@@ -338,7 +338,7 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, out_dir, n_cpu
             optimizer.step()
 
         # save model
-        _model_path = os.path.join(out_dir, 'model_ckpt_ep_{}.pth')
+        _model_path = os.path.join(out_dir, 'model_ckpt_ep_{}.pth'.format(epoch))
         torch.save(model.state_dict(), _model_path)
         logging.info("Model checkpoint saved at: {}".format(_model_path))
 
