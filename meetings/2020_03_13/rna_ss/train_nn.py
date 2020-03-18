@@ -187,9 +187,6 @@ class ResNet(nn.Module):
         for nf, ns in zip(num_filters, num_stacks):
             self.res_layers.append(self.make_layer(block, nf, ns))
         self.res_layers = nn.ModuleList(self.res_layers)
-        # self.res_layer1 = self.make_layer(block, 16, 2)
-        # self.res_layer2 = self.make_layer(block, 32, 2)
-        # self.res_layer3 = self.make_layer(block, 64, 2)
 
         self.fc = nn.Conv2d(64, 1, kernel_size=1)
         self.sigmoid = nn.Sigmoid()
@@ -213,9 +210,6 @@ class ResNet(nn.Module):
 
         for layer in self.res_layers:
             out = layer(out)
-        # out = self.res_layer1(out)
-        # out = self.res_layer2(out)
-        # out = self.res_layer3(out)
 
         out = self.sigmoid(self.fc(out))
         return out
@@ -248,18 +242,36 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, out_dir, n_cpu
     learning_rate = 1e-4
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-    dataset = MyDataSet(df)
-    train_loader = DataLoader(dataset, batch_size=batch_size,
-                              shuffle=True, num_workers=n_cpu,
-                              collate_fn=PadCollate2D())
+    # split into training+validation
+    # shuffle rows
+    df = df.sample(frac=1).reset_index(drop=True)
+    # subset
+    _n_tr = int(len(df) * 0.8)
+    df_tr = df[:_n_tr]
+    df_va = df[_n_tr:]
+    # data loaders
+    data_loader_tr = DataLoader(MyDataSet(df_tr), batch_size=batch_size,
+                                shuffle=True, num_workers=n_cpu,
+                                collate_fn=PadCollate2D())
+    data_loader_va = DataLoader(MyDataSet(df_va), batch_size=batch_size,
+                                shuffle=True, num_workers=n_cpu,
+                                collate_fn=PadCollate2D())
+
+    # naive guess is the mean of training target value
+    yp_naive = np.mean([np.mean(y) for _, y, _ in data_loader_tr], axis=0)
+    logging.info("Naive guess: {}".format(yp_naive))
+    # calculate loss using naive guess
+    # training
+    loss_naive_tr = torch.mean(
+        torch.stack([masked_loss(torch.ones_like(y) * yp_naive, y, m) for _, y, m in data_loader_tr]))
+    loss_naive_va = torch.mean(
+        torch.stack([masked_loss(torch.ones_like(y) * yp_naive, y, m) for _, y, m in data_loader_va]))
+    logging.info("Naive guess loss: training {} validation {}".format(loss_naive_tr, loss_naive_va))
 
     for epoch in range(n_epoch):
-        for x, y, m in train_loader:
+        for x, y, m in data_loader_tr:
             x, y, m = to_device(x, y, m, device)
             yp = model(x)
-            # print(y.shape, yp.shape, m.shape)
-            # print(y[0, 0, :])
-            # print(yp[0, 0, :])
             loss = masked_loss(yp, y, m)  # order: pred, target, mask
             print(loss)
             model.zero_grad()
