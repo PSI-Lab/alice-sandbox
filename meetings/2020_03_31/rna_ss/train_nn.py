@@ -371,7 +371,7 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, out_dir, n_cpu
             running_auprc_tr.extend(_p)
             model.zero_grad()
             loss.backward()
-            logging.info(loss)
+            logging.info("Training loss: {}".format(loss))
             optimizer.step()
 
         # save model
@@ -397,6 +397,7 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, out_dir, n_cpu
                 yp = model(x)
                 loss = masked_loss(yp, y, m)
                 running_loss_va.append(loss)
+                logging.info("Validation loss: {}".format(loss))
                 _r, _p = compute_metrics(y, yp, m)
                 running_auroc_va.extend(_r)
                 running_auprc_va.extend(_p)
