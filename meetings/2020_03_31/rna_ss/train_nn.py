@@ -337,11 +337,11 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, out_dir, n_cpu
         for x, y, m in data_loader_tr:
             x, y, m = to_device(x, y, m, device)
             yp = torch.ones_like(y) * yp_naive
-            loss_naive_tr.append(masked_loss(yp, y, m))
+            loss_naive_tr.append(masked_loss(yp, y, m).detach().cpu().numpy())
             _r, _p = compute_metrics(y, yp, m)
             auroc_naive_tr.extend(_r)
             auprc_naive_tr.extend(_p)
-        logging.info("Training: loss {} au-ROC {} au-PRC {}".format(torch.mean(torch.stack(loss_naive_tr)),
+        logging.info("Training: loss {} au-ROC {} au-PRC {}".format(np.mean(np.stack(loss_naive_tr)),
                                                                     np.mean(np.stack(auroc_naive_tr)),
                                                                     np.mean(np.stack(auprc_naive_tr))))
         # validation
@@ -351,11 +351,11 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, out_dir, n_cpu
         for x, y, m in data_loader_va:
             x, y, m = to_device(x, y, m, device)
             yp = torch.ones_like(y) * yp_naive
-            loss_naive_va.append(masked_loss(yp, y, m))
+            loss_naive_va.append(masked_loss(yp, y, m).detach().cpu().numpy())
             _r, _p = compute_metrics(y, yp, m)
             auroc_naive_va.extend(_r)
             auprc_naive_va.extend(_p)
-        logging.info("Validation: loss {} au-ROC {} au-PRC {}".format(torch.mean(torch.stack(loss_naive_va)),
+        logging.info("Validation: loss {} au-ROC {} au-PRC {}".format(np.mean(np.stack(loss_naive_va)),
                                                                       np.mean(np.stack(auroc_naive_va)),
                                                                       np.mean(np.stack(auprc_naive_va))))
 
@@ -367,7 +367,7 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, out_dir, n_cpu
             x, y, m = to_device(x, y, m, device)
             yp = model(x)
             loss = masked_loss(yp, y, m)  # order: pred, target, mask
-            running_loss_tr.append(loss)
+            running_loss_tr.append(loss.detach().cpu().numpy())
             _r, _p = compute_metrics(y, yp, m)
             running_auroc_tr.extend(_r)
             running_auprc_tr.extend(_p)
@@ -384,8 +384,8 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, out_dir, n_cpu
         # report training loss
         logging.info(
             "Epoch {}/{}, training loss (running) {}, au-ROC {}, au-PRC {}".format(epoch, n_epoch,
-                                                                                   torch.mean(
-                                                                                       torch.stack(running_loss_tr)),
+                                                                                   np.mean(
+                                                                                       np.stack(running_loss_tr)),
                                                                                    np.mean(np.stack(running_auroc_tr)),
                                                                                    np.mean(np.stack(running_auprc_tr))))
 
@@ -398,14 +398,14 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, out_dir, n_cpu
                 x, y, m = to_device(x, y, m, device)
                 yp = model(x)
                 loss = masked_loss(yp, y, m)
-                running_loss_va.append(loss)
+                running_loss_va.append(loss.detach().cpu().numpy())
                 logging.info("Epoch {} Validation loss: {}".format(epoch, loss))
                 _r, _p = compute_metrics(y, yp, m)
                 running_auroc_va.extend(_r)
                 running_auprc_va.extend(_p)
             logging.info(
                 "Epoch {}/{}, validation loss {}, au-ROC {}, au-PRC {}".format(epoch, n_epoch,
-                                                                               torch.mean(torch.stack(running_loss_tr)),
+                                                                               np.mean(np.stack(running_loss_tr)),
                                                                                np.mean(np.stack(running_auroc_va)),
                                                                                np.mean(np.stack(running_auprc_va))))
 
