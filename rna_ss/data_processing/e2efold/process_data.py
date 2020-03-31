@@ -36,7 +36,10 @@ def main(input_datas, output_data):
             char_idx = np.argmax(data_point.seq, axis=1)
             for i in range(data_point.length):
                 seq += seq_order[char_idx[i]]
-            one_idx = data_point.pairs
+            # convert to one_idx
+            # tuple of 2 lists, for np indexing
+            _idx = data_point.pairs
+            one_idx = ([x[0] for x in _idx], [x[1] for x in _idx])
             df.append({
                 'seq': seq,
                 'one_idx': one_idx,
