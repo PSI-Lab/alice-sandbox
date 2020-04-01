@@ -12,6 +12,10 @@ RNA_SS_data = collections.namedtuple('RNA_SS_data',
                                      'seq ss_label length name pairs')
 
 
+# for sanity check
+valid_pairs = [{'A', 'U'}, {'G', 'C'}, {'G', 'U'}]
+
+
 def main(input_datas, output_data):
     # mapping used by the author
     # seq_dict = {
@@ -40,6 +44,28 @@ def main(input_datas, output_data):
             # tuple of 2 lists, for np indexing
             _idx = data_point.pairs
             one_idx = ([x[0] for x in _idx], [x[1] for x in _idx])
+            # as a sanity check, make sure these indexes are compatible with the sequence length
+            # log failure, skip and proceed if suspicious
+            if len(one_idx[0]) > 0 and (np.min(one_idx[0]) < 0 or np.max(one_idx[0]) >= data_point.length):
+                print("Skipping suspicious data: {}\n".format(data_point))
+                continue
+            if len(one_idx[1]) > 0 and (np.min(one_idx[1]) < 0 or np.max(one_idx[1]) >= data_point.length):
+                print("Skipping suspicious data: {}\n".format(data_point))
+                continue
+            if len(one_idx[0]) > 0:
+                n_invalid = 0
+                for i, j in zip(one_idx[0], one_idx[1]):
+                    # only process upper triangular matrix
+                    # so we don't double count base pairs
+                    if i < j:
+                        continue
+                    base_pair = {seq[i], seq[j]}
+                    if base_pair not in valid_pairs:
+                        n_invalid += 1
+                if n_invalid > data_point.length * 0.2:
+                    print("{} invalid pairs in sequence of length {}".format(n_invalid, data_point.length))
+                    print("Skipping suspicious data: {}\n".format(data_point))
+                    continue
             df.append({
                 'seq': seq,
                 'one_idx': one_idx,
