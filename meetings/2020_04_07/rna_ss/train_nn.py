@@ -276,8 +276,10 @@ def compute_metrics(x, y, m):
         _y = y[idx_batch, 0, :, :]
         _m = m[idx_batch, 0, :, :]
         mask_bool = _m.eq(1)
-        _x2 = _x.masked_select(mask_bool).flatten().detach().cpu().numpy()
-        _y2 = _y.masked_select(mask_bool).flatten().detach().cpu().numpy()
+        # _x2 = _x.masked_select(mask_bool).flatten().detach().cpu().numpy()
+        _x2 = _x.masked_select(mask_bool).flatten().cpu().numpy()
+        # _y2 = _y.masked_select(mask_bool).flatten().detach().cpu().numpy()
+        _y2 = _y.masked_select(mask_bool).flatten().cpu().numpy()
         # do not compute if there's only one class
         if not np.all(_x2 == _x2[0]):
             aurocs.append(roc_auc_score(_x2, _y2))
@@ -348,7 +350,8 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, max_length, ou
         for x, y, m in data_loader_tr:
             x, y, m = to_device(x, y, m, device)
             yp = torch.ones_like(y) * yp_naive
-            loss_naive_tr.append(masked_loss(yp, y, m).detach().cpu().numpy())
+            # loss_naive_tr.append(masked_loss(yp, y, m).detach().cpu().numpy())
+            loss_naive_tr.append(masked_loss(yp, y, m).item())
             _r, _p = compute_metrics(y, yp, m)
             auroc_naive_tr.extend(_r)
             auprc_naive_tr.extend(_p)
@@ -362,7 +365,8 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, max_length, ou
         for x, y, m in data_loader_va:
             x, y, m = to_device(x, y, m, device)
             yp = torch.ones_like(y) * yp_naive
-            loss_naive_va.append(masked_loss(yp, y, m).detach().cpu().numpy())
+            # loss_naive_va.append(masked_loss(yp, y, m).detach().cpu().numpy())
+            loss_naive_va.append(masked_loss(yp, y, m).item())
             _r, _p = compute_metrics(y, yp, m)
             auroc_naive_va.extend(_r)
             auprc_naive_va.extend(_p)
@@ -378,7 +382,8 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, max_length, ou
             x, y, m = to_device(x, y, m, device)
             yp = model(x)
             loss = masked_loss(yp, y, m)  # order: pred, target, mask
-            running_loss_tr.append(loss.detach().cpu().numpy())
+            # running_loss_tr.append(loss.detach().cpu().numpy())
+            running_loss_tr.append(loss.item())
             _r, _p = compute_metrics(y, yp, m)
             running_auroc_tr.extend(_r)
             running_auprc_tr.extend(_p)
@@ -409,7 +414,8 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, max_length, ou
                 x, y, m = to_device(x, y, m, device)
                 yp = model(x)
                 loss = masked_loss(yp, y, m)
-                running_loss_va.append(loss.detach().cpu().numpy())
+                # running_loss_va.append(loss.detach().cpu().numpy())
+                running_loss_va.append(loss.item())
                 logging.info("Epoch {} Validation loss: {}".format(epoch, loss))
                 _r, _p = compute_metrics(y, yp, m)
                 running_auroc_va.extend(_r)
