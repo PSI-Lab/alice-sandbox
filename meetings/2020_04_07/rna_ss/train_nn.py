@@ -277,9 +277,9 @@ def compute_metrics(x, y, m):
         _m = m[idx_batch, 0, :, :]
         mask_bool = _m.eq(1)
         # _x2 = _x.masked_select(mask_bool).flatten().detach().cpu().numpy()
-        _x2 = _x.masked_select(mask_bool).flatten().cpu().numpy()
+        _x2 = _x.masked_select(mask_bool).flatten().detach().numpy()
         # _y2 = _y.masked_select(mask_bool).flatten().detach().cpu().numpy()
-        _y2 = _y.masked_select(mask_bool).flatten().cpu().numpy()
+        _y2 = _y.masked_select(mask_bool).flatten().detach().numpy()
         # do not compute if there's only one class
         if not np.all(_x2 == _x2[0]):
             aurocs.append(roc_auc_score(_x2, _y2))

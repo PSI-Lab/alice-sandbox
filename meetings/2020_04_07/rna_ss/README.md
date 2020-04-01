@@ -15,6 +15,7 @@ use same train/validation/test fold
 
 report same metric: precision, recall, F1
 (did they pick a threshold then computing those metric?)
+(use sklearn https://scikit-learn.org/stable/modules/generated/sklearn.metrics.classification_report.html)
 
 read E2Efold paper
 
