@@ -383,13 +383,15 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, max_length, ou
             yp = model(x)
             loss = masked_loss(yp, y, m)  # order: pred, target, mask
             # running_loss_tr.append(loss.detach().cpu().numpy())
-            running_loss_tr.append(loss.item())
-            _r, _p = compute_metrics(y, yp, m)
-            running_auroc_tr.extend(_r)
-            running_auprc_tr.extend(_p)
+
+            # running_loss_tr.append(loss.item())
+            # _r, _p = compute_metrics(y, yp, m)
+            # running_auroc_tr.extend(_r)
+            # running_auprc_tr.extend(_p)
+            # logging.info("Epoch {} Training loss: {}".format(epoch, loss))
+
             model.zero_grad()
             loss.backward()
-            logging.info("Epoch {} Training loss: {}".format(epoch, loss))
             optimizer.step()
 
         # save model
