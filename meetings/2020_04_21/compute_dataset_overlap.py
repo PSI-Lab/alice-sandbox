@@ -64,8 +64,10 @@ def main(d1, d2):
         else:
             print("No similar sequence found!\n")
 
+    print("{} {}".format(d1, len(df1)))
+    print("{} {}".format(d2, len(df2)))
     print("Found {} similar out of a total {}".format(n_similar, len(df1)))
-    print("[debug] n_identical {}".format(n_identical))
+    print("n_identical {}".format(n_identical))
 
 
 if __name__ == "__main__":
