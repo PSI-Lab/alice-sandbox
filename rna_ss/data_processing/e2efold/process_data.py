@@ -75,7 +75,7 @@ def main(input_datas, output_data):
     df = pd.DataFrame(df)
     print('output size: {}'.format(len(df)))
 
-    df.to_pickle(output_data, compression='gzip')
+    df.to_pickle(output_data, compression='gzip', protocol=2)  # make it py2 compatible
 
 
 if __name__ == "__main__":
