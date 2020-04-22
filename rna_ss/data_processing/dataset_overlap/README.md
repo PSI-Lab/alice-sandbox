@@ -15,7 +15,7 @@ python compute_dataset_overlap.py --d1 ../rna_cg/data/rfam.pkl --d2 ../pdb_250/d
 
 
 
-bash one-liner:
+run all:
 
 
 
