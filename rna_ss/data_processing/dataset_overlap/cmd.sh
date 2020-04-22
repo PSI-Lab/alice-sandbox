@@ -2,7 +2,7 @@
 
 # each id correspond to one path
 dataset_id=("rfam151" "sprocessed"  "pdb250"  "bprna"  "rnastralign"  "archive")
-dataset_path=("../rna_cg/data/rfam.pkl"  "./rna_cg/data/s_processed.pkl"  "../pdb_250/data/pdb_250.pkl"  "../spot_rna/bp_rna/data/bp_rna.pkl.gz"  "../e2efold/data/rnastralign.pkl.gz"  "../e2efold/data/archiveII.pkl.gz")
+dataset_path=("../rna_cg/data/rfam.pkl"  "../rna_cg/data/s_processed.pkl"  "../pdb_250/data/pdb_250.pkl"  "../spot_rna/bp_rna/data/bp_rna.pkl.gz"  "../e2efold/data/rnastralign.pkl.gz"  "../e2efold/data/archiveII.pkl.gz")
 
 
 for i in "${!dataset_id[@]}"
