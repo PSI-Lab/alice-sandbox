@@ -92,7 +92,7 @@ def main(d1, d2, out_file):
 
     # output
     df_overlap = pd.DataFrame(df_overlap)
-    df_overlap.to_csv(out_file, compression='gzip')
+    df_overlap.to_csv(out_file, compression='gzip', index=False)
 
 
 if __name__ == "__main__":
