@@ -224,6 +224,93 @@ It looks like this:
 ```
 
 
+## Extra - verify padding length used in their original data
+
+Result:
+
+
+```
+raw_data/archiveII_all/train.pickle
+       n_encoded_pos  n_total
+count    3180.000000   3180.0
+mean      212.846855   2968.0
+std       190.055349      0.0
+min        28.000000   2968.0
+25%       110.000000   2968.0
+50%       120.000000   2968.0
+75%       313.250000   2968.0
+max      2968.000000   2968.0
+
+raw_data/archiveII_all/val.pickle
+       n_encoded_pos  n_total
+count     398.000000    398.0
+mean      224.479899   2968.0
+std       215.416656      0.0
+min        33.000000   2968.0
+25%       104.250000   2968.0
+50%       121.000000   2968.0
+75%       323.000000   2968.0
+max      2915.000000   2968.0
+
+raw_data/archiveII_all/test.pickle
+       n_encoded_pos  n_total
+count     397.000000    397.0
+mean      205.876574   2968.0
+std       189.977517      0.0
+min        30.000000   2968.0
+25%       111.000000   2968.0
+50%       120.000000   2968.0
+75%       318.000000   2968.0
+max      2923.000000   2968.0
+
+raw_data/rnastralign_all/train.pickle
+       n_encoded_pos  n_total
+count   29719.000000  29719.0
+mean      499.815875   1851.0
+std       559.815606      0.0
+min        30.000000   1851.0
+25%        93.000000   1851.0
+50%       122.000000   1851.0
+75%       897.500000   1851.0
+max      1829.000000   1851.0
+
+raw_data/rnastralign_all/val.pickle
+       n_encoded_pos  n_total
+count    3715.000000   3715.0
+mean      509.972005   1851.0
+std       561.982915      0.0
+min        36.000000   1851.0
+25%        95.500000   1851.0
+50%       122.000000   1851.0
+75%       963.000000   1851.0
+max      1689.000000   1851.0
+
+raw_data/rnastralign_all/test.pickle
+       n_encoded_pos  n_total
+count    3715.000000   3715.0
+mean      511.974159   1851.0
+std       563.327558      0.0
+min        30.000000   1851.0
+25%       107.500000   1851.0
+50%       122.000000   1851.0
+75%       961.500000   1851.0
+max      1829.000000   1851.0
+
+```
+
+As shown above, after 1-hot encoding,
+all sequences in archiveII_all were padded to length 2968,
+and all sequences in rnastralign were padded to length 1851.
+
+
+To reproduce:
+
+```bash
+python inspect_raw_data.py --input raw_data/archiveII_all/train.pickle raw_data/archiveII_all/val.pickle raw_data/archiveII_all/test.pickle raw_data/rnastralign_all/train.pickle raw_data/rnastralign_all/val.pickle raw_data/rnastralign_all/test.pickle
+```
+
+
+
 --------
 
 TODO some data points seem to have incompatible sequence length and matrix index... needs debugging.
