@@ -1,4 +1,70 @@
 
+## Data description
+
+### rnastralign
+
+Training data used in "RNA SECONDARY STRUCTURE PREDICTION
+BY LEARNING UNROLLED ALGORITHMS".
+
+```
+RNAStralign (Tan et al., 2017), composed of 37149 structures
+from 8 RNA types, is one of the most comprehensive collections of RNA structures in the market. After removing
+redundant sequences and structures, 30451 structures remain.
+```
+
+From paper Table 1, this dataset contains the following RNA families:
+
+    - 16SrRNA
+
+    - 5SrRNA
+
+    - tRNA
+
+    - grp1
+
+    - SRP
+
+    - tmRNA
+
+    - RNaseP
+
+    - telomerase
+
+
+
+### ArchiveII
+
+Training data used in "RNA SECONDARY STRUCTURE PREDICTION
+BY LEARNING UNROLLED ALGORITHMS".
+
+```
+ ArchiveII
+(Sloma & Mathews, 2016), containing 3975 RNA structures from 10 RNA types, is a widely used benchmark
+dataset for classical RNA folding methods.
+```
+
+From paper Table 1, this dataset contains the following RNA families:
+
+    - 16SrRNA
+
+    - 5SrRNA
+
+    - tRNA
+
+    - grp1
+
+    - SRP
+
+    - tmRNA
+
+    - RNaseP
+
+    - telomerase
+
+    - 23SrRNA
+
+    - grp2
+
 ## Workflow
 
 1. Download the raw data, see [raw_data/](raw_data/).
