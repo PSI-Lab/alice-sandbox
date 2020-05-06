@@ -409,6 +409,5 @@ for s, p in zip(seqs, preds):
                    'pred_idx': [list(idxes[0]), list(idxes[1])]})
 df_out = pd.DataFrame(df_out)
 
-# TODO need to pickle since output contains list
-df_out.to_csv(args.out_file, index=False)
+df_out.to_pickle(args.out_file, protocol=2)
 
