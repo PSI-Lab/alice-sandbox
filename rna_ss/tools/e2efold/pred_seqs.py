@@ -4,11 +4,6 @@ from torch.utils import data
 import argparse
 import pandas as pd
 import numpy as np
-# hacky!!
-import os
-dir_path = os.path.dirname(os.path.realpath(__file__))
-import sys
-sys.path.insert(0, os.path.join(dir_path, '../'))
 
 from e2efold.models import ContactNetwork, ContactNetwork_test, ContactNetwork_fc
 from e2efold.models import ContactAttention, ContactAttention_simple_fix_PE
@@ -35,6 +30,8 @@ def get_args_new():
         '--out_file', type=str,
         help='path to output csv file'
     )
+    argparser.add_argument('--long', dest='long', action='store_true', default=False,
+                           help='inputs are long sequences (use a different trained model)')
     # argparser.add_argument('--test', type=bool, default=False,
     #     help='skip training to test directly.')
     args = argparser.parse_args()
@@ -62,18 +59,26 @@ data_type = config.data_type
 model_type = config.model_type
 pp_type = '{}_s{}'.format(config.pp_model, pp_steps)
 rho_per_position = config.rho_per_position
-model_path = '../models_ckpt/supervised_{}_{}_d{}_l3_upsampling.pt'.format(model_type, data_type, d)
-pp_model_path = '../models_ckpt/lag_pp_{}_{}_{}_position_{}.pt'.format(
+
+# load model depend on whether we're running short or long sequences
+if args.long:
+    model_path = 'models_ckpt/supervised_{}_{}_d{}_l3.pt'.format(model_type, data_type, d)
+else:
+    model_path = 'models_ckpt/supervised_{}_{}_d{}_l3_upsampling.pt'.format(model_type, data_type, d)
+
+
+
+pp_model_path = 'models_ckpt/lag_pp_{}_{}_{}_position_{}.pt'.format(
     pp_type, data_type, pp_loss, rho_per_position)
 # The unrolled steps for the upsampling model is 10
 # e2e_model_path = '../models_ckpt/e2e_{}_{}_d{}_{}_{}_position_{}_upsampling.pt'.format(model_type,
 #     pp_type,d, data_type, pp_loss,rho_per_position)
-e2e_model_path = '../models_ckpt/e2e_{}_{}_d{}_{}_{}_position_{}.pt'.format(model_type,
-                                                                            pp_type, d, data_type, pp_loss,
-                                                                            rho_per_position)
-epoches_third = config.epoches_third
-evaluate_epi = config.evaluate_epi
-step_gamma = config.step_gamma
+e2e_model_path = 'models_ckpt/e2e_{}_{}_d{}_{}_{}_position_{}.pt'.format(model_type,
+                                                                         pp_type, d, data_type, pp_loss,
+                                                                         rho_per_position)
+# epoches_third = config.epoches_third
+# evaluate_epi = config.evaluate_epi
+# step_gamma = config.step_gamma
 k = config.k
 
 steps_done = 0
@@ -100,12 +105,16 @@ RNA_SS_data = collections.namedtuple('RNA_SS_data',
 # seqs = ['GGGUUGUAGUAGUAACC', 'GGGGAACCGGAUUAGAACCCCCCC']
 df_in = pd.read_csv(args.in_file)
 seqs = df_in['seq'].tolist()
-
-test_data = SeqDataGen(seqs, 600)
+# seq_len = max([len(x) for x in seqs])
+if args.long:
+    seq_len = 1800
+else:
+    seq_len = 600  # has to be 600
+test_data = SeqDataGen(seqs, seq_len)
 
 # seq_len = train_data.data_y.shape[-2]
 # seq_len = test_data.data_y.shape[-2]
-seq_len = 600
+
 print(test_data)
 print('Max seq length ', seq_len)
 
@@ -341,14 +350,14 @@ criterion_mse = torch.nn.MSELoss(reduction='sum')
 
 contact_net.eval()
 lag_pp_net.eval()
-result_no_train = list()
-result_no_train_shift = list()
-result_pp = list()
-result_pp_shift = list()
-
-f1_no_train = list()
-f1_pp = list()
-seq_lens_list = list()
+# result_no_train = list()
+# result_no_train_shift = list()
+# result_pp = list()
+# result_pp_shift = list()
+#
+# f1_no_train = list()
+# f1_pp = list()
+# seq_lens_list = list()
 
 batch_n = 0
 
