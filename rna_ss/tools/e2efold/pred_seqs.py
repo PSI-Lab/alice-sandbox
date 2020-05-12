@@ -405,8 +405,14 @@ for s, p in zip(seqs, preds):
     p[np.where(np.tril(np.ones(p.shape), -1))] = 0
     # get pred idx
     idxes = np.where(p > 0.5)
+    # for visualization, also add dot-bracket notation output
+    db_str = np.array(['.']*len(s))
+    db_str[idxes[0]] = '('
+    db_str[idxes[1]] = ')'
+    db_str = ''.join(list(db_str))
     df_out.append({'seq': s,
-                   'pred_idx': [list(idxes[0]), list(idxes[1])]})
+                   'pred_idx': [list(idxes[0]), list(idxes[1])],
+                   'db_str': db_str})
 df_out = pd.DataFrame(df_out)
 
 df_out.to_pickle(args.out_file, protocol=2)
