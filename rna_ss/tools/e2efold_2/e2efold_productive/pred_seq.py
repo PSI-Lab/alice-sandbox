@@ -171,15 +171,19 @@ for seqs in seq_batch:
     final_pred = (a_pred_list[-1].cpu() > 0.5).float()
 
     for i in range(final_pred.shape[0]):
+        p = final_pred[i].cpu().numpy()
+        # set lower triangular to 0
+        p[np.where(np.tril(np.ones(p.shape), -1))] = 0
+        idxes = np.where(p)
         # ct_tmp = contact2ct(final_pred[i].cpu().numpy(),
         #                     seq_embeddings[i], seq_lens.numpy()[i])
         # ct_list.append(ct_tmp)
-        df_out.append({'seq': seq_lens[i],
-                       'pred_idx': [list(final_pred[i][0]), list(final_pred[i][1])]})
+        df_out.append({'seq': seqs[i],
+                       'pred_idx': [list(idxes[0]), list(idxes[1])]})
 
 df_out = pd.DataFrame(df_out)
 # TODO need to pickle since output contains list
-df_out.to_csv(args.out_file, index=False)
+df_out.to_pickle(args.out_file, protocol=2)
 
 # # for saving the results
 # save_path = config.save_folder
