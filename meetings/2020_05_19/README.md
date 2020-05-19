@@ -1,11 +1,8 @@
 
 
-## TODOs
+## E2Efold
 
-
-### E2Efold
-
-#### New prediction pipeline
+### New prediction pipeline
 
 Author checked in new code: https://github.com/ml4bio/e2efold/tree/42847da56b59c2ee7620eee73fb7a1dac8326076/e2efold_productive
 that can be run on any sequences.
@@ -68,7 +65,7 @@ GGGGAAAAACCCC
 ```
 
 
-#### Toy examples (re-testing using their new pipeline)
+### Toy examples (re-testing using their new pipeline)
 
 ```
 GGGGGGAAAAAACCCCCC
@@ -93,7 +90,7 @@ GGCUGAGCCGCAGUAGUUCUUCAGUGGCAAGCUUUAUGUCCUGACCCAGCUAAAGCUGCCAGUUGAAGAACUGUUGCCCU
 Conclusion: same as before (i.e. our own inference wrapper was bug-free)
 
 
-#### Create python wrapper for convenience
+### Create python wrapper for convenience
 
 `rna_ss/tools/e2efold_2/e2efold_productive/pred_seq.py`
 (also added pythonpath override, so this can be run without command line prefix)
@@ -111,16 +108,16 @@ python -c "import pandas as pd; df=pd.read_pickle('tmp/test_seq_out.pkl'); print
 ```
 
 
-#### Examples for investigating positional embedding
+### Examples for investigating positional embedding
 
 
 
 
-#### Pipeline for long sequences
+### Pipeline for long sequences
 
 Author said it'll be added by end of May.
 
-#### Rfam151
+### Rfam151
 
 Inside directory `rna_ss/tools/e2efold_2/e2efold_productive`, run:
 
@@ -131,13 +128,11 @@ python pred_seq.py --format pkl --in_file /Users/alicegao/work/psi-lab-sandbox/r
 back to this directory, check result using notebook `check_rfam151.ipynb`
 
 
-#### TODO overfit?
 
+
+## TODOs
 
 predict on a real dataset, with different RNA families
-
-
-
 
 compare number of parameters of E2Efold v.s. SPOT-RNA
 
@@ -148,9 +143,6 @@ does SPOT-RNA's no-constraint setup make sense? Any weird result?
 probing data: 293
 
 read new paper
-
-## Carry-overs
-
 
 read paper "Linearly Constrained Neural Networks"
 https://arxiv.org/pdf/2002.01600.pdf
