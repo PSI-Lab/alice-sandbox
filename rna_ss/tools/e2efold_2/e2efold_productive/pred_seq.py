@@ -147,6 +147,11 @@ else:
 sequences = df_in['seq'].tolist()
 # convert to upper case
 sequences = [x.upper() for x in sequences]
+print("number of sequence: {}".format(len(sequences))
+# drop sequences with length > 600 (need to set up another script!)
+sequences = [x for x in sequences if len(x) <= 600]
+print("after dropping len > 600: {}".format(len(sequences))
+
 
 # make the predictions
 
@@ -164,7 +169,7 @@ ct_list = list()
 df_out = []
 
 for batch_id, seqs in enumerate(seq_batch):
-    print("Batch {} out of {}".format(batch_id, len(seq_batch))
+    print("Batch {} out of {}".format(batch_id, len(seq_batch)))
     seq_embeddings = list(map(seq_encoding, seqs))
     seq_embeddings = list(map(lambda x: padding(x, seq_len),
                               seq_embeddings))
