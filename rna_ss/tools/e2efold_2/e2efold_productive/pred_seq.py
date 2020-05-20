@@ -147,7 +147,7 @@ else:
 sequences = df_in['seq'].tolist()
 # convert to upper case
 sequences = [x.upper() for x in sequences]
-print("number of sequence: {}".format(len(sequences))
+print("number of sequence: {}".format(len(sequences)))
 # drop sequences with length > 600 (need to set up another script!)
 sequences = [x for x in sequences if len(x) <= 600]
 print("after dropping len > 600: {}".format(len(sequences))
