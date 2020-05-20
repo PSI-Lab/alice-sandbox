@@ -35,6 +35,10 @@ def get_args_new():
         '--out_file', type=str,
         help='path to output csv file'
     )
+    argparser.add_argument(
+        '--format', type=str,
+        help='input format, csv or pkl'
+    )
     # argparser.add_argument('--test', type=bool, default=False,
     #     help='skip training to test directly.')
     args = argparser.parse_args()
@@ -111,9 +115,9 @@ if LOAD_MODEL and os.path.isfile(e2e_model_path):
     else:
         rna_ss_e2e.load_state_dict(torch.load(e2e_model_path))
 
-# load test sequences
-folder = config.test_folder
-files = os.listdir(folder)
+# # load test sequences
+# folder = config.test_folder
+# files = os.listdir(folder)
 # files = list(filter(lambda x: 'fasta' in x, files))
 
 # sequences = list()
@@ -132,8 +136,17 @@ files = os.listdir(folder)
 # querys = list(zip(files, sequences))
 # querys = list(filter(lambda x: len(x[1]) <= seq_len, querys))
 
-df_in = pd.read_csv(args.in_file)
+in_format = args.format
+
+if in_format == 'csv':
+    df_in = pd.read_csv(args.in_file)
+elif in_format == 'pkl':
+    df_in = pd.read_pickle(args.in_file)
+else:
+    raise ValueError(in_format)
 sequences = df_in['seq'].tolist()
+# convert to upper case
+sequences = [x.upper() for x in sequences]
 
 # make the predictions
 
