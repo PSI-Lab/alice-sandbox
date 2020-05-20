@@ -163,7 +163,8 @@ ct_list = list()
 
 df_out = []
 
-for seqs in seq_batch:
+for batch_id, seqs in enumerate(seq_batch):
+    print("Batch {} out of {}".format(batch_id, len(seq_batch))
     seq_embeddings = list(map(seq_encoding, seqs))
     seq_embeddings = list(map(lambda x: padding(x, seq_len),
                               seq_embeddings))
