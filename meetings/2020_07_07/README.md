@@ -231,3 +231,7 @@ backprop
 
 conditional grammar?
 
+use NN for scoring, combined with discrete back-tracing? (so we incorporate grammar/constraint)
+
+generate decomposition (tree?),1 step
+
