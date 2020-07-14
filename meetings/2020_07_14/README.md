@@ -152,6 +152,50 @@ Author provides a few insights:
 
 is this related to what I was thinking? - nope
 
+## Ideas
+
+General idea is to decompose the problem (divide and concur).
+It can be done in a bottom-up (like in traditional DP approaches),
+or a top-down (like in RNN grammar, linearfold?) manner.
+How about a combination of the two? (todo: find literature in NLP?)
+
+Bottom-up part can be done using neural network,
+where the task is to predict and localize all high scoring substructures (they can be overlapping, or even superset of each other).
+Substructures can be *parameterised* such that all constraints are satisfied by design.
+Top-down part (or still bottom-up?) can combine the above proposals (in a valid way that satisfies all constraints)
+and find the best one. Intuitively, the combinatorial space in the second part should be much smaller than in the traditional DP.
+
+Substructure location:
+One problem is not all substructures are *local* on the 2D grid (they might be local on 3D/4D grid,
+but we probably don't want to go higher dimension for the sake of computational complexity).
+The following substructures can be captured in a local 2D region:
+stem, stem-loop, stem with bulge(s), stem with internal loop(s).
+On the other hand, muulti-branch loop cannot be represented in a local 2D region,
+unless we includes all the 'branches'. Is there any way we can address muulti-branch loop in the second step?
+Special case: pseudoknot. It consists of, but does not decompose into, stems and loops.
+There might be a way we can combine substructures in a smarter way in the second step to allow for pseudoknot,
+without requiring pseudoknot to be an explicit substructure.
+
+
+Substructure parametrization:
+The key is to find a parametrization that reflect the constraints.
+Simple case: stem (without loops or bulges) does not need any parameters, since it's always the diagonal within the substructure.
+Other cases are WIP.
+Also how do we express the constraints on allowed bases (A-U, G-C and G-U)?
+
+
+How to train neural net to propose the existence, type and location of local structure(s)?
+I think we can borrow ideas from object detection in computer vision, e.g. the YOLO algorithm.
+See https://www.coursera.org/lecture/convolutional-neural-networks/yolo-algorithm-fF3O0 for an overview.
+
+![plots/yolo_algorithm.png](plots/yolo_algorithm.png)
+
+
+How to combine the proposed substructures while respecting the constraints?
+Maybe we can first work out the worst case i.e. brute-force DP version? (since search space shouldn't be too big)
+Also we'll need to define scores for the substructures.
+
+
 
 ## carry-overs & other random notes
 
