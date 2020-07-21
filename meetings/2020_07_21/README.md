@@ -5,9 +5,9 @@ todo
 
 ## Prepare RNA substructure dataset
 
-![plots/local_struct_1.png](plots/local_struct_1.png)
+![plots/local_struct_1.png](plots/local_struct_1.png | width=100)
 
-![plots/local_struct_2.png](plots/local_struct_1.png)
+![plots/local_struct_2.png](plots/local_struct_1.png | width=100)
 
 We consider the following to be local structures on the 2D grid (colored in plot):
 
