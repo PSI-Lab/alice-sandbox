@@ -5,9 +5,9 @@ todo
 
 ## Prepare RNA substructure dataset
 
-![plots/local_struct_1.png](plots/local_struct_1.png | width=100)
+![plots/local_struct_1.png](plots/local_struct_1.png)
 
-![plots/local_struct_2.png](plots/local_struct_1.png | width=100)
+![plots/local_struct_2.png](plots/local_struct_1.png)
 
 We consider the following to be local structures on the 2D grid (colored in plot):
 
@@ -25,7 +25,7 @@ On the other hand, external loops and multi-branch loops are NOT 2D-local struct
 TODOs:
 
     - update data structures so we can represent 'linked' relationship between local struc
-
+no missing corners
     - make sure we can process pesudo-knot
 
     - process dataset so we use consistent 0-based or 1-based indexing
