@@ -99,10 +99,35 @@ class StemCollection(object):
 class LocalStructureParser(object):
 
     def __init__(self, pairs):
+        self.verbose = False  # debug use
         self.pairs = pairs
         self.stems = self.parse_stem()
         self.l_bulges, self.r_bulges, self.internal_loops = self.parse_internal_loop()
         self.hairpin_loops = self.parse_hairpin_loop()
+        self.local_structure_bounding_boxes = self.parse_bounding_boxes()
+
+    def parse_bounding_boxes(self):
+        local_structures = []
+        # stems
+        for x in self.stems.stems:
+            x0, y0, wx, wy = self.bounding_box(x, 'stem')
+            local_structures.append(((x0, y0), (wx, wy), 'stem'))
+        # bulges
+        for x in self.l_bulges:
+            x0, y0, wx, wy = self.bounding_box(x, 'l_bulge')
+            local_structures.append(((x0, y0), (wx, wy), 'bulge'))
+        for x in self.r_bulges:
+            x0, y0, wx, wy = self.bounding_box(x, 'r_bulge')
+            local_structures.append(((x0, y0), (wx, wy), 'bulge'))
+        # internal loop
+        for x in self.internal_loops:
+            x0, y0, wx, wy = self.bounding_box(x, 'internal_loop')
+            local_structures.append(((x0, y0), (wx, wy), 'internal_loop'))
+        # hairpin loop
+        for x in self.hairpin_loops:
+            x0, y0, wx, wy = self.bounding_box(x, 'hairpin_loop')
+            local_structures.append(((x0, y0), (wx, wy), 'hairpin_loop'))
+        return local_structures
 
     def bounding_box(self, x, structure_type):
         # returns coordinate of top left corner and box size
@@ -179,20 +204,23 @@ class LocalStructureParser(object):
                 idxes = range(s2.one_idx[0][1] + 1, s1.one_idx[-1][1])
                 if all([not self.paired(i, self.pairs) for i in idxes]):
                     r_bulges.append((list(idxes), s1.one_idx[-1][0], s2.one_idx[0][0]))
-                    print("bulge(R) {} between stems:\n{}\n{}\n".format(list(idxes), s1, s2))
+                    if self.verbose:
+                        print("bulge(R) {} between stems:\n{}\n{}\n".format(list(idxes), s1, s2))
             elif s1.one_idx[-1][1] - 1 == s2.one_idx[0][1]:  # j connected
                 # check if all idxes on the other side are unpaired -> bulge
                 idxes = range(s1.one_idx[-1][0] + 1, s2.one_idx[0][0])
                 if all([not self.paired(i, self.pairs) for i in idxes]):
                     l_bulges.append((list(idxes), s2.one_idx[0][1], s1.one_idx[-1][1]))
-                    print("bulge(R) {} between stems:\n{}\n{}\n".format(list(idxes), s1, s2))
+                    if self.verbose:
+                        print("bulge(R) {} between stems:\n{}\n{}\n".format(list(idxes), s1, s2))
             else:  # neither side connected
                 # check if all idxes on both sides are unpaired -> internal loop
                 idxes_i = range(s1.one_idx[-1][0] + 1, s2.one_idx[0][0])
                 idxes_j = range(s2.one_idx[0][1] + 1, s1.one_idx[-1][1])
                 if all([not self.paired(i, self.pairs) for i in list(idxes_i) + list(idxes_j)]):
                     internal_loops.append([min(idxes_i), max(idxes_i), min(idxes_j), max(idxes_j)])
-                    print("internal loop {} {} between stems:\n{}\n{}\n".format(list(idxes_i), list(idxes_j), s1, s2))
+                    if self.verbose:
+                        print("internal loop {} {} between stems:\n{}\n{}\n".format(list(idxes_i), list(idxes_j), s1, s2))
         return l_bulges, r_bulges, internal_loops
 
     def parse_hairpin_loop(self):
@@ -202,7 +230,8 @@ class LocalStructureParser(object):
             idxes = range(s.one_idx[-1][0] + 1, s.one_idx[-1][1])
             if all([not self.paired(i, self.pairs) for i in idxes]):
                 hairpin_loops.append(list(idxes))
-                print("hairpin loop {} within stem:\n{}\n".format(list(idxes), s))
+                if self.verbose:
+                    print("hairpin loop {} within stem:\n{}\n".format(list(idxes), s))
         return hairpin_loops
 
     def paired(self, position, pairs):
