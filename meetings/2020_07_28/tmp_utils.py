@@ -130,6 +130,7 @@ class LocalStructureParser(object):
         return local_structures
 
     def bounding_box(self, x, structure_type):
+        # TODO log wanrning validate structure local array
         # returns coordinate of top left corner and box size
         # bounding box includes all closing bases for loop structures
         assert structure_type in ['stem', 'l_bulge', 'r_bulge', 'internal_loop', 'hairpin_loop']
@@ -228,6 +229,9 @@ class LocalStructureParser(object):
         for s in self.stems.stems:
             # check whether the positions enclosed by the stem are unpaired -> hairpin loop
             idxes = range(s.one_idx[-1][0] + 1, s.one_idx[-1][1])
+            # skip if empty loop <- rare case
+            if len(idxes) == 0:
+                continue
             if all([not self.paired(i, self.pairs) for i in idxes]):
                 hairpin_loops.append(list(idxes))
                 if self.verbose:
@@ -240,67 +244,4 @@ class LocalStructureParser(object):
             if position == pair[0] or position == pair[1]:
                 paired = True
         return paired
-
-#
-# def parse_local_structures(pairs):
-#
-#
-#
-#     # stems only
-#     # sc = StemCollection()
-#     # sc.new()
-#     # for pair in pairs:
-#     #     if sc.is_compatible(pair):
-#     #         sc.add_pair(pair)
-#     #     else:
-#     #         sc.conclude()
-#     #         sc.new()
-#     #         sc.add_pair(pair)
-#     # sc.conclude()
-#
-#     # l_bulges = []
-#     # r_bulges = []
-#     # internal_loops = []
-#     # hairpin_loops = []
-#
-#     # find in-between stem local structures:
-#     # bulge
-#     # internal loop
-#
-#     # TODO sort stem collection
-#
-#     # for s1, s2 in zip(sc.stems[:-1], sc.stems[1:]):
-#     #     # make sure these two stems are not fully connected
-#     #     assert not (s1.one_idx[-1][0] + 1 == s2.one_idx[0][0] and s1.one_idx[-1][1] - 1 == s2.one_idx[0][1])
-#     #     if s1.one_idx[-1][0] + 1 == s2.one_idx[0][0]:  # i connected
-#     #         # check if all idxes on the other side are unpaired -> bulge
-#     #         idxes = range(s2.one_idx[0][1] + 1, s1.one_idx[-1][1])
-#     #         if all([not paired(i, pairs) for i in idxes]):
-#     #             r_bulges.append((list(idxes), s1.one_idx[-1][0], s2.one_idx[0][0]))
-#     #             print("bulge(R) {} between stems:\n{}\n{}\n".format(list(idxes), s1, s2))
-#     #     elif s1.one_idx[-1][1] - 1 == s2.one_idx[0][1]:  # j connected
-#     #         # check if all idxes on the other side are unpaired -> bulge
-#     #         idxes = range(s1.one_idx[-1][0] + 1, s2.one_idx[0][0])
-#     #         if all([not paired(i, pairs) for i in idxes]):
-#     #             l_bulges.append((list(idxes), s2.one_idx[0][1], s1.one_idx[-1][1]))
-#     #             print("bulge(R) {} between stems:\n{}\n{}\n".format(list(idxes), s1, s2))
-#     #     else:  # neither side connected
-#     #         # check if all idxes on both sides are unpaired -> internal loop
-#     #         idxes_i = range(s1.one_idx[-1][0] + 1, s2.one_idx[0][0])
-#     #         idxes_j = range(s2.one_idx[0][1] + 1, s1.one_idx[-1][1])
-#     #         if all([not paired(i, pairs) for i in list(idxes_i) + list(idxes_j)]):
-#     #             internal_loops.append([min(idxes_i), max(idxes_i), min(idxes_j), max(idxes_j)])
-#     #             print("internal loop {} {} between stems:\n{}\n{}\n".format(list(idxes_i), list(idxes_j), s1, s2))
-#
-#     # find single-stem local structure:
-#     # hairpin loop
-#     # for s in sc.stems:
-#     #     # check whether the positions enclosed by the stem are unpaired -> hairpin loop
-#     #     idxes = range(s.one_idx[-1][0] + 1, s.one_idx[-1][1])
-#     #     if all([not paired(i, pairs) for i in idxes]):
-#     #         hairpin_loops.append(list(idxes))
-#     #         print("hairpin loop {} within stem:\n{}\n".format(list(idxes), s))
-#
-#     return sc, l_bulges, r_bulges, internal_loops, hairpin_loops
-
 
