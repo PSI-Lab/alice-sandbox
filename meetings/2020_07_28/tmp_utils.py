@@ -232,13 +232,14 @@ class LocalStructureParser(object):
                         print("bulge(R) {} between stems:\n{}\n{}\n".format(list(idxes), s1, s2))
             else:  # neither side connected
                 # check if this is a pseudo knot
-                if not (s1.one_idx[-1][0] < s2.one_idx[0][0] and s2.one_idx[0][1] < s1.one_idx[-1][1]):
+                if s1.one_idx[-1][0] < s2.one_idx[0][0] < s1.one_idx[-1][1] < s2.one_idx[0][1]:
+                # if not (s1.one_idx[-1][0] < s2.one_idx[0][0] and s2.one_idx[0][1] < s1.one_idx[-1][1]):
                     # flattern all idxes
                     idx_all = list(sum(s1.one_idx, ()))  + list(sum(s2.one_idx, ()))
                     pesudo_knots.append([min(idx_all), max(idx_all)])
                     if self.verbose:
                         print("pseudo knot {} {} stems:\n{}\n{}\n".format(min(idx_all), max(idx_all), s1, s2))
-                else:
+                else:  # TODO make sure we don't include multi-loop
                     # check if all idxes on both sides are unpaired -> internal loop
                     idxes_i = range(s1.one_idx[-1][0] + 1, s2.one_idx[0][0])
                     idxes_j = range(s2.one_idx[0][1] + 1, s1.one_idx[-1][1])
