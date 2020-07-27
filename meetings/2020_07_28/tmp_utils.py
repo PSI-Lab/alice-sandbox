@@ -216,7 +216,15 @@ class LocalStructureParser(object):
         for s1, s2 in zip(self.stems.stems[:-1], self.stems.stems[1:]):
             # make sure these two stems are not fully connected
             assert not (s1.one_idx[-1][0] + 1 == s2.one_idx[0][0] and s1.one_idx[-1][1] - 1 == s2.one_idx[0][1])
-            if s1.one_idx[-1][0] + 1 == s2.one_idx[0][0]:  # i connected
+            # check if this is a pseudo knot
+            if s1.one_idx[-1][0] < s2.one_idx[0][0] < s1.one_idx[-1][1] < s2.one_idx[0][1]:
+                # if not (s1.one_idx[-1][0] < s2.one_idx[0][0] and s2.one_idx[0][1] < s1.one_idx[-1][1]):
+                # flattern all idxes
+                idx_all = list(sum(s1.one_idx, ())) + list(sum(s2.one_idx, ()))
+                pesudo_knots.append([min(idx_all), max(idx_all)])
+                if self.verbose:
+                    print("pseudo knot {} {} stems:\n{}\n{}\n".format(min(idx_all), max(idx_all), s1, s2))
+            elif s1.one_idx[-1][0] + 1 == s2.one_idx[0][0]:  # i connected
                 # check if all idxes on the other side are unpaired -> bulge
                 idxes = range(s2.one_idx[0][1] + 1, s1.one_idx[-1][1])
                 if all([not self.paired(i, self.pairs) for i in idxes]):
@@ -231,22 +239,13 @@ class LocalStructureParser(object):
                     if self.verbose:
                         print("bulge(R) {} between stems:\n{}\n{}\n".format(list(idxes), s1, s2))
             else:  # neither side connected
-                # check if this is a pseudo knot
-                if s1.one_idx[-1][0] < s2.one_idx[0][0] < s1.one_idx[-1][1] < s2.one_idx[0][1]:
-                # if not (s1.one_idx[-1][0] < s2.one_idx[0][0] and s2.one_idx[0][1] < s1.one_idx[-1][1]):
-                    # flattern all idxes
-                    idx_all = list(sum(s1.one_idx, ()))  + list(sum(s2.one_idx, ()))
-                    pesudo_knots.append([min(idx_all), max(idx_all)])
+                # check if all idxes on both sides are unpaired -> internal loop
+                idxes_i = range(s1.one_idx[-1][0] + 1, s2.one_idx[0][0])
+                idxes_j = range(s2.one_idx[0][1] + 1, s1.one_idx[-1][1])
+                if all([not self.paired(i, self.pairs) for i in list(idxes_i) + list(idxes_j)]):
+                    internal_loops.append([min(idxes_i), max(idxes_i), min(idxes_j), max(idxes_j)])
                     if self.verbose:
-                        print("pseudo knot {} {} stems:\n{}\n{}\n".format(min(idx_all), max(idx_all), s1, s2))
-                else:  # TODO make sure we don't include multi-loop
-                    # check if all idxes on both sides are unpaired -> internal loop
-                    idxes_i = range(s1.one_idx[-1][0] + 1, s2.one_idx[0][0])
-                    idxes_j = range(s2.one_idx[0][1] + 1, s1.one_idx[-1][1])
-                    if all([not self.paired(i, self.pairs) for i in list(idxes_i) + list(idxes_j)]):
-                        internal_loops.append([min(idxes_i), max(idxes_i), min(idxes_j), max(idxes_j)])
-                        if self.verbose:
-                            print("internal loop {} {} between stems:\n{}\n{}\n".format(list(idxes_i), list(idxes_j), s1, s2))
+                        print("internal loop {} {} between stems:\n{}\n{}\n".format(list(idxes_i), list(idxes_j), s1, s2))
         return l_bulges, r_bulges, internal_loops, pesudo_knots
 
     def parse_hairpin_loop(self):
