@@ -2,7 +2,7 @@
 import numpy as np
 
 
-def one_idx2arr(one_idx, l):
+def one_idx2arr(one_idx, l, remove_lower_triangular=False):
     # convert list of tuples
     # [(i1, i2, ...), (j1, j2, ...)]
     # to binary matrix
@@ -11,6 +11,8 @@ def one_idx2arr(one_idx, l):
     # unpack idxes
     pairs = []
     for i, j in zip(one_idx[0], one_idx[1]):
+        if remove_lower_triangular and i >= j:
+            continue
         assert 0 <= i < j <= l, "Input index should be 0-based upper triangular"
         pairs.append((i, j))
     #     pairs.append((i-1, j-1))   # only for PDB? - TODO make all dataset consistent
@@ -102,7 +104,7 @@ class LocalStructureParser(object):
         self.verbose = False  # debug use
         self.pairs = pairs
         self.stems = self.parse_stem()
-        self.l_bulges, self.r_bulges, self.internal_loops = self.parse_internal_loop()
+        self.l_bulges, self.r_bulges, self.internal_loops, self.pesudo_knots = self.parse_internal_loop()
         self.hairpin_loops = self.parse_hairpin_loop()
         self.local_structure_bounding_boxes = self.parse_bounding_boxes()
 
@@ -123,6 +125,10 @@ class LocalStructureParser(object):
         for x in self.internal_loops:
             x0, y0, wx, wy = self.bounding_box(x, 'internal_loop')
             local_structures.append(((x0, y0), (wx, wy), 'internal_loop'))
+        # pesudo knots
+        for x in self.pesudo_knots:
+            x0, y0, wx, wy = self.bounding_box(x, 'pesudo_knot')
+            local_structures.append(((x0, y0), (wx, wy), 'pesudo_knot'))
         # hairpin loop
         for x in self.hairpin_loops:
             x0, y0, wx, wy = self.bounding_box(x, 'hairpin_loop')
@@ -133,7 +139,7 @@ class LocalStructureParser(object):
         # TODO log wanrning validate structure local array
         # returns coordinate of top left corner and box size
         # bounding box includes all closing bases for loop structures
-        assert structure_type in ['stem', 'l_bulge', 'r_bulge', 'internal_loop', 'hairpin_loop']
+        assert structure_type in ['stem', 'l_bulge', 'r_bulge', 'internal_loop', 'pesudo_knot', 'hairpin_loop']
         if structure_type == 'stem':
             a, b, w = x.bounding_box()
             return a, b, w, w
@@ -169,6 +175,15 @@ class LocalStructureParser(object):
             wx = a2 - a1 + 3
             wy = b2 - b1 + 3
             return x0, y0, wx, wy
+        elif structure_type == 'pesudo_knot':
+            # pesudo_knot is specified by:
+            # - a & b: start and end of pseudo knot
+            a, b = x
+            x0 = a
+            y0 = a
+            wx = b - a + 1
+            wy = b - a + 1
+            return x0, y0, wx, wy
         elif structure_type == 'hairpin_loop':
             # hairpin loop is specified by:
             # - idxes: list of indexes in the loop (unpaired)
@@ -196,6 +211,7 @@ class LocalStructureParser(object):
         l_bulges = []
         r_bulges = []
         internal_loops = []
+        pesudo_knots = []
         # internal loop and bulge, in between stems
         for s1, s2 in zip(self.stems.stems[:-1], self.stems.stems[1:]):
             # make sure these two stems are not fully connected
@@ -215,14 +231,22 @@ class LocalStructureParser(object):
                     if self.verbose:
                         print("bulge(R) {} between stems:\n{}\n{}\n".format(list(idxes), s1, s2))
             else:  # neither side connected
-                # check if all idxes on both sides are unpaired -> internal loop
-                idxes_i = range(s1.one_idx[-1][0] + 1, s2.one_idx[0][0])
-                idxes_j = range(s2.one_idx[0][1] + 1, s1.one_idx[-1][1])
-                if all([not self.paired(i, self.pairs) for i in list(idxes_i) + list(idxes_j)]):
-                    internal_loops.append([min(idxes_i), max(idxes_i), min(idxes_j), max(idxes_j)])
+                # check if this is a pseudo knot
+                if not (s1.one_idx[-1][0] < s2.one_idx[0][0] and s2.one_idx[0][1] < s1.one_idx[-1][1]):
+                    # flattern all idxes
+                    idx_all = list(sum(s1.one_idx, ()))  + list(sum(s2.one_idx, ()))
+                    pesudo_knots.append([min(idx_all), max(idx_all)])
                     if self.verbose:
-                        print("internal loop {} {} between stems:\n{}\n{}\n".format(list(idxes_i), list(idxes_j), s1, s2))
-        return l_bulges, r_bulges, internal_loops
+                        print("pseudo knot {} {} stems:\n{}\n{}\n".format(min(idx_all), max(idx_all), s1, s2))
+                else:
+                    # check if all idxes on both sides are unpaired -> internal loop
+                    idxes_i = range(s1.one_idx[-1][0] + 1, s2.one_idx[0][0])
+                    idxes_j = range(s2.one_idx[0][1] + 1, s1.one_idx[-1][1])
+                    if all([not self.paired(i, self.pairs) for i in list(idxes_i) + list(idxes_j)]):
+                        internal_loops.append([min(idxes_i), max(idxes_i), min(idxes_j), max(idxes_j)])
+                        if self.verbose:
+                            print("internal loop {} {} between stems:\n{}\n{}\n".format(list(idxes_i), list(idxes_j), s1, s2))
+        return l_bulges, r_bulges, internal_loops, pesudo_knots
 
     def parse_hairpin_loop(self):
         hairpin_loops = []
