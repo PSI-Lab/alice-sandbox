@@ -10,6 +10,17 @@ local structure code update:
     - added pseudo knot detection and bounding box (always on top of off-diagonal, with edge touching the two stems)
 
 
+
+
+For an example on pseudo knot structures, use dataset '../../rna_ss/data_processing/e2efold/data/rnastralign.pkl.gz'
+and run script on row index 18 (seq_id: ./RNAStrAlign/16S_rRNA_database/Bacilli/AY074879.ct).
+For an example on long range pesudo knot, see index 286 (seq_id: ./RNAStrAlign/group_I_intron_database/IB4/Dpa.cL2500_p1.ct).
+
+See notes in doc: https://docs.google.com/document/d/1IiU89BdAAIB_HW3aLFR6xJA53BB_z_Ym-dDnsLChth0/edit?usp=sharing
+
+todo plot
+
+
 utils
 
 
@@ -41,3 +52,10 @@ per pixel classes in addition to bounding box type:
 corner of box, edge of box, inside box?
 
 or: just predict the corners?
+only need two corners (uniquely defines a rectangle)
+
+advantage: run on super long sequence, linear time?
+conv net for local structure prediction,
+discrete opt for assembly,
+ensures validity
+
