@@ -1,0 +1,39 @@
+## Process dataset
+
+bpRNA (used by SPOT-RNA): successful
+
+
+Target values:
+per-pixel classification
+
+background mask (gradient masking)
+
+one pixel can take on multiple classes!
+e.g. a pixel can be both top right corner of hairpin loop and bottom left corner of stem
+
+if we come up with a scheme to assign probability/class to every pixel,
+then we can compute the joint probability.
+to avoid exponentially many assembly possibilities,
+we can apply cut off to construct an initial set of proposals
+before running the discrete step.
+
+debug: terminal internal loop? (does not make sense)
+
+
+## Training local structure
+
+```
+python train_nn.py --data data/local_struct.bp_rna.pkl.gz --result result/debug --num_filters 16 32 32 64 --num_stacks 4 4 4 4 --epoch 10 --batch_size 20 --max_length 200 --cpu 4
+```
+
+
+TODOs:
+
+- sample negative mask (make sure to always mask lower triangle)
+
+- report metric on different outputs
+
+- export prediction (training + validation) & visualize
+
+- other ways to parametrize output?
+
