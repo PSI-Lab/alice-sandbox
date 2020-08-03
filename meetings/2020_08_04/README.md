@@ -31,7 +31,12 @@ TODOs:
 
 - *DONE* remove training data points with non-ACGTN character
 
+- *DONE* loss: average over spatial dimension.
+due to masking, we'll be summing and dividing by the number of valid entries.
+
 - export prediction (training + validation) & visualize
+
+- per-channel naive guess & performance
 
 - sample negative mask (make sure to always mask lower triangle)
 

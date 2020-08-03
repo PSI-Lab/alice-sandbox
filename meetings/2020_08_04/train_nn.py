@@ -258,8 +258,19 @@ class ResNet(nn.Module):
 def masked_loss(x, y, m):
     # print(x.shape, y.shape, m.shape)
     l = torch.nn.BCELoss(reduction='none')(x, y)
+    # number of valid entries = 1's in the mask
+    # TODO later on we might have different mask per channel - currently implementation assumes same mask across all channels
+    assert m.shape[1] == y.shape[1]
+    n_valid_output = torch.sum(torch.sum(m, dim=3), dim=2)  # vector of length = batch
+    # average over spatial dimension is achieved by summing then dividing by the above
+    # (need to do this since we're padding + masking, can't naively do mean)
     # note that tensor shapes: batch x channel x H x W
-    return torch.mean(torch.sum(torch.sum(torch.mul(l, m), dim=3), dim=2))
+    loss_spatial_sum = torch.sum(torch.sum(torch.mul(l, m), dim=3), dim=2)
+    # print(loss_spatial_sum.shape)
+    # print(n_valid_output.shape)
+    loss_spatial_mean = loss_spatial_sum/n_valid_output  # element-wise division
+    # average over batch and channels
+    return torch.mean(loss_spatial_mean)
 
 
 def to_device(x, y, m, device):
@@ -421,6 +432,13 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, max_length, ou
         # torch.save(model.state_dict(), _model_path)
         # logging.info("Model checkpoint saved at: {}".format(_model_path))
 
+        # save the last minibatch prediction
+        df_pred = []
+        for i in y.shape[0]:  #  batch x channel x H x W
+            _y = y[i, :, :, :].detach().cpu().numpy()
+            _yp = yp[i, :, :, :].detach().cpu().numpy()
+            df_pred.append({'target': _y, 'pred': _yp, 'subset': 'training'})
+
         # # report training loss
         # logging.info(
         #     "Epoch {}/{}, training loss (running) {}, au-ROC {}, au-PRC {}".format(epoch, n_epoch,
@@ -428,6 +446,8 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, max_length, ou
         #                                                                                np.stack(running_loss_tr)),
         #                                                                            np.mean(np.stack(running_auroc_tr)),
         #                                                                            np.mean(np.stack(running_auprc_tr))))
+        logging.info(
+            "Epoch {}/{}, training loss (running) {}".format(epoch, n_epoch,np.mean(np.stack(running_loss_tr))))
 
         with torch.set_grad_enabled(False):
             # report validation loss
@@ -449,7 +469,22 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, max_length, ou
             #                                                                    np.mean(np.stack(running_loss_tr)),
             #                                                                    np.mean(np.stack(running_auroc_va)),
             #                                                                    np.mean(np.stack(running_auprc_va))))
+            logging.info(
+                "Epoch {}/{}, validation loss {}".format(epoch, n_epoch, np.mean(np.stack(running_loss_tr))))
 
+
+            # save the last minibatch prediction
+            for i in y.shape[0]:  #  batch x channel x H x W
+                _y = y[i, :, :, :].detach().cpu().numpy()
+                _yp = yp[i, :, :, :].detach().cpu().numpy()
+                df_pred.append({'target': _y, 'pred': _yp, 'subset': 'validation'})
+
+        # end pf epoch
+        # export prediction
+        out_file = os.path.join(out_dir, 'pred_ep_{}.pkl.gz'.format(epoch))
+        df_pred = pd.DataFrame(df_pred)
+        df_pred.to_pickle(out_file, compression='gzip')
+        logging.info("Exported prediction (one minibatch) to: {}".format(out_file))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
