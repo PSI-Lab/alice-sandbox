@@ -27,6 +27,13 @@ python train_nn.py --data data/local_struct.bp_rna.pkl.gz --result result/debug 
 ```
 
 
+on GPU:
+```
+CUDA_VISIBLE_DEVICES=0 python train_nn.py --data data/local_struct.bp_rna.pkl.gz --result result/debug --num_filters 16 32 32 64 --num_stacks 4 4 4 4 --epoch 10 --batch_size 20 --max_length 80 --cpu 4
+```
+
+
+
 TODOs:
 
 - *DONE* remove training data points with non-ACGTN character
@@ -34,7 +41,11 @@ TODOs:
 - *DONE* loss: average over spatial dimension.
 due to masking, we'll be summing and dividing by the number of valid entries.
 
-- export prediction (training + validation) & visualize
+- export prediction (training + validation) & visualize (make better plot + caption)
+
+- smaller input region? localize to the structure? (same as masking most of the background)
+
+- toy example?
 
 - per-channel naive guess & performance
 

@@ -228,7 +228,7 @@ class ResNet(nn.Module):
         # self.sigmoid = nn.Sigmoid()
 
         # FIXME hard-coded to 5 outputs for now
-        self.fc = nn.Conv2d(64, 5, kernel_size=1)
+        self.fc = nn.Conv2d(num_filters[-1], 5, kernel_size=1)
         self.sigmoid = nn.Sigmoid()
 
     def make_layer(self, block, out_channels, num_blocks):
@@ -434,7 +434,7 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, max_length, ou
 
         # save the last minibatch prediction
         df_pred = []
-        for i in y.shape[0]:  #  batch x channel x H x W
+        for i in range(y.shape[0]):  #  batch x channel x H x W
             _y = y[i, :, :, :].detach().cpu().numpy()
             _yp = yp[i, :, :, :].detach().cpu().numpy()
             df_pred.append({'target': _y, 'pred': _yp, 'subset': 'training'})
@@ -474,7 +474,7 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, max_length, ou
 
 
             # save the last minibatch prediction
-            for i in y.shape[0]:  #  batch x channel x H x W
+            for i in range(y.shape[0]):  #  batch x channel x H x W
                 _y = y[i, :, :, :].detach().cpu().numpy()
                 _yp = yp[i, :, :, :].detach().cpu().numpy()
                 df_pred.append({'target': _y, 'pred': _yp, 'subset': 'validation'})
