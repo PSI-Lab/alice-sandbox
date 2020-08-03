@@ -266,6 +266,14 @@ def to_device(x, y, m, device):
     return x.to(device), y.to(device), m.to(device)
 
 
+def is_seq_valid(seq):
+    seq = seq.upper()
+    if set(seq).issubset(set('ACGTUN')):
+        return True
+    else:
+        return False
+
+
 # def compute_metrics(x, y, m):
 #     # x : true label, y: pred, m: binary mask, where 1 indicate valid
 #     # x, y, m are both torch tensors with batch x channel=1 x H x W
@@ -308,6 +316,14 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, max_length, ou
         else:
             df = df[df['len'] <= max_length]
         logging.info("After: {}".format(len(df)))
+    # subset to sequence with valid nucleotides ACGTN
+    df = add_column(df, 'is_seq_valid', ['seq'], is_seq_valid)
+    n_invalid = (~df['is_seq_valid']).sum()
+    logging.info("Subsetting to sequence with valid bases, n_rows before: {}".format(len(df)))
+    logging.info("Dropping {} rows".format(n_invalid))
+    df = df[df['is_seq_valid']]
+    logging.info("After: {}".format(len(df)))
+    df.drop(columns=['is_seq_valid'], inplace=True)
 
     model = ResNet(ResidualBlock, num_filters, num_stacks)
     print(model)

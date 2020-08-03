@@ -23,17 +23,27 @@ debug: terminal internal loop? (does not make sense)
 ## Training local structure
 
 ```
-python train_nn.py --data data/local_struct.bp_rna.pkl.gz --result result/debug --num_filters 16 32 32 64 --num_stacks 4 4 4 4 --epoch 10 --batch_size 20 --max_length 200 --cpu 4
+python train_nn.py --data data/local_struct.bp_rna.pkl.gz --result result/debug --num_filters 16 32 32 64 --num_stacks 4 4 4 4 --epoch 10 --batch_size 20 --max_length 80 --cpu 4
 ```
 
 
 TODOs:
 
+- *DONE* remove training data points with non-ACGTN character
+
+- export prediction (training + validation) & visualize
+
 - sample negative mask (make sure to always mask lower triangle)
 
 - report metric on different outputs
 
-- export prediction (training + validation) & visualize
-
 - other ways to parametrize output?
+
+- run on GPU
+
+- discover intrinsic structure within dataset (e.g. families?) unsupervised?
+
+- deep learning assemble proposal?
+
+- formulate as RL?
 
