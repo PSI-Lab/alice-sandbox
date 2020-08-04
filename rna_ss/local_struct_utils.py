@@ -315,7 +315,7 @@ def make_target(structure_arr, local_structure_bounding_boxes, local_unmask_offs
         ix2 = min(structure_arr.shape[0], x0 + wx + local_unmask_offset)
         iy1 = max(0, y0 - local_unmask_offset)
         iy2 = min(structure_arr.shape[0], y0 + wy + local_unmask_offset)
-        target_mask[ix1:ix2, iy1:iy2] = 0
+        target_mask[ix1:ix2, iy1:iy2] = 1
 
         # set corresponding output value (also validate data)
         # note that for output unit 'stem', 'internal_loop', 'hairpin loop', more than one can be set to 1
