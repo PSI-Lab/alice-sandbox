@@ -73,30 +73,30 @@ class MyDataSet(Dataset):
         self.len = len(df)
         self.df = df
 
-    def _make_pair_arr(self, seq, one_idx):
-
-        def _make_arr(seq, one_idx):
-            target = np.zeros((len(seq), len(seq)))
-            target[one_idx] = 1
-            return target
-
-        # def _mask(x):
-        #     assert len(x.shape) == 2
-        #     assert x.shape[0] == x.shape[1]
-        #     x[np.tril_indices(x.shape[0])] = -1   # TODO how to mask gradient in pytorch?
-        #     return x
-
-        def _make_mask(x):
-            assert len(x.shape) == 2
-            assert x.shape[0] == x.shape[1]
-            m = np.ones_like(x)
-            m[np.tril_indices(x.shape[0])] = 0
-            return m
-
-        pair_matrix = _make_arr(seq, one_idx)
-        # pair_matrix = _mask(pair_matrix)
-        mask = _make_mask(pair_matrix)
-        return pair_matrix, mask
+    # def _make_pair_arr(self, seq, one_idx):
+    #
+    #     def _make_arr(seq, one_idx):
+    #         target = np.zeros((len(seq), len(seq)))
+    #         target[one_idx] = 1
+    #         return target
+    #
+    #     # def _mask(x):
+    #     #     assert len(x.shape) == 2
+    #     #     assert x.shape[0] == x.shape[1]
+    #     #     x[np.tril_indices(x.shape[0])] = -1   # TODO how to mask gradient in pytorch?
+    #     #     return x
+    #
+    #     def _make_mask(x):
+    #         assert len(x.shape) == 2
+    #         assert x.shape[0] == x.shape[1]
+    #         m = np.ones_like(x)
+    #         m[np.tril_indices(x.shape[0])] = 0
+    #         return m
+    #
+    #     pair_matrix = _make_arr(seq, one_idx)
+    #     # pair_matrix = _mask(pair_matrix)
+    #     mask = _make_mask(pair_matrix)
+    #     return pair_matrix, mask
 
     def _encode_seq(self, seq):
         seq = seq.upper().replace('A', '1').replace('C', '2').replace('G', '3').replace('T', '4').replace('U', '4').replace('N', '0')
@@ -116,10 +116,11 @@ class MyDataSet(Dataset):
 
     def __getitem__(self, index):
         seq = self.df.iloc[index]['seq']
-        one_idx = self.df.iloc[index]['one_idx']
+        # one_idx = self.df.iloc[index]['one_idx']
         x = self._encode_seq(seq)
         x = self.tile_and_stack(x)
-        _, m = self._make_pair_arr(seq, one_idx)
+        # _, m = self._make_pair_arr(seq, one_idx)
+        m = self.df.iloc[index]['mask']
         # todo tmp
         y = self.df.iloc[index]['target']
         m = np.repeat(m[:, :, np.newaxis], y.shape[2], axis=2)
@@ -466,11 +467,11 @@ def main(path_data, num_filters, num_stacks, n_epoch, batch_size, max_length, ou
                 # running_auprc_va.extend(_p)
             # logging.info(
             #     "Epoch {}/{}, validation loss {}, au-ROC {}, au-PRC {}".format(epoch, n_epoch,
-            #                                                                    np.mean(np.stack(running_loss_tr)),
+            #                                                                    np.mean(np.stack(running_loss_va)),
             #                                                                    np.mean(np.stack(running_auroc_va)),
             #                                                                    np.mean(np.stack(running_auprc_va))))
             logging.info(
-                "Epoch {}/{}, validation loss {}".format(epoch, n_epoch, np.mean(np.stack(running_loss_tr))))
+                "Epoch {}/{}, validation loss {}".format(epoch, n_epoch, np.mean(np.stack(running_loss_va))))
 
 
             # save the last minibatch prediction
