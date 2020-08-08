@@ -193,7 +193,7 @@ class SimpleConvNet(nn.Module):
         for i, (nf, fw) in enumerate(zip(num_filters[1:], filter_width[1:])):
             assert fw % 2 == 1  # odd
             cnn_layers.append(nn.Conv2d(num_filters[i], nf, kernel_size=fw, stride=1, padding=fw//2))
-            cnn_layers.append(nn.BatchNorm2d(32))
+            cnn_layers.append(nn.BatchNorm2d(nf))
             cnn_layers.append(nn.ReLU(inplace=True))
         self.cnn_layers = nn.Sequential(*cnn_layers)
 
