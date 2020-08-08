@@ -209,7 +209,7 @@ class SimpleConvNet(nn.Module):
         #     nn.ReLU(inplace=True),
         # )
 
-        self.fc = nn.Conv2d(32, 5, kernel_size=1)
+        self.fc = nn.Conv2d(num_filters[-1], 5, kernel_size=1)
         self.sigmoid = nn.Sigmoid()
 
     # Defining the forward pass
