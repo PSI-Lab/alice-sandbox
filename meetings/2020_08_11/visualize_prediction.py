@@ -19,10 +19,13 @@ def make_plot(target, pred, title):
     # by finding out how many consecutive columns are all 0's in target channel 0
     tmp = np.sum(target[0, :, :], axis=0)
     first_nonzero_idx_from_right = next(i for i in range(len(tmp)) if tmp[-(i + 1)] > 0)
-
     # crop
-    target = target[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
-    pred = pred[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
+    if first_nonzero_idx_from_right == 0:   # can't index by -0 <- will be empty!
+        # no crop
+        pass
+    else:
+        target = target[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
+        pred = pred[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
 
     # apply 'hard-mask'  (lower triangle)
     assert target.shape == pred.shape  # channel x h x w
@@ -68,16 +71,19 @@ def make_plot(target, pred, title):
 def main(in_file, out_path):
     df = pd.read_pickle(in_file)
     assert set(df.columns) == {'target', 'pred', 'subset'}
-    # pick random index of training data point
+    # # pick random index of training data point
     row_tr = df[df['subset'] == 'training'].sample(n=1).iloc[0]
     fig_tr = make_plot(row_tr['target'], row_tr['pred'],
                        '{} type: {}'.format(in_file, row_tr.subset))
-    fig_tr.write_html(os.path.join(out_path, 'train.html'))
+    # fig_tr.write_html(os.path.join(out_path, 'train.html'))
     # pick random index of validation data point
     row_va = df[df['subset'] == 'validation'].sample(n=1).iloc[0]
     fig_va = make_plot(row_va['target'], row_va['pred'],
                        '{} type: {}'.format(in_file, row_va.subset))
-    fig_va.write_html(os.path.join(out_path, 'validation.html'))
+    # fig_va.write_html(os.path.join(out_path, 'validation.html'))
+    with open(os.path.join(out_path, 'debug.html'), 'w') as f:
+        f.write(fig_tr.to_html(full_html=False, include_plotlyjs='cdn'))
+        f.write(fig_va.to_html(full_html=False, include_plotlyjs='cdn'))
 
 
 if __name__ == "__main__":
