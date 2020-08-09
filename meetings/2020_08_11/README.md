@@ -64,7 +64,7 @@ mask r-cnn, instance segmentation:
 
 ## Trying out ideas
 
-### General code improvement
+### Generic code improvement
 
 - Dataset uploaded to DC: `MVRSGa`
 
@@ -72,35 +72,45 @@ mask r-cnn, instance segmentation:
 n_valid_output (denominator) will be 0, which makes the loss NaN.
 Since for those cases numerator is 0, wlog, we set the denominator to 1.
 
-- Script to visualize training and validation performance:
-todo
+- Script to visualize training and validation performance: [visualize_prediction.py](visualize_prediction.py)
 
 To use, e.g.
 ```
-python visualize_prediction.py --in_file result/test_simple_conv_1/pred_ep_9.pkl.gz --out_path result/test_simple_conv_1/plot/
+python visualize_prediction.py --in_file result/test_simple_conv_1/pred_ep_9.pkl.gz --out_file result/test_simple_conv_1/plot/pred_plot.html
 ```
 
-- report loss for different outputs
-todo
+- report loss for different outputs: added simple logging
 
 
-Updated baseline training script:
-todo
+Updated baseline training script: [train_nn.py](train_nn.py)
 
 ### simpler conv net (remove res blocks)
 
+--num_filters 32 32 64 64 128 128 --filter_width 9 9 9 9 9 9
 
+trained on GPU:
 ```
-python train_nn.py --data MVRSGa --result result/test_simple_conv_1 --num_filters 32 --num_stacks 1 --epoch 10 --batch_size 20 --max_length 80 --cpu 4
-```
-
-
-on GPU:
-```
-CUDA_VISIBLE_DEVICES=0 python train_nn.py --data MVRSGa --result result/test_simple_conv_1 --num_filters 32 --num_stacks 1 --epoch 10 --batch_size 20 --max_length 80 --cpu 4
+CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net.py --data MVRSGa --result result/test_simple_conv_1 --num_filters 32 32 64 64 128 128 --filter_width 9 9 9 9 9 9 --epoch 100 --batch_size 40 --max_length 200 --cpu 16
 ```
 
+log & plot (git hash in log): https://drive.google.com/drive/folders/1qUlr-Jrcl7OcSg2QCBbct3SZ-K5Fp97W
 
+overfit?
+```
+(training last minibatch 0.0324, 0.0174, 0.0153, 0.0067, 0.0048)
+Epoch 99/100, training loss (running) 0.012379504205740017
+(validation last minibatch 0.6953, 0.5342, 0.0854, 0.1866, 0.0240)
+Epoch 99/100, validation loss 0.32930181997603386
+```
+
+### simpler conv net with dropout
+
+--num_filters 32 32 64 64 128 128 --filter_width 9 9 9 9 9 9 --dropout 0.5
+
+trained on GPU:
+```
+CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net.py --data MVRSGa --result result/test_simple_conv_2 --num_filters 32 32 64 64 128 128 --filter_width 9 9 9 9 9 9 --dropout 0.5 --epoch 100 --batch_size 40 --max_length 200 --cpu 16
+```
 
 
 
@@ -110,11 +120,10 @@ Make sure to log the conclusion for each idea, for future reference.
 (make one section for each idea, move above)
 (also for each idea include git hash so we can check the associated training code)
 
-- remove pooling?
+- remove pooling? - we don't have pooling
 
 - read capsule network paper
 
--
 
 - re-weight 5 losses
 
@@ -141,6 +150,8 @@ Are they compatible?
 
 - corners are hard to predict, but crucial for stage 2 assembly.
 If we try to predict only this output will it work?
+
+- pre-train stage 1 on very short seq, e.g, miRNA or RNAfold generated dataset
 
 ## Carry-overs
 

@@ -184,7 +184,7 @@ class PadCollate2D:
 
 
 class SimpleConvNet(nn.Module):
-    def __init__(self, num_filters, filter_width):
+    def __init__(self, num_filters, filter_width, dropout):
         super(SimpleConvNet, self).__init__()
 
         num_filters = [8] + num_filters
@@ -195,6 +195,8 @@ class SimpleConvNet(nn.Module):
             cnn_layers.append(nn.Conv2d(num_filters[i], nf, kernel_size=fw, stride=1, padding=fw//2))
             cnn_layers.append(nn.BatchNorm2d(nf))
             cnn_layers.append(nn.ReLU(inplace=True))
+            if dropout > 0:
+                cnn_layers.append(nn.Dropout(dropout))
         self.cnn_layers = nn.Sequential(*cnn_layers)
 
         # self.cnn_layers = nn.Sequential(
@@ -280,7 +282,7 @@ def is_seq_valid(seq):
 #     return aurocs, auprcs
 
 
-def main(path_data, num_filters, filter_width, n_epoch, batch_size, max_length, out_dir, n_cpu):
+def main(path_data, num_filters, filter_width, dropout, n_epoch, batch_size, max_length, out_dir, n_cpu):
     logging.info("Loading dataset: {}".format(path_data))
     dc_client = dc.Client()
     df = []
@@ -310,7 +312,7 @@ def main(path_data, num_filters, filter_width, n_epoch, batch_size, max_length, 
     logging.info("After: {}".format(len(df)))
     df.drop(columns=['is_seq_valid'], inplace=True)
 
-    model = SimpleConvNet(num_filters, filter_width)
+    model = SimpleConvNet(num_filters, filter_width, dropout)
     print(model)
 
     # device
@@ -466,6 +468,7 @@ if __name__ == "__main__":
     parser.add_argument('--result', type=str, help='Path to output result')
     parser.add_argument('--num_filters', nargs='*', type=int, help='Number of conv filters for each layer.')
     parser.add_argument('--filter_width', nargs='*', type=int, help='Filter width for each layer.')
+    parser.add_argument('--dropout', type=float, default=0.0, help='Dropout probability')
     parser.add_argument('--epoch', type=int, help='Number of epochs')
     parser.add_argument('--batch_size', type=int, help='Mini batch size')
     parser.add_argument('--max_length', type=int, default=0,
@@ -480,5 +483,6 @@ if __name__ == "__main__":
     cur_dir = os.path.dirname(os.path.realpath(__file__))
     logging.debug("Current dir: {}, git hash: {}".format(cur_dir, git_hash))
     # training
-    main(args.data, args.num_filters, args.filter_width, args.epoch, args.batch_size, args.max_length, args.result,
+    assert 0 <= args.dropout <= 1
+    main(args.data, args.num_filters, args.filter_width, args.dropout, args.epoch, args.batch_size, args.max_length, args.result,
          args.cpu)
