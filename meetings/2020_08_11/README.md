@@ -112,6 +112,46 @@ trained on GPU:
 CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net.py --data MVRSGa --result result/test_simple_conv_2 --num_filters 32 32 64 64 128 128 --filter_width 9 9 9 9 9 9 --dropout 0.5 --epoch 100 --batch_size 40 --max_length 200 --cpu 16
 ```
 
+running
+
+
+### Multi-class softmax
+
+Make new dataset:
+
+```
+# original sigmoid (non mutually exclusive):
+# not_ss, stem, i_loop, h_loop, corner
+# mutually exclusive classes correspond to the following assignments:
+# 1, 0, 0, 0, 0    # non-local structure region
+# 0, 1, 0, 0, 0    # within stem
+# 0, 1, 1, 0, 1    # stem - internal_loop boundary
+# 0, 1, 0, 1, 1    # stem - hairpin_loop boundary
+# 0, 1, 0, 0, 1    # stem - other non-local structure boundary
+# 0, 1, 1, 1, 1    # special case where stem length = 1, and is also the boundary between i_loop and h_loop
+# 0, 0, 1, 0, 0    # inside internal_loop
+# 0, 0, 0, 1, 0    # inside hairpin loop
+# 8 classes in total
+```
+
+
+run:
+```
+python make_data_multiclass.py
+```
+
+Upload to DC:
+`xCzNlr`
+
+
+train (debug):
+```
+python train_simple_conv_net_softmax.py --data xCzNlr --result result/test_simple_conv_softmax_1 --num_filters 16 --filter_width 9 --epoch 10 --batch_size 20 --max_length 80 --cpu 4
+```
+
+train (GPU):
+todo
+
 
 
 ## Ideas & TODOs
