@@ -68,33 +68,34 @@ def make_plot(target, pred, title):
     return fig
 
 
-def main(in_file, out_path):
+def main(in_file, out_file):
     df = pd.read_pickle(in_file)
     assert set(df.columns) == {'target', 'pred', 'subset'}
     # # pick random index of training data point
     row_tr = df[df['subset'] == 'training'].sample(n=1).iloc[0]
     fig_tr = make_plot(row_tr['target'], row_tr['pred'],
                        '{} type: {}'.format(in_file, row_tr.subset))
-    # fig_tr.write_html(os.path.join(out_path, 'train.html'))
     # pick random index of validation data point
     row_va = df[df['subset'] == 'validation'].sample(n=1).iloc[0]
     fig_va = make_plot(row_va['target'], row_va['pred'],
                        '{} type: {}'.format(in_file, row_va.subset))
-    # fig_va.write_html(os.path.join(out_path, 'validation.html'))
-    with open(os.path.join(out_path, 'debug.html'), 'w') as f:
+    # output to a single html
+    with open(out_file, 'w') as f:
         f.write(fig_tr.to_html(full_html=False, include_plotlyjs='cdn'))
         f.write(fig_va.to_html(full_html=False, include_plotlyjs='cdn'))
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--in_file', type=str, help='Prediction file')
-    parser.add_argument('--out_path', type=str, help='Path to output result')
+    parser.add_argument('--in_file', type=str, help='Path to input prediction file')
+    parser.add_argument('--out_file', type=str, help='Path to output plot html file')
     args = parser.parse_args()
 
+    assert args.out_file.endswith('.html')
     # make result dir if non existing
-    if not os.path.isdir(args.out_path):
-        os.makedirs(args.out_path)
+    out_path = os.path.dirname(args.out_file)
+    if not os.path.isdir(out_path):
+        os.makedirs(out_path)
 
-    main(args.in_file, args.out_path)
+    main(args.in_file, args.out_file)
 
