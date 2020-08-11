@@ -360,3 +360,234 @@ def make_target(structure_arr, local_structure_bounding_boxes, local_unmask_offs
 
     return target_vals, target_mask
 
+
+def make_target_pixel_bb(structure_arr, local_structure_bounding_boxes, local_unmask_offset=10):
+    # Most of the time, each pixel can be uniquely assigned to one bounding box.
+    # In the case of closing pair of a loop, it's assigned to both the stem and the loop.
+    # In the rare case where the stem is of length 1, and the stem has 2 loops, one on each side,
+    # the pixel is assigned to 2 loops.
+    # Thus, it can be observed that each pixel can be assigned to:
+    #     - 0 or 1 stem box
+    #     - 0, 1 or 2 internal loop box
+    #     - 0 or 1 hairpin loop
+    # From the above, we conclude that for each pixel we need at most 4 bounding boxes with unique types
+    # (of course each box can be turned on/off independently, like in CV):
+    #     - stem box
+    #     - internal loop box 1
+    #     - internal loop box 2 (rarely used)
+    #     - hairpin loop box
+    # Using the above formulation, we only need to predict the on/off of each box (sigmoid),
+    # without the need to predict its type (also avoid problem of multiple box permutation).
+    #
+    # To encode the location, we use the top right corner as the reference point,
+    # and calculate the distance of the current pixel to the reference,
+    # both horizontally and vertically.
+    # The idea is to predict it using a softmax over finite classes,
+    # Horizontal distance (y/columns) <= 0, e.g. 0, -1, ..., -9, -10, -10_beyond.
+    # Vertical distance (x/rows) >= 0, e.g. 0, 1, ..., 9, 10, 10_beyond.
+    # Basically we assign one class for each integer distance until some distance away (10in the above example).
+    # Alternatively we can use one sigmoid unit to encode the direction, and 12-softmax for the magnitude
+    # (although in the case of 0, direction needs to be masked).
+    #
+    # To encode the size, we use different number of softmax, depending on the box type:
+    #     - stem: one softmax over 1, ..., 9, 10, 10_beyond, since it's square shaped
+    #     - internal loop: two softmax over 1, ..., 9, 10, 10_beyond, one for height one for width
+    #     - hairpin loop: one softmax over 1, ..., 9, 10, 10_beyond, since it's triangle/square shaped
+    #     (caveat: some hairpin loops are very long)
+    # Alternative: encode distance to lower left corner (hairpin is tricky since it's a triangle).
+    # Also: we should still be able to 'decode' boxes > 10 in size, although with reduced accuracy?
+    
+    # multiple target & multiple masks
+
+    # TODO to save memory, consider using dtypes e.g. np.uint8
+
+    # binary indicator for each box type & mask
+    target_stem_on = np.zeros_like(structure_arr)
+    target_iloop1_on = np.zeros_like(structure_arr)
+    target_iloop2_on = np.zeros_likes(structure_arr)
+    target_hloop_on = np.zeros_like(structure_arr)
+    mask_stem_on = np.zeros_like(structure_arr)
+    mask_iloop1_on = np.zeros_like(structure_arr)
+    mask_iloop2_on = np.zeros_likes(structure_arr)
+    mask_hloop_on = np.zeros_like(structure_arr)
+    # location softmax & mask
+    # since we're using the top right corner as the reference point
+    # horizontal (y/col) distance: 0, -1, -2, ..., -10, -10_beyond
+    # vertical (x/row) distance: 0, +1, +2, ...., +10, +10_beyond
+    # to save memory, we store integer encoding (not 1-hot)
+    target_stem_location_x = np.zeros_like(structure_arr)
+    target_stem_location_y = np.zeros_like(structure_arr)
+    target_iloop1_location_x = np.zeros_like(structure_arr)
+    target_iloop1_location_y = np.zeros_like(structure_arr)
+    target_iloop2_location_x = np.zeros_like(structure_arr)
+    target_iloop2_location_y = np.zeros_like(structure_arr)
+    target_hloop_location_x = np.zeros_like(structure_arr)
+    target_hloop_location_y = np.zeros_like(structure_arr)
+    # size softmax & mask
+    # size softmax order: 1, 2, ..., 10, 10_beyond
+    target_stem_size = np.zeros_like(structure_arr)
+    target_iloop1_size_x = np.zeros_like(structure_arr)
+    target_iloop1_size_y = np.zeros_like(structure_arr)
+    target_iloop2_size_x = np.zeros_like(structure_arr)
+    target_iloop2_size_y = np.zeros_like(structure_arr)
+    target_hloop_size = np.zeros_like(structure_arr)
+    # mask can be used for both location and size (which are either both set or not set)
+    mask_stem_location_size = np.zeros_like(structure_arr)
+    mask_iloop1_location_size = np.zeros_like(structure_arr)
+    mask_iloop2_location_size = np.zeros_like(structure_arr)
+    mask_hloop_location_size = np.zeros_like(structure_arr)
+
+    # above initialization correspond to: everything off & all being masked
+    
+    # not_local_structure, stem, internal_loop (include bulges), hairpin loop, is_corner
+    for ls in local_structure_bounding_boxes:
+        (x0, y0), (wx, wy), name = ls
+
+        # skip pseudo knot for now since it's not really local structure
+        if name == 'pesudo_knot':
+            continue
+
+        # un-mask box types (hacky for hairpin loop, but we'll fix later)
+        # location & size remain being masked
+        ix1 = max(0, x0 - local_unmask_offset)
+        ix2 = min(structure_arr.shape[0], x0 + wx + local_unmask_offset)
+        iy1 = max(0, y0 - local_unmask_offset)
+        iy2 = min(structure_arr.shape[0], y0 + wy + local_unmask_offset)
+        mask_stem_on[ix1:ix2, iy1:iy2] = 1
+        mask_iloop1_on[ix1:ix2, iy1:iy2] = 1
+        mask_iloop2_on[ix1:ix2, iy1:iy2] = 1
+        mask_hloop_on[ix1:ix2, iy1:iy2] = 1
+
+        # extract local binary array from original structure, for validation
+        local_arr = structure_arr[x0:x0 + wx, y0:y0 + wy]
+
+        # convenience function for calculating index for location and size
+
+        def get_size_index(x):
+            # convert integer size to finite array index
+            # 1 -> 0, 2 -> 1, ..... 10 -> 9, 11 -> 10, 12 -> 10
+            assert x > 0
+            assert int(x) == x
+            if x <= 10:
+                return x - 1
+            else:
+                return 10
+
+        def get_location_index(x, direction):
+            assert direction in ['x', 'y']
+            if direction == 'x':
+                assert x >= 0
+                # 0, +1, +2, ...., +10, +10_beyond
+                # 0 -> 0, 1 -> 1, ...., 10 -> 10, 11 -> 11, 12 -> 11, ...
+                if x <= 10:
+                    return x
+                else:
+                    return 11
+            elif direction == 'y':
+                assert x <= 0
+                # 0, +1, +2, ...., +10, +10_beyond
+                # 0 -> 0, -1 -> 1, ...., -10 -> 10, -11 -> 11, -12 -> 11, ...
+                if abs(x) <= 10:
+                    return abs(x)
+                else:
+                    return 11
+            else:  # should never be here
+                raise ValueError
+
+        def set_location(x0, y0, wx, wy, arr_location_x, arr_location_y):
+            # not the most efficient way to set values, but easier to debug
+            for i in range(x0, x0 + wx):
+                for j in range(y0, y0 + wy):
+                    distance_x = i - x0
+                    idx_x = get_location_index(distance_x, direction='x')
+                    distance_y = j - (y0 + wy)
+                    idx_y = get_location_index(distance_y, direction='y')
+                    arr_location_x[i, j] = idx_x
+                    arr_location_y[i, j] = idx_y
+            return arr_location_x, arr_location_y
+
+        if name == 'stem':
+            # make sure it's all zeros except for off-diagonal (1's)
+            np.testing.assert_array_equal(local_arr, np.eye(local_arr.shape[0])[::-1])
+            # stem_on = 1, for all pixels within this box
+            target_stem_on[x0:x0 + wx, y0:y0 + wy] = 1
+            # size
+            assert wx == wy
+            idx_size = get_size_index(wx)
+            target_stem_size[x0:x0 + wx, y0:y0 + wy] = idx_size
+            # location
+            target_stem_location_x, target_stem_location_y = set_location(x0, y0, wx, wy, target_stem_location_x,
+                                                                          target_stem_location_y)
+            # unmask location and size
+            mask_stem_location_size[ix1:ix2, iy1:iy2] = 1
+
+        if name in ['bulge', 'internal_loop']:
+            # make sure it's all zeros except for 2 corners (1's)
+            tmp_arr = np.zeros(local_arr.shape)
+            tmp_arr[0, -1] = 1
+            tmp_arr[-1, 0] = 1
+            np.testing.assert_array_equal(local_arr, tmp_arr)
+            # iloop_on = 1, for all pixels within this box
+            # usually we set loop 1, unless it's already set, then we use loop 2
+            if np.all(target_illop1_on[x0:x0 + wx, y0:y0 + wy] == 1):
+                # set loop 2
+                target_iloop2_on[x0:x0 + wx, y0:y0 + wy] = 1
+                # size
+                target_iloop2_size_x[x0:x0 + wx, y0:y0 + wy] = get_size_index(wx)
+                target_iloop2_size_y[x0:x0 + wx, y0:y0 + wy] = get_size_index(wy)
+                # location
+                target_iloop2_location_x, target_iloop2_location_y = set_location(x0, y0, wx, wy,
+                                                                                  target_iloop2_location_x,
+                                                                                  target_iloop2_location_y)
+                # unmask location and size
+                mask_iloop2_location_size[ix1:ix2, iy1:iy2] = 1
+            else:
+                # make sure loop 1 is not set yet
+                assert np.all(target_illop1_on[x0:x0 + wx, y0:y0 + wy] == 0)
+                # set loop 1
+                target_iloop1_on[x0:x0 + wx, y0:y0 + wy] = 1
+                # size
+                target_iloop1_size_x[x0:x0 + wx, y0:y0 + wy] = get_size_index(wx)
+                target_iloop1_size_y[x0:x0 + wx, y0:y0 + wy] = get_size_index(wy)
+                # location
+                target_iloop1_location_x, target_iloop1_location_y = set_location(x0, y0, wx, wy,
+                                                                                  target_iloop1_location_x,
+                                                                                  target_iloop1_location_y)
+                # unmask location and size
+                mask_iloop1_location_size[ix1:ix2, iy1:iy2] = 1
+
+        if name == 'hairpin_loop':
+            # make sure it's all zeros except for top right corner
+            tmp_arr = np.zeros(local_arr.shape)
+            tmp_arr[0, -1] = 1
+            np.testing.assert_array_equal(local_arr, tmp_arr)
+            # set hloop
+            target_hloop_on[x0:x0 + wx, y0:y0 + wy] = 1
+            # size
+            assert wx == wy
+            target_hloop_size[x0:x0 + wx, y0:y0 + wy] = get_size_index(wx)
+            # location
+            target_hloop_location_x, target_hloop_location_y = set_location(x0, y0, wx, wy,
+                                                                            target_hloop_location_x,
+                                                                            target_hloop_location_y)
+            # unmask location and size
+            # hacky for hairpin loop, but we'll fix (re-mask lower triangle) at the end
+            mask_hloop_location_size[ix1:ix2, iy1:iy2] = 1
+
+
+            # set output unit 'hairpin_loop' to 1's
+            target_vals[x0:x0 + wx, y0:y0 + wy, 3] = 1
+            # set top right corner
+            target_vals[x0, y0 + wy - 1, 4] = 1
+
+    # fix mask for hloop(re-mask lower triangle)
+    mask_hloop_location_size[np.tril_indices_from(mask_hloop_location_size)] = 0
+
+    return target_stem_on, target_iloop1_on, target_iloop2_on, target_hloop_on, \
+           mask_stem_on, mask_iloop1_on, mask_iloop2_on, mask_hloop_on, \
+           target_stem_location_x, target_stem_location_y, target_iloop1_location_x, target_iloop1_location_y, \
+           target_iloop2_location_x, target_iloop2_location_y, target_hloop_location_x, target_hloop_location_y, \
+           target_stem_size, target_iloop1_size_x, target_iloop1_size_y, \
+           target_iloop2_size_x, target_iloop2_size_y, target_hloop_size, \
+           mask_stem_location_size, mask_iloop1_location_size, mask_iloop2_location_size, mask_hloop_location_size
+
