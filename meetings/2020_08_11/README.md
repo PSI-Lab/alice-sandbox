@@ -79,6 +79,13 @@ To use, e.g.
 python visualize_prediction.py --in_file result/test_simple_conv_1/pred_ep_9.pkl.gz --out_file result/test_simple_conv_1/plot/pred_plot.html
 ```
 
+Softmax output version: [visualize_prediction_softmax.py](visualize_prediction_softmax.py)
+
+To use, e.g.
+```
+python visualize_prediction_softmax.py --in_file result/test_simple_conv_softmax_1/pred_ep_5.pkl.gz --out_file result/test_simple_conv_softmax_1/plot/pred_plot_ep5.html
+```
+
 - report loss for different outputs: added simple logging
 
 
@@ -112,7 +119,9 @@ trained on GPU:
 CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net.py --data MVRSGa --result result/test_simple_conv_2 --num_filters 32 32 64 64 128 128 --filter_width 9 9 9 9 9 9 --dropout 0.5 --epoch 100 --batch_size 40 --max_length 200 --cpu 16
 ```
 
-running
+log & plot (git hash in log): https://drive.google.com/drive/folders/195exuiAozk0SQR2Rgx3Ad2HXCBRkGsWu
+
+Dropout seems to make bounding box boundary blurred.
 
 
 ### Multi-class softmax
@@ -150,8 +159,84 @@ python train_simple_conv_net_softmax.py --data xCzNlr --result result/test_simpl
 ```
 
 train (GPU):
-todo
+```
+CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net_softmax.py --data xCzNlr --result result/test_simple_conv_softmax_1 --num_filters 32 32 64 64 128 128 --filter_width 9 9 9 9 9 9 --epoch 100 --batch_size 40 --max_length 200 --cpu 16
+```
 
+log & plot (git hash in log): https://drive.google.com/drive/folders/1Mz_KUUrmVaWGcve4Eh6jxwKrd88Mz1U-
+
+Does not seem to work well?
+
+### Pixel-wise encoding of precise location of bounding box
+
+Most of the time, each pixel can be uniquely assigned to one bounding box.
+In the case of closing pair of a loop, it's assigned to both the stem and the loop.
+In the rare case where the stem is of length 1, and the stem has 2 loops, one on each side,
+the pixel is assigned to 2 loops.
+Thus, it can be observed that each pixel can be assigned to:
+
+    - 0 or 1 stem box
+
+    - 0, 1 or 2 internal loop box (we'll ignore the case of 2 internal loop for now since it's rare )
+
+    - 0 or 1 hairpin loop
+
+From the above, we conclude that for each pixel we need at most 4 bounding boxes with unique types
+(of course each box can be turned on/off independently, like in CV):
+
+    - stem box
+
+    - internal loop box 1
+
+    - internal loop box 2 (rarely used, ignored for now)
+
+    - hairpin loop box
+
+Using the above formulation, we only need to predict the on/off of each box (sigmoid),
+without the need to predict its type (also avoid problem of multiple box permutation).
+
+(since we only predict one iloop, in the case there are both
+(which only happens for a single pixel at the boundary, and that pixel also needs to be a len=1 stem),
+we set that pixel to belong to the box where it is the top right corner)
+
+To encode the location, we use the top right corner as the reference point,
+and calculate the distance of the current pixel to the reference,
+both horizontally and vertically.
+The idea is to predict it using a softmax over finite classes.
+Horizontal distance (y/columns) <= 0, e.g. 0, -1, ..., -9, -10, -10_beyond.
+Vertical distance (x/rows) >= 0, e.g. 0, 1, ..., 9, 10, 10_beyond.
+Basically we assign one class for each integer distance until some distance away (10in the above example).
+
+To encode the size, we use different number of softmax, depending on the box type:
+
+    - stem: one softmax over 1, ..., 9, 10, 10_beyond, since it's square shaped
+
+    - internal loop: two softmax over 1, ..., 9, 10, 10_beyond, one for height one for width
+
+    - hairpin loop: one softmax over 1, ..., 9, 10, 10_beyond, since it's triangle/square shaped
+    (caveat: some hairpin loops are very long)
+
+
+Alternative: encode distance to lower left corner (hairpin is tricky since it's a triangle).
+
+Also: we should still be able to 'decode' boxes > 10 in size, although with reduced accuracy?
+
+
+generate new dataset:
+
+```
+python make_dataset_pixel_bb.py
+```
+
+Uploaded to DC: `youYTn`
+
+visual inspection: [local_structure_pixel_bb.ipynb](local_structure_pixel_bb.ipynb)
+See one example: https://docs.google.com/document/d/1QLnFraUsyTrJsIZcff_7v3h1VwAB_WyUSWq7bYXSOj0/edit
+
+
+training:
+
+todo
 
 
 ## Ideas & TODOs
@@ -160,7 +245,11 @@ Make sure to log the conclusion for each idea, for future reference.
 (make one section for each idea, move above)
 (also for each idea include git hash so we can check the associated training code)
 
+- use sparse array (numpy? scipy?)
+
 - remove pooling? - we don't have pooling
+
+- improve data loader (taking too much memory)
 
 - read capsule network paper
 
