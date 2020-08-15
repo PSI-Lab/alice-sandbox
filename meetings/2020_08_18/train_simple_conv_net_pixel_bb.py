@@ -161,12 +161,14 @@ class MyDataSet(Dataset):
         # organize # FIXME debug - stem only
         y = {
             'stem_on': torch.from_numpy(target_stem_on[:, :, np.newaxis]).float(),  # add singleton dimension
+            # FIXME these are int, no need to convert to float
             'stem_location_x': torch.from_numpy(target_stem_location_x[:, :, np.newaxis]).float(),   # add singleton dimension (these are integer index of softmax index)
             'stem_location_y': torch.from_numpy(target_stem_location_y[:, :, np.newaxis]).float(),
             'stem_size': torch.from_numpy(target_stem_size[:, :, np.newaxis]).float(),
         }
 
         m = {
+            # FIXME use int type to save memory
             'stem_on': torch.from_numpy(mask_stem_on[:, :, np.newaxis]).float(),
             'stem_location_size': torch.from_numpy(mask_stem_location_size[:, :, np.newaxis]).float(),
         }
@@ -242,8 +244,6 @@ class PadCollate2D:
         # keys of dict
         keys_y = batch[0][1].keys()
         keys_m = batch[0][2].keys()
-        # debug
-        print(keys_y, keys_m)
         # find longest sequence
         max_len = max(map(lambda x: x[0].shape[0], batch))
         # we expect it to be symmetric between dim 0 and 1
@@ -359,10 +359,25 @@ loss_b = torch.nn.BCELoss(reduction='none')
 loss_m = torch.nn.NLLLoss(reduction='none')
 
 
-def _masked_loss(x, y, m, loss_func):
+# def _masked_loss(x, y, m, loss_func):
+#     print(x.shape)
+#     print(y.shape)
+#     print(m.shape)
+#     print(loss_func)
+#     # batch x channel? x h x w
+#     l = loss_func(x, y)
+#     # TODO any singleton dimensions?
+#     n_valid_output = torch.sum(torch.sum(m, dim=3), dim=2)  # vector of length = batch
+#     loss_spatial_sum = torch.sum(torch.sum(torch.mul(l, m), dim=3), dim=2)
+#     n_valid_output[n_valid_output == 0] = 1
+#     loss_spatial_mean = loss_spatial_sum / n_valid_output
+#     loss_batch_mean = torch.mean(loss_spatial_mean, dim=0)
+#     return torch.mean(loss_batch_mean)
+
+
+def masked_loss_b(x, y, m):
     # batch x channel? x h x w
-    l = loss_func(x, y)
-    # TODO any singleton dimensions?
+    l = loss_b(x, y)
     n_valid_output = torch.sum(torch.sum(m, dim=3), dim=2)  # vector of length = batch
     loss_spatial_sum = torch.sum(torch.sum(torch.mul(l, m), dim=3), dim=2)
     n_valid_output[n_valid_output == 0] = 1
@@ -371,13 +386,20 @@ def _masked_loss(x, y, m, loss_func):
     return torch.mean(loss_batch_mean)
 
 
-def masked_loss_b(x, y, m):
-    return _masked_loss(x, y, m, loss_b)
-
-
 def masked_loss_m(x, y, m):
-    # TODO expand m to match shape
-    return _masked_loss(x, y, m, loss_m)
+    # remove singleton dimension in target & mask since NLLLoss doesn't need it
+    assert y.shape[1] == 1
+    assert m.shape[1] == 1
+    y = y[:, 0, :, :]
+    m = m[:, 0, :, :]
+    l = loss_m(x, y.long())  # FIXME should use long type in data gen (also need to fix padding <- not happy with long?)
+    # batch x h x w
+    n_valid_output = torch.sum(torch.sum(m, dim=2), dim=1)  # vector of length = batch
+    loss_spatial_sum = torch.sum(torch.sum(torch.mul(l, m), dim=2), dim=1)
+    n_valid_output[n_valid_output == 0] = 1
+    loss_spatial_mean = loss_spatial_sum / n_valid_output
+    loss_batch_mean = torch.mean(loss_spatial_mean, dim=0)
+    return torch.mean(loss_batch_mean)
 
 
 def masked_loss(x, y, m):
@@ -602,10 +624,13 @@ def main(path_data, num_filters, filter_width, dropout, n_epoch, batch_size, max
 
         # save the last minibatch prediction
         df_pred = []
-        for i in range(y.shape[0]):  #  batch x channel x H x W
-            _y = y[i, :, :, :].detach().cpu().numpy()
-            _yp = yp[i, :, :, :].detach().cpu().numpy()
-            df_pred.append({'target': _y, 'pred': _yp, 'subset': 'training'})
+        for k in y.keys():
+            for i in range(y[k].shape[0]):  #  batch x channel x H x W
+                _y = y[k][i, :, :, :].detach().cpu().numpy()
+                _yp = yp[k][i, :, :, :].detach().cpu().numpy()
+                df_pred.append({'target_{}'.format(k): _y,
+                                'pred_{}'.format(k): _yp,
+                                'subset': 'training'})
 
         # # report training loss
         # logging.info(
@@ -642,10 +667,11 @@ def main(path_data, num_filters, filter_width, dropout, n_epoch, batch_size, max
 
 
             # save the last minibatch prediction
-            for i in range(y.shape[0]):  #  batch x channel x H x W
-                _y = y[i, :, :, :].detach().cpu().numpy()
-                _yp = yp[i, :, :, :].detach().cpu().numpy()
-                df_pred.append({'target': _y, 'pred': _yp, 'subset': 'validation'})
+            for k in y.keys():
+                for i in range(y[k].shape[0]):  #  batch x channel x H x W
+                    _y = y[k][i, :, :, :].detach().cpu().numpy()
+                    _yp = yp[k][i, :, :, :].detach().cpu().numpy()
+                    df_pred.append({'target_{}'.format(k): _y, 'pred_{}'.format(k): _yp, 'subset': 'validation'})
 
         # end pf epoch
         # export prediction
