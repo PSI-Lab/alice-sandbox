@@ -412,22 +412,26 @@ def masked_loss(x, y, m):
     _y = y['stem_on']
     _m = m['stem_on']
     loss_stem_on = masked_loss_b(_x, _y, _m)
+    logging.info("loss_stem_on: {}".format(loss_stem_on))
 
     # stem location x & y
     _x = x['stem_location_x']
     _y = y['stem_location_x']
     _m = m['stem_location_size']
     loss_stem_loc_x = masked_loss_m(_x, _y, _m)
+    logging.info("loss_stem_loc_x: {}".format(loss_stem_loc_x))
     _x = x['stem_location_y']
     _y = y['stem_location_y']
     _m = m['stem_location_size']
     loss_stem_loc_y = masked_loss_m(_x, _y, _m)
+    logging.info("loss_stem_loc_y: {}".format(loss_stem_loc_y))
 
     # stem size
     _x = x['stem_size']
     _y = y['stem_size']
     _m = m['stem_location_size']
     loss_stem_siz = masked_loss_m(_x, _y, _m)
+    logging.info("loss_stem_siz: {}".format(loss_stem_siz))
 
     return loss_stem_on + loss_stem_loc_x + loss_stem_loc_y + loss_stem_siz
 
