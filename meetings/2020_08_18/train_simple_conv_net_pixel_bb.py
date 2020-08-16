@@ -819,7 +819,6 @@ def main(path_data, num_filters, filter_width, dropout, n_epoch, batch_size, max
                 "Epoch {}/{}, validation loss {}".format(epoch, n_epoch, np.mean(np.stack(running_loss_va))))
 
             # save the last minibatch prediction
-            df_pred = []
             num_examples = y[list(y.keys())[0]].shape[0]  # wlog, check batch dimension using first output key
             for i in range(num_examples):
                 row = {'subset': 'validation'}
