@@ -532,8 +532,9 @@ def compute_metrics(x, y, m):
         mask_bool = _m.eq(1)
         _x2 = _x.masked_select(mask_bool).flatten().detach().cpu().numpy()
         _y2 = _y.masked_select(mask_bool).flatten().detach().cpu().numpy()
+        # do not compute if empty (e.g. when all elements are being masked)
         # do not compute if there's only one class
-        if not np.all(_x2 == _x2[0]):
+        if len(_x2) > 0 and not np.all(_x2 == _x2[0]):
             roc = roc_auc_score(_x2, _y2)
             prc = average_precision_score(_x2, _y2)
         else:
