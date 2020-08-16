@@ -1,6 +1,7 @@
 import os
 import subprocess
 import logging
+import pprint
 import argparse
 import numpy as np
 import pandas as pd
@@ -474,6 +475,136 @@ def is_seq_valid(seq):
         return False
 
 
+class EvalMetric(object):
+
+    def __init__(self):
+        # hard-coded 2-level dict
+        # output -> metric -> list
+        self.metrics = {
+            'stem_on': {
+                'auroc': [],
+                'auprc': [],
+            },
+            'stem_location_x': {
+                'accuracy': [],
+            },
+            'stem_location_y': {
+                'accuracy': [],
+            },
+            'stem_size': {
+                'accuracy': [],
+            },
+            # TODO more outputs
+        }
+
+    def add_val(self, output, metric, val):
+        assert output in self.metrics.keys()
+        assert metric in self.metrics[output].keys()
+        self.metrics[output][metric].append(val)
+
+    def merge(self, m):
+        # merge inner list
+        assert isinstance(m, EvalMetric)
+        assert self.metrics.keys() == m.metrics.keys()
+        for k1 in self.metrics.keys():
+            assert self.metrics[k1].keys() == m.metrics[k1].keys()
+            for k2 in self.metrics[k1].keys():
+                assert isinstance(self.metrics[k1][k2], list)
+                assert isinstance(m.metrics[k1][k2], list)
+                self.metrics[k1][k2].extend(m.metrics[k1][k2])
+
+    def aggregate(self, method=np.nanmean):
+        x = self.metrics.copy()
+        for k1 in x.keys():
+            for k2 in x[k1].keys():
+                x[k1][k2] = method(x[k1][k2])
+        return x
+
+
+def compute_metrics(x, y, m):
+    # x, y, m are all dictionaries
+    # x : true label, y: pred, m: binary mask, where 1 indicate valid
+
+    def _roc_prc(key_target, key_mask):
+        _x = x[key_target][idx_batch, 0, :, :]
+        _y = y[key_target][idx_batch, 0, :, :]
+        _m = m[key_mask][idx_batch, 0, :, :]
+        mask_bool = _m.eq(1)
+        _x2 = _x.masked_select(mask_bool).flatten().detach().cpu().numpy()
+        _y2 = _y.masked_select(mask_bool).flatten().detach().cpu().numpy()
+        # do not compute if there's only one class
+        if not np.all(_x2 == _x2[0]):
+            roc = roc_auc_score(_x2, _y2)
+            prc = average_precision_score(_x2, _y2)
+        else:
+            roc = np.NaN
+            prc = np.NaN
+        return roc, prc
+
+    def _accuracy(key_target, key_mask):
+        # for convenience
+        _x = x[key_target][idx_batch, 0, :, :]
+        _y = y[key_target][idx_batch, :, :, :].argmax(axis=0)
+        _m = m[key_mask][idx_batch, 0, :, :]
+        mask_bool = _m.eq(1)
+        _x2 = _x.masked_select(mask_bool).flatten().detach().cpu().numpy()
+        _y2 = _y.masked_select(mask_bool).flatten().detach().cpu().numpy()
+        return np.sum(_x2 == _y2)/float(len(_x2))
+
+    evalm = EvalMetric()
+
+    num_examples = y[list(y.keys())[0]].shape[0]  # wlog, check batch dimension using first output key
+
+    for idx_batch in range(num_examples):
+        # use mask to select non-zero entries
+
+        # stem on
+        # _x = x['stem_on'][idx_batch, 0, :, :]
+        # _y = y['stem_on'][idx_batch, 0, :, :]
+        # _m = m['stem_on'][idx_batch, 0, :, :]
+        # mask_bool = _m.eq(1)
+        # _x2 = _x.masked_select(mask_bool).flatten().detach().cpu().numpy()
+        # _y2 = _y.masked_select(mask_bool).flatten().detach().cpu().numpy()
+        # # do not compute if there's only one class
+        # if not np.all(_x2 == _x2[0]):
+        #     evalm.add_val(output='stem_on', metric='auroc', val=roc_auc_score(_x2, _y2))
+        #     evalm.add_val(output='stem_on', metric='auprc', val=average_precision_score(_x2, _y2))
+        roc, prc = _roc_prc(key_target='stem_on', key_mask='stem_on')
+        evalm.add_val(output='stem_on', metric='auroc', val=roc)
+        evalm.add_val(output='stem_on', metric='auprc', val=prc)
+
+        # stem location x & y
+        evalm.add_val(output='stem_location_x', metric='accuracy',
+                      val=_accuracy(key_target='stem_location_x', key_mask='stem_location_size'))
+        evalm.add_val(output='stem_location_y', metric='accuracy',
+                      val=_accuracy(key_target='stem_location_y', key_mask='stem_location_size'))
+
+        # stem size
+        evalm.add_val(output='stem_size', metric='accuracy',
+                      val=_accuracy(key_target='stem_size', key_mask='stem_location_size'))
+
+
+    # # stem location x & y
+    # _x = x['stem_location_x']
+    # _y = y['stem_location_x']
+    # _m = m['stem_location_size']
+    # loss_stem_loc_x = masked_loss_m(_x, _y, _m)
+    # logging.info("loss_stem_loc_x: {}".format(loss_stem_loc_x))
+    # _x = x['stem_location_y']
+    # _y = y['stem_location_y']
+    # _m = m['stem_location_size']
+    # loss_stem_loc_y = masked_loss_m(_x, _y, _m)
+    # logging.info("loss_stem_loc_y: {}".format(loss_stem_loc_y))
+    #
+    # # stem size
+    # _x = x['stem_size']
+    # _y = y['stem_size']
+    # _m = m['stem_location_size']
+    # loss_stem_siz = masked_loss_m(_x, _y, _m)
+    # logging.info("loss_stem_siz: {}".format(loss_stem_siz))
+    return evalm
+
+
 # def compute_metrics(x, y, m):
 #     # x : true label, y: pred, m: binary mask, where 1 indicate valid
 #     # x, y, m are both torch tensors with batch x channel=1 x H x W
@@ -605,6 +736,7 @@ def main(path_data, num_filters, filter_width, dropout, n_epoch, batch_size, max
         running_loss_tr = []
         running_auroc_tr = []
         running_auprc_tr = []
+        evalm_tr = EvalMetric()
         for x, y, m in data_loader_tr:
             x, y, m = to_device(x, y, m, device)
             yp = model(x)
@@ -612,7 +744,11 @@ def main(path_data, num_filters, filter_width, dropout, n_epoch, batch_size, max
             # running_loss_tr.append(loss.detach().cpu().numpy())
 
             running_loss_tr.append(loss.item())
-            # _r, _p = compute_metrics(y, yp, m)
+
+            # TODO return val
+            evalm_tr.merge(compute_metrics(y, yp, m))
+
+
             # running_auroc_tr.extend(_r)
             # running_auprc_tr.extend(_p)
             logging.info("Epoch {} Training loss: {}".format(epoch, loss))
@@ -620,6 +756,10 @@ def main(path_data, num_filters, filter_width, dropout, n_epoch, batch_size, max
             model.zero_grad()
             loss.backward()
             optimizer.step()
+        
+        # report metric
+        # logging.info(pprint.pformat(evalm_tr.aggregate(method=np.mean), indent=4))
+        logging.info(evalm_tr.aggregate(method=np.nanmean))
 
         # # save model
         # _model_path = os.path.join(out_dir, 'model_ckpt_ep_{}.pth'.format(epoch))
@@ -655,6 +795,7 @@ def main(path_data, num_filters, filter_width, dropout, n_epoch, batch_size, max
             running_loss_va = []
             running_auroc_va = []
             running_auprc_va = []
+            evalm_tr = EvalMetric()
             for x, y, m in data_loader_va:
                 x, y, m = to_device(x, y, m, device)
                 yp = model(x)
@@ -662,9 +803,12 @@ def main(path_data, num_filters, filter_width, dropout, n_epoch, batch_size, max
                 # running_loss_va.append(loss.detach().cpu().numpy())
                 running_loss_va.append(loss.item())
                 logging.info("Epoch {} Validation loss: {}".format(epoch, loss))
+
+                evalm_tr.merge(compute_metrics(y, yp, m))
                 # _r, _p = compute_metrics(y, yp, m)
                 # running_auroc_va.extend(_r)
                 # running_auprc_va.extend(_p)
+            logging.info(evalm_tr.aggregate(method=np.nanmean))
             # logging.info(
             #     "Epoch {}/{}, validation loss {}, au-ROC {}, au-PRC {}".format(epoch, n_epoch,
             #                                                                    np.mean(np.stack(running_loss_va)),
