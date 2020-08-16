@@ -628,13 +628,17 @@ def main(path_data, num_filters, filter_width, dropout, n_epoch, batch_size, max
 
         # save the last minibatch prediction
         df_pred = []
-        for k in y.keys():
-            for i in range(y[k].shape[0]):  #  batch x channel x H x W
+        num_examples = y[list(y.keys())[0]].shape[0]   # wlog, check batch dimension using first output key
+        for i in range(num_examples):
+            row = {'subset': 'training'}
+            for k in y.keys():
+                #  batch x channel x H x W
                 _y = y[k][i, :, :, :].detach().cpu().numpy()
                 _yp = yp[k][i, :, :, :].detach().cpu().numpy()
-                df_pred.append({'target_{}'.format(k): _y,
-                                'pred_{}'.format(k): _yp,
-                                'subset': 'training'})
+                row.update({'target_{}'.format(k): _y,
+                            'pred_{}'.format(k): _yp,
+                            })
+            df_pred.append(row)
 
         # # report training loss
         # logging.info(
@@ -669,13 +673,19 @@ def main(path_data, num_filters, filter_width, dropout, n_epoch, batch_size, max
             logging.info(
                 "Epoch {}/{}, validation loss {}".format(epoch, n_epoch, np.mean(np.stack(running_loss_va))))
 
-
             # save the last minibatch prediction
-            for k in y.keys():
-                for i in range(y[k].shape[0]):  #  batch x channel x H x W
+            df_pred = []
+            num_examples = y[list(y.keys())[0]].shape[0]  # wlog, check batch dimension using first output key
+            for i in range(num_examples):
+                row = {'subset': 'validation'}
+                for k in y.keys():
+                    #  batch x channel x H x W
                     _y = y[k][i, :, :, :].detach().cpu().numpy()
                     _yp = yp[k][i, :, :, :].detach().cpu().numpy()
-                    df_pred.append({'target_{}'.format(k): _y, 'pred_{}'.format(k): _yp, 'subset': 'validation'})
+                    row.update({'target_{}'.format(k): _y,
+                                'pred_{}'.format(k): _yp,
+                                })
+                df_pred.append(row)
 
         # end pf epoch
         # export prediction
