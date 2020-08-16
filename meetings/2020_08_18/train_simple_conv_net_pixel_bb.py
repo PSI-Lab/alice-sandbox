@@ -323,15 +323,15 @@ class SimpleConvNet(nn.Module):
         )
         self.out_stem_loc_x = nn.Sequential(
             nn.Conv2d(50, 12, kernel_size=1),
-            nn.LogSoftmax(),
+            nn.LogSoftmax(dim=1),
         )
         self.out_stem_loc_y = nn.Sequential(
             nn.Conv2d(50, 12, kernel_size=1),
-            nn.LogSoftmax(),
+            nn.LogSoftmax(dim=1),
         )
         self.out_stem_siz = nn.Sequential(
             nn.Conv2d(50, 11, kernel_size=1),
-            nn.LogSoftmax(),
+            nn.LogSoftmax(dim=1),
         )
 
     # Defining the forward pass
@@ -403,35 +403,36 @@ def masked_loss_m(x, y, m):
     return torch.mean(loss_batch_mean)
 
 
-def masked_loss(x, y, m):
+def masked_loss(x, y, m, maskw):
     # x: pred
     # y: target
+    # maskw: mask weight, [0, 1], 0: hard mask (masked position loss ->0), >0: soft mask: masked position loss * maskw
     # x, y, m are all dicts
     # right now we're dealing with stem outputs only FIXME
     # stem on
     _x = x['stem_on']
     _y = y['stem_on']
-    _m = m['stem_on']
-    loss_stem_on = masked_loss_b(_x, _y, _m)
+    _m1 = m['stem_on']
+    if maskw > 0:
+        _m1[_m1 == 0] = maskw
+    loss_stem_on = masked_loss_b(_x, _y, _m1)
     logging.info("loss_stem_on: {}".format(loss_stem_on))
 
     # stem location x & y
     _x = x['stem_location_x']
     _y = y['stem_location_x']
-    _m = m['stem_location_size']
-    loss_stem_loc_x = masked_loss_m(_x, _y, _m)
+    _m2 = m['stem_location_size']
+    loss_stem_loc_x = masked_loss_m(_x, _y, _m2)
     logging.info("loss_stem_loc_x: {}".format(loss_stem_loc_x))
     _x = x['stem_location_y']
     _y = y['stem_location_y']
-    _m = m['stem_location_size']
-    loss_stem_loc_y = masked_loss_m(_x, _y, _m)
+    loss_stem_loc_y = masked_loss_m(_x, _y, _m2)
     logging.info("loss_stem_loc_y: {}".format(loss_stem_loc_y))
 
     # stem size
     _x = x['stem_size']
     _y = y['stem_size']
-    _m = m['stem_location_size']
-    loss_stem_siz = masked_loss_m(_x, _y, _m)
+    loss_stem_siz = masked_loss_m(_x, _y, _m2)
     logging.info("loss_stem_siz: {}".format(loss_stem_siz))
 
     return loss_stem_on + loss_stem_loc_x + loss_stem_loc_y + loss_stem_siz
@@ -632,7 +633,7 @@ def compute_metrics(x, y, m):
 #     return aurocs, auprcs
 
 
-def main(path_data, num_filters, filter_width, dropout, n_epoch, batch_size, max_length, out_dir, n_cpu):
+def main(path_data, num_filters, filter_width, dropout, maskw, n_epoch, batch_size, max_length, out_dir, n_cpu):
     logging.info("Loading dataset: {}".format(path_data))
     dc_client = dc.Client()
     df = []
@@ -739,9 +740,12 @@ def main(path_data, num_filters, filter_width, dropout, n_epoch, batch_size, max
         running_auprc_tr = []
         evalm_tr = EvalMetric()
         for x, y, m in data_loader_tr:
+
             x, y, m = to_device(x, y, m, device)
             yp = model(x)
-            loss = masked_loss(yp, y, m)  # order: pred, target, mask
+
+            loss = masked_loss(yp, y, m, maskw)  # order: pred, target, mask, mask_weight
+
             # running_loss_tr.append(loss.detach().cpu().numpy())
 
             running_loss_tr.append(loss.item())
@@ -755,6 +759,7 @@ def main(path_data, num_filters, filter_width, dropout, n_epoch, batch_size, max
             logging.info("Epoch {} Training loss: {}".format(epoch, loss))
 
             model.zero_grad()
+
             loss.backward()
             optimizer.step()
         
@@ -800,7 +805,7 @@ def main(path_data, num_filters, filter_width, dropout, n_epoch, batch_size, max
             for x, y, m in data_loader_va:
                 x, y, m = to_device(x, y, m, device)
                 yp = model(x)
-                loss = masked_loss(yp, y, m)
+                loss = masked_loss(yp, y, m, maskw)
                 # running_loss_va.append(loss.detach().cpu().numpy())
                 running_loss_va.append(loss.item())
                 logging.info("Epoch {} Validation loss: {}".format(epoch, loss))
@@ -845,6 +850,7 @@ if __name__ == "__main__":
     parser.add_argument('--num_filters', nargs='*', type=int, help='Number of conv filters for each layer.')
     parser.add_argument('--filter_width', nargs='*', type=int, help='Filter width for each layer.')
     parser.add_argument('--dropout', type=float, default=0.0, help='Dropout probability')
+    parser.add_argument('--mask', type=float, default=0.0, help='Mask weight. Setting to 0 is equivalent to hard mask.')
     parser.add_argument('--epoch', type=int, help='Number of epochs')
     parser.add_argument('--batch_size', type=int, help='Mini batch size')
     parser.add_argument('--max_length', type=int, default=0,
@@ -860,5 +866,6 @@ if __name__ == "__main__":
     logging.debug("Current dir: {}, git hash: {}".format(cur_dir, git_hash))
     # training
     assert 0 <= args.dropout <= 1
-    main(args.data, args.num_filters, args.filter_width, args.dropout, args.epoch, args.batch_size, args.max_length, args.result,
+    assert 0 <= args.mask <= 1
+    main(args.data, args.num_filters, args.filter_width, args.dropout, args.mask, args.epoch, args.batch_size, args.max_length, args.result,
          args.cpu)
