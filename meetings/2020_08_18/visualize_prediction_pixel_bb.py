@@ -55,10 +55,10 @@ def make_plot_bb(target, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y
         # top right corner
         bb_x = i - loc_x
         bb_y = j + loc_y
-        #     print(bb_x, bb_y, siz)
+        # print(bb_x, bb_y, siz_x, siz_y)
         # top left corner (for plot)
         x0 = bb_x
-        y0 = bb_y - siz_y
+        y0 = bb_y - siz_y + 1  # 0-based
         wx = siz_x
         wy = siz_y
         fig.add_shape(
