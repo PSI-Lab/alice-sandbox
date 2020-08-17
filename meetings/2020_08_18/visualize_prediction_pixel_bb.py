@@ -16,8 +16,7 @@ def _make_mask(l):
     return m
 
 
-def make_plot_bb(target, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y=None, title=None):
-    thres = 0.5   # hard-coded threshold
+def make_plot_bb(target, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y=None, title=None, thres=0.5):
     if pred_siz_y is None:
         pred_siz_y = pred_siz_x.copy()  # same size
     tmp = np.sum(target[0, :, :], axis=0)
@@ -171,7 +170,7 @@ def make_plot_softmax(target, pred, title):
     return fig
 
 
-def main(in_file, out_file):
+def main(in_file, out_file, thres):
     df = pd.read_pickle(in_file)
 
     # col -> plot_func
@@ -198,7 +197,7 @@ def main(in_file, out_file):
             fig = make_plot_bb(row['target_stem_on'], row['pred_stem_on'],
                                row['pred_stem_location_x'], row['pred_stem_location_y'],
                                row['pred_stem_size'], pred_siz_y=None,
-                               title='bounding box prediction')
+                               title='bounding box prediction', thres=thres)
             f.write(fig.to_html(full_html=False, include_plotlyjs='cdn'))
 
 
@@ -206,13 +205,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--in_file', type=str, help='Path to input prediction file')
     parser.add_argument('--out_file', type=str, help='Path to output plot html file')
+    parser.add_argument('--threshold', type=float, default=0.5, help='Threshold for calling bounding box.')
     args = parser.parse_args()
 
+    assert 0 < args.threshold < 1
     assert args.out_file.endswith('.html')
     # make result dir if non existing
     out_path = os.path.dirname(args.out_file)
     if not os.path.isdir(out_path):
         os.makedirs(out_path)
 
-    main(args.in_file, args.out_file)
+    main(args.in_file, args.out_file, args.threshold)
 
