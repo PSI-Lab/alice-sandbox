@@ -96,10 +96,10 @@ Above procedure is demonstrated as in the following figure:
 ![plot/bb_proposal.png](plot/bb_proposal.png)
 
 3. We can also compute the probability of this bounding box,
-by multiplying the above 3 softmax probability corresponding to the argmax index:
+by multiplying the sigmoid probability and 3 softmax probability corresponding to the argmax index:
 
 ```
-    p_box = stem_location_x[idx_x] * stem_location_y[idx_y] * stem_size[idx_size]
+    p_box = stem_on * stem_location_x[idx_x] * stem_location_y[idx_y] * stem_size[idx_size]
 ```
 
 #### Interactive Plot
