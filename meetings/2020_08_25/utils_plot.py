@@ -18,7 +18,11 @@ def make_plot_bb(target, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y
     if pred_siz_y is None:
         pred_siz_y = pred_siz_x.copy()  # same size
     tmp = np.sum(target[0, :, :], axis=0)
-    first_nonzero_idx_from_right = next(i for i in range(len(tmp)) if tmp[-(i + 1)] > 0)
+    try:
+        first_nonzero_idx_from_right = next(i for i in range(len(tmp)) if tmp[-(i + 1)] > 0)
+    except StopIteration:
+        # target all 0, can't infer index, don't crop FIXME we should save original sequence length in df then we don't need to infer
+        first_nonzero_idx_from_right = 0
     # crop
     if first_nonzero_idx_from_right == 0:  # can't index by -0 <- will be empty!
         # no crop
@@ -71,7 +75,11 @@ def make_plot_bb(target, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y
 
 def make_plot_sigmoid(target, pred, title):
     tmp = np.sum(target[0, :, :], axis=0)
-    first_nonzero_idx_from_right = next(i for i in range(len(tmp)) if tmp[-(i + 1)] > 0)
+    try:
+        first_nonzero_idx_from_right = next(i for i in range(len(tmp)) if tmp[-(i + 1)] > 0)
+    except StopIteration:
+        # target all 0, can't infer index, don't crop FIXME we should save original sequence length in df then we don't need to infer
+        first_nonzero_idx_from_right = 0
     # crop
     if first_nonzero_idx_from_right == 0:  # can't index by -0 <- will be empty!
         # no crop
@@ -116,7 +124,11 @@ def make_plot_softmax(target, pred, title):
     pred = softmax(pred, axis=0)
 
     tmp = np.sum(target[0, :, :], axis=0)
-    first_nonzero_idx_from_right = next(i for i in range(len(tmp)) if tmp[-(i + 1)] > 0)
+    try:
+        first_nonzero_idx_from_right = next(i for i in range(len(tmp)) if tmp[-(i + 1)] > 0)
+    except StopIteration:
+        # target all 0, can't infer index, don't crop FIXME we should save original sequence length in df then we don't need to infer
+        first_nonzero_idx_from_right = 0
     # crop
     if first_nonzero_idx_from_right == 0:  # can't index by -0 <- will be empty!
         # no crop
