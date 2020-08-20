@@ -333,21 +333,29 @@ class SimpleConvNet(nn.Module):
         # self.fc = nn.Conv2d(num_filters[-1], 5, kernel_size=1)
         self.fc = nn.Conv2d(num_filters[-1], 50, kernel_size=1)
 
-        # TODO add output specific hidden layers
+        # add output specific hidden layers
         self.out_stem_on = nn.Sequential(
-            nn.Conv2d(50, 1, kernel_size=1),
+            nn.Conv2d(50, 20, kernel_size=1),
+            nn.ReLU(),
+            nn.Conv2d(20, 1, kernel_size=1),
             nn.Sigmoid(),
         )
         self.out_stem_loc_x = nn.Sequential(
-            nn.Conv2d(50, 12, kernel_size=1),
+            nn.Conv2d(50, 20, kernel_size=1),
+            nn.ReLU(),
+            nn.Conv2d(20, 12, kernel_size=1),
             nn.LogSoftmax(dim=1),
         )
         self.out_stem_loc_y = nn.Sequential(
-            nn.Conv2d(50, 12, kernel_size=1),
+            nn.Conv2d(50, 20, kernel_size=1),
+            nn.ReLU(),
+            nn.Conv2d(20, 12, kernel_size=1),
             nn.LogSoftmax(dim=1),
         )
         self.out_stem_siz = nn.Sequential(
-            nn.Conv2d(50, 11, kernel_size=1),
+            nn.Conv2d(50, 20, kernel_size=1),
+            nn.ReLU(),
+            nn.Conv2d(20, 11, kernel_size=1),
             nn.LogSoftmax(dim=1),
         )
 
