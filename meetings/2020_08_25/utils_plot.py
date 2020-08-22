@@ -43,6 +43,12 @@ def make_plot_bb(target, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y
     target = target[0, :, :] * m
     pred_on = pred_on[0, :, :] * m
 
+    # binary array with all 0's, we'll set the predicted bounding box region to 1
+    # this will be used to calculate 'sensitivity'
+    pred_box = np.zeros_like(target)
+    # also save box locations and probabilities
+    proposed_boxes = []
+
     fig = px.imshow(target)
 
     for i, j in np.transpose(np.where(pred_on > thres)):
@@ -70,7 +76,32 @@ def make_plot_bb(target, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y
             line_color='red'
         )
         fig['layout'].update(height=800, width=800, title="{} threshold {}".format(title, thres))
-    return fig
+
+        # save box
+        proposed_boxes.append({
+            'bb_x': bb_x,
+            'bb_y': bb_y,
+            'siz_x': siz_x,
+            'siz_y': siz_y,
+            'prob': prob,   # TODO shall we store 4 probabilities separately?
+        })
+
+        # set value in pred box, be careful with out of bound index
+        ix0 = max(0, x0)
+        iy0 = max(0, y0)
+        ix1 = min(x0 + wx, pred_box.shape[0])
+        iy1 = min(y0 + wy, pred_box.shape[1])
+        pred_box[ix0:ix1, iy0:iy1] = 1
+
+    # apply hard-mask to pred box
+    pred_box = pred_box * m
+    # calculate metrics
+    sensitivity = np.sum(pred_box * target) / np.sum(target)
+    metric = {
+        'sensitivity': sensitivity,
+    }
+
+    return fig, proposed_boxes, metric
 
 
 def make_plot_sigmoid(target, pred, title):
