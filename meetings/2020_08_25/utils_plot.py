@@ -75,7 +75,6 @@ def make_plot_bb(target, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y
             opacity=prob,  # opacity proportional to probability of bounding box
             line_color='red'
         )
-        fig['layout'].update(height=800, width=800, title="{} threshold {}".format(title, thres))
 
         # save box
         proposed_boxes.append({
@@ -97,9 +96,15 @@ def make_plot_bb(target, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y
     pred_box = pred_box * m
     # calculate metrics
     sensitivity = np.sum(pred_box * target) / np.sum(target)
+    specificity = np.sum((1-pred_box) * (1-target) * m) / np.sum((1-target) * m)
     metric = {
         'sensitivity': sensitivity,
+        'specificity': specificity,
     }
+
+    # update figure
+    fig_txt = ", ".join(["{}: {:.2f}".format(k, v) for k, v in metric.items()])
+    fig['layout'].update(height=800, width=800, title="{} threshold {}<br>{}".format(title, thres, fig_txt))
 
     return fig, proposed_boxes, metric
 
