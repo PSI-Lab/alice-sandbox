@@ -972,10 +972,10 @@ def main(path_data, num_filters, filter_width, dropout, maskw, n_epoch, batch_si
         # logging.info(pprint.pformat(evalm_tr.aggregate(method=np.mean), indent=4))
         logging.info(evalm_tr.aggregate(method=np.nanmean))
 
-        # # save model
-        # _model_path = os.path.join(out_dir, 'model_ckpt_ep_{}.pth'.format(epoch))
-        # torch.save(model.state_dict(), _model_path)
-        # logging.info("Model checkpoint saved at: {}".format(_model_path))
+        # save model
+        _model_path = os.path.join(out_dir, 'model_ckpt_ep_{}.pth'.format(epoch))
+        torch.save(model.state_dict(), _model_path)
+        logging.info("Model checkpoint saved at: {}".format(_model_path))
 
         # save the last minibatch prediction
         df_pred = []
