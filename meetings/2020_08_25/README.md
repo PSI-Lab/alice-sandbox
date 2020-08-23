@@ -36,6 +36,15 @@ python make_dataset_synthetic.py
 Data uploaded to DC: `xs5Soq`
 
 
+- generate dataset using synthetic data  (bigger dataset)
+
+```
+python make_dataset_synthetic_2.py
+```
+
+Data uploaded to DC: `ZQi8RT`
+
+
 ### Generate new dataset using synthetic sequence and RNAfold predicted structure
 
 Dataset: `xs5Soq`
@@ -94,6 +103,24 @@ python train_simple_conv_net_pixel_bb_all_targets.py --data DmNgdP --result resu
 
 gpu:
 
+```
+CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net_pixel_bb_all_targets.py --data xs5Soq --result result/rf_data_all_targets_1 --num_filters 32 32 32 64 64 64 128 --filter_width 9 9 9 9 9 9 9 --epoch 50 --mask 0.1 --batch_size 40 --max_length 200 --cpu 8
+```
+
+
+plot
+
+```
+python visualize_prediction_pixel_bb_all_targets.py --in_file result/rf_data_all_targets_1/pred_ep_20.pkl.gz --out_file result/rf_data_all_targets_1/plot/ep_20.bb_all_5.html --threshold 0.5 --row all --bb --verbose
+```
+
+
+### All targets, larger dataset & model
+
+```
+CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net_pixel_bb_all_targets.py --data ZQi8RT --result result/rf_data_all_targets_2 --num_filters 32 32 64 64 64 128 128 --filter_width 9 9 9 9 9 9 9 --epoch 50 --mask 0.1 --batch_size 40 --max_length 200 --cpu 8
+```
+
 
 
 
@@ -104,12 +131,56 @@ Make sure to log the conclusion for each idea, for future reference.
 (make one section for each idea, move above)
 (also for each idea include git hash so we can check the associated training code)
 
+- update pandas on workstation - done
+
 - save model, implement script to predict on new dataset
+
+- enumerate all valid configurations of bounding boxes, how to do it efficiently?
+
+- train on bigger dataset, with more complicated model, see if we can improve sensitivity
+
+- data generator: return extra info, so that we can store at training/validation minibatch.
+e.g. sequence, sequence length, original bounding box list
+
+- vectorize bounding box proposal code
+
+- right now we make separate plot for different box types,
+ if we plot all on the same, need to use different color for different box type
+
+- the confidence of a bounding box is reflected by:
+(1) the joint probability of sigmoid/softmax output,
+(2) how many other bounding box overlap
+
+- ideas for assembly:
+start with most confidence box,
+for each iloop find the compatible stems on each side,
+for each hloop find the compatible stem.
+formulate as another prediction problem?
+given the sequence and all bounding boxes, predict the 'groud truth' combination of bounding box?
+equivalent to predict (globally) on/off of each bounding box? how to represent bounding box, another feature map?
+
+- assembly: how to train the 2nd stage algorithm if he first stage sensitivity is not 100%?
+i.e. given that we know what is valid path and we have a way to enumerate all valid paths,
+how to define closeness of each path to the ground truth? convert it back to binary matrix and calculate the old metrics?
+
+- validity:
+stem is not valid if not joined by loop (e.g. hloop between diagonal),
+hloop is not valid if it's not across diagonal,
+etc.
 
 - bounding box loss (not differentiable?)
 TP & FP at threshold, TP: proposed bb overlapping ground truth,
 FP: proposed bb not overlapping ground truth.
 For the bb module, we want high TP, even at a cost of high FN.
+
+- bounding box size > 10? how?  re-process dataset to partition into smaller (overlapping) boxes?
+how to determine which one to assign for each pixel, the closer one?
+
+- if we have the original target bounding box locations, we can compute the following metrics:
+(similar to sensitivity):
+% of true bounding box that has: identical proposed box, overlapping proposed box, no proposed box.
+(similar to specificity):
+% of predicted bounding box that has: identical true box, overlapping true box, no overlapping true box
 
 - fix divide warning:
 
