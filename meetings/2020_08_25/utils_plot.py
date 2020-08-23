@@ -14,6 +14,52 @@ def _make_mask(l):
     return m
 
 
+def predict_bounidng_box(pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y=None, thres=0.5):
+    # hard-mask
+    m = _make_mask(pred_on.shape[1])
+    # apply mask (for pred, only apply to pred_on since our processing starts from that array)
+    pred_on = pred_on * m
+    # binary array with all 0's, we'll set the predicted bounding box region to 1
+    # this will be used to calculate 'sensitivity'
+    pred_box = np.zeros_like(pred_on)
+    # also save box locations and probabilities
+    proposed_boxes = []
+
+    for i, j in np.transpose(np.where(pred_on > thres)):
+        loc_x = np.argmax(pred_loc_x[:, i, j])
+        loc_y = np.argmax(pred_loc_y[:, i, j])
+        siz_x = np.argmax(pred_siz_x[:, i, j]) + 1  # size starts at 1 for index=0
+        siz_y = np.argmax(pred_siz_y[:, i, j]) + 1
+        # compute joint probability of taking the max value
+        prob = pred_on[i, j] * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y] * \
+               softmax(pred_siz_x[:, i, j])[siz_x - 1] * softmax(pred_siz_y[:, i, j])[siz_y - 1]  # FIXME multiplying twice for case where y is set to x
+        # top right corner
+        bb_x = i - loc_x
+        bb_y = j + loc_y
+        # save box
+        proposed_boxes.append({
+            'bb_x': bb_x,
+            'bb_y': bb_y,
+            'siz_x': siz_x,
+            'siz_y': siz_y,
+            'prob': prob,   # TODO shall we store 4 probabilities separately?
+        })
+        # set value in pred box, be careful with out of bound index
+        x0 = bb_x
+        y0 = bb_y - siz_y + 1  # 0-based
+        wx = siz_x
+        wy = siz_y
+        ix0 = max(0, x0)
+        iy0 = max(0, y0)
+        ix1 = min(x0 + wx, pred_box.shape[0])
+        iy1 = min(y0 + wy, pred_box.shape[1])
+        pred_box[ix0:ix1, iy0:iy1] = 1
+
+    # apply hard-mask to pred box
+    pred_box = pred_box * m
+    return proposed_boxes, pred_box
+
+
 def make_plot_bb(target, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y=None, title=None, thres=0.5):
     if pred_siz_y is None:
         pred_siz_y = pred_siz_x.copy()  # same size
@@ -43,27 +89,36 @@ def make_plot_bb(target, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y
     target = target[0, :, :] * m
     pred_on = pred_on[0, :, :] * m
 
-    # binary array with all 0's, we'll set the predicted bounding box region to 1
-    # this will be used to calculate 'sensitivity'
-    pred_box = np.zeros_like(target)
-    # also save box locations and probabilities
-    proposed_boxes = []
+    # # binary array with all 0's, we'll set the predicted bounding box region to 1
+    # # this will be used to calculate 'sensitivity'
+    # pred_box = np.zeros_like(target)
+    # # also save box locations and probabilities
+    # proposed_boxes = []
 
     fig = px.imshow(target)
 
-    for i, j in np.transpose(np.where(pred_on > thres)):
-        loc_x = np.argmax(pred_loc_x[:, i, j])
-        loc_y = np.argmax(pred_loc_y[:, i, j])
-        siz_x = np.argmax(pred_siz_x[:, i, j]) + 1  # size starts at 1 for index=0
-        siz_y = np.argmax(pred_siz_y[:, i, j]) + 1
-        # compute joint probability of taking the max value
-        prob = pred_on[i, j] * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y] * \
-               softmax(pred_siz_x[:, i, j])[siz_x - 1] * softmax(pred_siz_y[:, i, j])[siz_y - 1]  # FIXME multiplying twice for case where y is set to x
-        # top right corner
-        bb_x = i - loc_x
-        bb_y = j + loc_y
-        # print(bb_x, bb_y, siz_x, siz_y)
-        # top left corner (for plot)
+    proposed_boxes, pred_box = predict_bounidng_box(pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y, thres)
+
+    for bb in proposed_boxes:
+        bb_x = bb['bb_x']
+        bb_y = bb['bb_y']
+        siz_x = bb['siz_x']
+        siz_y = bb['siz_y']
+        prob = bb['prob']
+
+    # for i, j in np.transpose(np.where(pred_on > thres)):
+    #     loc_x = np.argmax(pred_loc_x[:, i, j])
+    #     loc_y = np.argmax(pred_loc_y[:, i, j])
+    #     siz_x = np.argmax(pred_siz_x[:, i, j]) + 1  # size starts at 1 for index=0
+    #     siz_y = np.argmax(pred_siz_y[:, i, j]) + 1
+    #     # compute joint probability of taking the max value
+    #     prob = pred_on[i, j] * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y] * \
+    #            softmax(pred_siz_x[:, i, j])[siz_x - 1] * softmax(pred_siz_y[:, i, j])[siz_y - 1]  # FIXME multiplying twice for case where y is set to x
+    #     # top right corner
+    #     bb_x = i - loc_x
+    #     bb_y = j + loc_y
+    #     # print(bb_x, bb_y, siz_x, siz_y)
+    #     # top left corner (for plot)
         x0 = bb_x
         y0 = bb_y - siz_y + 1  # 0-based
         wx = siz_x
@@ -76,24 +131,24 @@ def make_plot_bb(target, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y
             line_color='red'
         )
 
-        # save box
-        proposed_boxes.append({
-            'bb_x': bb_x,
-            'bb_y': bb_y,
-            'siz_x': siz_x,
-            'siz_y': siz_y,
-            'prob': prob,   # TODO shall we store 4 probabilities separately?
-        })
+        # # save box
+        # proposed_boxes.append({
+        #     'bb_x': bb_x,
+        #     'bb_y': bb_y,
+        #     'siz_x': siz_x,
+        #     'siz_y': siz_y,
+        #     'prob': prob,   # TODO shall we store 4 probabilities separately?
+        # })
 
-        # set value in pred box, be careful with out of bound index
-        ix0 = max(0, x0)
-        iy0 = max(0, y0)
-        ix1 = min(x0 + wx, pred_box.shape[0])
-        iy1 = min(y0 + wy, pred_box.shape[1])
-        pred_box[ix0:ix1, iy0:iy1] = 1
+        # # set value in pred box, be careful with out of bound index
+        # ix0 = max(0, x0)
+        # iy0 = max(0, y0)
+        # ix1 = min(x0 + wx, pred_box.shape[0])
+        # iy1 = min(y0 + wy, pred_box.shape[1])
+        # pred_box[ix0:ix1, iy0:iy1] = 1
 
-    # apply hard-mask to pred box
-    pred_box = pred_box * m
+    # # apply hard-mask to pred box
+    # pred_box = pred_box * m
     # calculate metrics
     sensitivity = np.sum(pred_box * target) / np.sum(target)
     specificity = np.sum((1-pred_box) * (1-target) * m) / np.sum((1-target) * m)
