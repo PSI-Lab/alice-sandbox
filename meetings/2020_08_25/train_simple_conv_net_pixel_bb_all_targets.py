@@ -214,11 +214,18 @@ class MyDataSet(Dataset):
             'hloop_location_size': torch.from_numpy(mask_hloop_location_size[:, :, np.newaxis]).float(),
         }
 
+        # extra data saved for evaluation purpose (not used for training)
+        md = {
+            'seq': row['seq'],
+            'one_idx': row['one_idx'],
+            'bounding_boxes': row['bounding_boxes'],
+        }
+
         # # debug
         # print(x.shape)
         # print({k: v.shape for k, v in y.items()})
         # print({k: v.shape for k, v in m.items()})
-        return torch.from_numpy(x).float(), y, m
+        return torch.from_numpy(x).float(), y, m, md
 
 
     def __len__(self):
@@ -275,12 +282,13 @@ class PadCollate2D:
     def pad_collate(self, batch):
         """
         args:
-            batch - list of (x, y, m), where y and m are dict
+            batch - list of (x, y, m, md), where y and m are dict
 
         reutrn:
             xs - x after padding
             ys - y after padding, dict of tensor
             ms - m after padding, dict of tensor
+            md - list
         """
         # keys of dict
         keys_y = batch[0][1].keys()
@@ -294,7 +302,10 @@ class PadCollate2D:
         xs = []
         ys = {k: [] for k in keys_y}
         ms = {k: [] for k in keys_m}
-        for x, y, m in batch:
+        mds = []
+        for x, y, m, md in batch:
+            # store metadata
+            mds.append(md)
             # permute: prep for stacking: batch x channel x H x W
             # process x
             _x = pad_tensor(pad_tensor(x, pad=max_len, dim=0), pad=max_len, dim=1).permute(2, 0, 1)
@@ -317,7 +328,7 @@ class PadCollate2D:
             ys[k] = torch.stack(ys[k], dim=0)
         for k in keys_m:
             ms[k] = torch.stack(ms[k], dim=0)
-        return xs, ys, ms
+        return xs, ys, ms, mds
 
 
     def __call__(self, batch):
@@ -944,7 +955,7 @@ def main(path_data, num_filters, filter_width, dropout, maskw, n_epoch, batch_si
         running_auroc_tr = []
         running_auprc_tr = []
         evalm_tr = EvalMetric()
-        for x, y, m in data_loader_tr:
+        for x, y, m, md in data_loader_tr:
 
             x, y, m = to_device(x, y, m, device)
             yp = model(x)
@@ -982,6 +993,8 @@ def main(path_data, num_filters, filter_width, dropout, maskw, n_epoch, batch_si
         num_examples = y[list(y.keys())[0]].shape[0]   # wlog, check batch dimension using first output key
         for i in range(num_examples):
             row = {'subset': 'training'}
+            # store metadata
+            row.update(md[i])
             for k in y.keys():
                 #  batch x channel x H x W
                 _y = y[k][i, :, :, :].detach().cpu().numpy()
@@ -1007,7 +1020,7 @@ def main(path_data, num_filters, filter_width, dropout, maskw, n_epoch, batch_si
             running_auroc_va = []
             running_auprc_va = []
             evalm_tr = EvalMetric()
-            for x, y, m in data_loader_va:
+            for x, y, m, md in data_loader_va:
                 x, y, m = to_device(x, y, m, device)
                 yp = model(x)
                 loss = masked_loss(yp, y, m, maskw)
@@ -1032,6 +1045,8 @@ def main(path_data, num_filters, filter_width, dropout, maskw, n_epoch, batch_si
             num_examples = y[list(y.keys())[0]].shape[0]  # wlog, check batch dimension using first output key
             for i in range(num_examples):
                 row = {'subset': 'validation'}
+                # store metadata
+                row.update(md[i])
                 for k in y.keys():
                     #  batch x channel x H x W
                     _y = y[k][i, :, :, :].detach().cpu().numpy()
