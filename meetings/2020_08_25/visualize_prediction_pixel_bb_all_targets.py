@@ -46,13 +46,13 @@ def main(in_file, out_file, thres, opt_row, opt_tgt, opt_bb, verbose=False):
             if opt_tgt:
                 # per-output plot
                 for col, func in col2plot.items():
-                    fig = func(row['target_{}'.format(col)], row['pred_{}'.format(col)],
+                    fig = func(row['seq'], row['target_{}'.format(col)], row['pred_{}'.format(col)],
                                '{} name: {} type: {}'.format(in_file, col, row.subset))
                     f.write(fig.to_html(full_html=False, include_plotlyjs='cdn'))
             if opt_bb:
                 # proposed bounding box plot
                 # stem
-                fig, bb, m = make_plot_bb(row['target_stem_on'], row['pred_stem_on'],
+                fig, bb, m = make_plot_bb(row['seq'], row['target_stem_on'], row['pred_stem_on'],
                                    row['pred_stem_location_x'], row['pred_stem_location_y'],
                                    row['pred_stem_size'], pred_siz_y=None,
                                    title='stem bounding box prediction, type: {} '.format(row.subset), thres=thres)
@@ -60,7 +60,7 @@ def main(in_file, out_file, thres, opt_row, opt_tgt, opt_bb, verbose=False):
                 if verbose:
                     print('\nstem', m)
                 # iloop
-                fig, bb, m = make_plot_bb(row['target_iloop_on'], row['pred_iloop_on'],
+                fig, bb, m = make_plot_bb(row['seq'], row['target_iloop_on'], row['pred_iloop_on'],
                                    row['pred_iloop_location_x'], row['pred_iloop_location_y'],
                                    row['pred_iloop_size_x'], pred_siz_y=row['pred_iloop_size_y'],
                                    title='iloop bounding box prediction, type: {} '.format(row.subset), thres=thres)
@@ -68,7 +68,7 @@ def main(in_file, out_file, thres, opt_row, opt_tgt, opt_bb, verbose=False):
                 if verbose:
                     print('iloop', m)
                 # hloop
-                fig, bb, m = make_plot_bb(row['target_hloop_on'], row['pred_hloop_on'],
+                fig, bb, m = make_plot_bb(row['seq'], row['target_hloop_on'], row['pred_hloop_on'],
                                    row['pred_hloop_location_x'], row['pred_hloop_location_y'],
                                    row['pred_hloop_size'], pred_siz_y=None,
                                    title='hloop bounding box prediction, type: {} '.format(row.subset), thres=thres)

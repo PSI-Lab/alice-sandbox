@@ -45,6 +45,13 @@ python make_dataset_synthetic_2.py
 Data uploaded to DC: `ZQi8RT`
 
 
+- updated training script to save model + data generator returns original data (one_idx and bb) for evaluation
+
+- updated eval code to crop using seq len (as opposed to infer from zero padding)
+
+- added eval: sensitivity based on: (1) per-pixel bb, (2) per-bb
+
+
 ### Generate new dataset using synthetic sequence and RNAfold predicted structure
 
 Dataset: `xs5Soq`
@@ -117,12 +124,18 @@ python visualize_prediction_pixel_bb_all_targets.py --in_file result/rf_data_all
 
 ### All targets, larger dataset & model
 
+also updated data generator to return meta data like sequence, one_idx and bounding boxes, to make evaluation easier
+
 ```
 CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net_pixel_bb_all_targets.py --data ZQi8RT --result result/rf_data_all_targets_2 --num_filters 32 32 64 64 64 128 128 --filter_width 9 9 9 9 9 9 9 --epoch 50 --mask 0.1 --batch_size 40 --max_length 200 --cpu 8
 ```
 
 
+plot
 
+```
+python visualize_prediction_pixel_bb_all_targets.py --in_file result/rf_data_all_targets_2/pred_ep_10.pkl.gz --out_file result/rf_data_all_targets_2/plot/ep_10.bb_all_1.html --threshold 0.1 --row sample --bb --verbose
+```
 
 
 ## Ideas & TODOs
@@ -133,7 +146,10 @@ Make sure to log the conclusion for each idea, for future reference.
 
 - update pandas on workstation - done
 
-- save model, implement script to predict on new dataset
+- save model, implement script to predict on new dataset - done
+
+- now we're saving metadata, update plot code cropping since we no longer need to infer length,
+also add evaluation to check identical/overlapping box
 
 - enumerate all valid configurations of bounding boxes, how to do it efficiently?
 

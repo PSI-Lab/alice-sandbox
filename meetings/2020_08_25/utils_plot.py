@@ -14,7 +14,7 @@ def _make_mask(l):
     return m
 
 
-def predict_bounidng_box(pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y=None, thres=0.5):
+def predict_bounidng_box(pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y, thres=0.5):
     # hard-mask
     m = _make_mask(pred_on.shape[1])
     # apply mask (for pred, only apply to pred_on since our processing starts from that array)
@@ -60,26 +60,36 @@ def predict_bounidng_box(pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y
     return proposed_boxes, pred_box
 
 
-def make_plot_bb(target, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y=None, title=None, thres=0.5):
+def array_clean_up(seq_len, target, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y=None):
+    # # remove padding
+    # # FIXME we should save original sequence length in df then we don't need to infer
     if pred_siz_y is None:
         pred_siz_y = pred_siz_x.copy()  # same size
-    tmp = np.sum(target[0, :, :], axis=0)
-    try:
-        first_nonzero_idx_from_right = next(i for i in range(len(tmp)) if tmp[-(i + 1)] > 0)
-    except StopIteration:
-        # target all 0, can't infer index, don't crop FIXME we should save original sequence length in df then we don't need to infer
-        first_nonzero_idx_from_right = 0
-    # crop
-    if first_nonzero_idx_from_right == 0:  # can't index by -0 <- will be empty!
-        # no crop
-        pass
-    else:
-        target = target[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
-        pred_on = pred_on[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
-        pred_loc_x = pred_loc_x[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
-        pred_loc_y = pred_loc_y[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
-        pred_siz_x = pred_siz_x[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
-        pred_siz_y = pred_siz_y[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
+    # tmp = np.sum(target[0, :, :], axis=0)
+    # try:
+    #     first_nonzero_idx_from_right = next(i for i in range(len(tmp)) if tmp[-(i + 1)] > 0)
+    # except StopIteration:
+    #     # target all 0, can't infer index, don't crop
+    #     first_nonzero_idx_from_right = 0
+    # # crop
+    # if first_nonzero_idx_from_right == 0:  # can't index by -0 <- will be empty!
+    #     # no crop
+    #     pass
+    # else:
+    #     target = target[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
+    #     pred_on = pred_on[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
+    #     pred_loc_x = pred_loc_x[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
+    #     pred_loc_y = pred_loc_y[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
+    #     pred_siz_x = pred_siz_x[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
+    #     pred_siz_y = pred_siz_y[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
+
+    # remove padding
+    target = target[:, :seq_len, :seq_len]
+    pred_on = pred_on[:, :seq_len, :seq_len]
+    pred_loc_x = pred_loc_x[:, :seq_len, :seq_len]
+    pred_loc_y = pred_loc_y[:, :seq_len, :seq_len]
+    pred_siz_x = pred_siz_x[:, :seq_len, :seq_len]
+    pred_siz_y = pred_siz_y[:, :seq_len, :seq_len]
 
     # apply 'hard-mask'  (lower triangle)
     assert target.shape == pred_on.shape  # channel x h x w
@@ -88,15 +98,44 @@ def make_plot_bb(target, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y
     # apply mask (for pred, only apply to pred_on since our processing starts from that array)
     target = target[0, :, :] * m
     pred_on = pred_on[0, :, :] * m
+    return target, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y, m
 
-    # # binary array with all 0's, we'll set the predicted bounding box region to 1
-    # # this will be used to calculate 'sensitivity'
-    # pred_box = np.zeros_like(target)
-    # # also save box locations and probabilities
-    # proposed_boxes = []
+
+
+def make_plot_bb(seq, target, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y=None, title=None, thres=0.5):
+    # if pred_siz_y is None:
+    #     pred_siz_y = pred_siz_x.copy()  # same size
+    # tmp = np.sum(target[0, :, :], axis=0)
+    # try:
+    #     first_nonzero_idx_from_right = next(i for i in range(len(tmp)) if tmp[-(i + 1)] > 0)
+    # except StopIteration:
+    #     # target all 0, can't infer index, don't crop
+    #     first_nonzero_idx_from_right = 0
+    # # crop
+    # if first_nonzero_idx_from_right == 0:  # can't index by -0 <- will be empty!
+    #     # no crop
+    #     pass
+    # else:
+    #     target = target[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
+    #     pred_on = pred_on[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
+    #     pred_loc_x = pred_loc_x[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
+    #     pred_loc_y = pred_loc_y[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
+    #     pred_siz_x = pred_siz_x[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
+    #     pred_siz_y = pred_siz_y[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
+
+    # # apply 'hard-mask'  (lower triangle)
+    # assert target.shape == pred_on.shape  # channel x h x w
+    # assert target.shape[1] == target.shape[2]
+    # m = _make_mask(target.shape[1])
+    # # apply mask (for pred, only apply to pred_on since our processing starts from that array)
+    # target = target[0, :, :] * m
+    # pred_on = pred_on[0, :, :] * m
+    target, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y, m = array_clean_up(len(seq), target, pred_on, pred_loc_x,
+                                                                                     pred_loc_y, pred_siz_x, pred_siz_y)
 
     fig = px.imshow(target)
 
+    # predict bounding boxes
     proposed_boxes, pred_box = predict_bounidng_box(pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y, thres)
 
     for bb in proposed_boxes:
@@ -106,19 +145,6 @@ def make_plot_bb(target, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y
         siz_y = bb['siz_y']
         prob = bb['prob']
 
-    # for i, j in np.transpose(np.where(pred_on > thres)):
-    #     loc_x = np.argmax(pred_loc_x[:, i, j])
-    #     loc_y = np.argmax(pred_loc_y[:, i, j])
-    #     siz_x = np.argmax(pred_siz_x[:, i, j]) + 1  # size starts at 1 for index=0
-    #     siz_y = np.argmax(pred_siz_y[:, i, j]) + 1
-    #     # compute joint probability of taking the max value
-    #     prob = pred_on[i, j] * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y] * \
-    #            softmax(pred_siz_x[:, i, j])[siz_x - 1] * softmax(pred_siz_y[:, i, j])[siz_y - 1]  # FIXME multiplying twice for case where y is set to x
-    #     # top right corner
-    #     bb_x = i - loc_x
-    #     bb_y = j + loc_y
-    #     # print(bb_x, bb_y, siz_x, siz_y)
-    #     # top left corner (for plot)
         x0 = bb_x
         y0 = bb_y - siz_y + 1  # 0-based
         wx = siz_x
@@ -131,24 +157,6 @@ def make_plot_bb(target, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y
             line_color='red'
         )
 
-        # # save box
-        # proposed_boxes.append({
-        #     'bb_x': bb_x,
-        #     'bb_y': bb_y,
-        #     'siz_x': siz_x,
-        #     'siz_y': siz_y,
-        #     'prob': prob,   # TODO shall we store 4 probabilities separately?
-        # })
-
-        # # set value in pred box, be careful with out of bound index
-        # ix0 = max(0, x0)
-        # iy0 = max(0, y0)
-        # ix1 = min(x0 + wx, pred_box.shape[0])
-        # iy1 = min(y0 + wy, pred_box.shape[1])
-        # pred_box[ix0:ix1, iy0:iy1] = 1
-
-    # # apply hard-mask to pred box
-    # pred_box = pred_box * m
     # calculate metrics
     sensitivity = np.sum(pred_box * target) / np.sum(target)
     specificity = np.sum((1-pred_box) * (1-target) * m) / np.sum((1-target) * m)
@@ -164,20 +172,258 @@ def make_plot_bb(target, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y
     return fig, proposed_boxes, metric
 
 
-def make_plot_sigmoid(target, pred, title):
-    tmp = np.sum(target[0, :, :], axis=0)
-    try:
-        first_nonzero_idx_from_right = next(i for i in range(len(tmp)) if tmp[-(i + 1)] > 0)
-    except StopIteration:
-        # target all 0, can't infer index, don't crop FIXME we should save original sequence length in df then we don't need to infer
-        first_nonzero_idx_from_right = 0
-    # crop
-    if first_nonzero_idx_from_right == 0:  # can't index by -0 <- will be empty!
-        # no crop
-        pass
+def make_target_df(target_bb):
+    df_target_stem = []
+    df_target_iloop = []
+    df_target_hloop = []
+    for (bb_x, bb_y), (siz_x, siz_y), bb_type in target_bb:
+        row = {
+            'bb_x': bb_x,
+            'bb_y': bb_y,
+            'siz_x': siz_x,
+            'siz_y': siz_y,
+        }
+        if bb_type == 'stem':
+            df_target_stem.append(row)
+        elif bb_type in ['bulge', 'internal_loop']:
+            df_target_iloop.append(row)
+        elif bb_type == 'hairpin_loop':
+            df_target_hloop.append(row)
+        elif bb_type == 'pseudo_knot':
+            pass  # do not process
+        else:
+            raise ValueError  # TODO pseudo knot?
+    if len(df_target_stem) > 0:
+        df_target_stem = pd.DataFrame(df_target_stem)
+    if len(df_target_iloop) > 0:
+        df_target_iloop = pd.DataFrame(df_target_iloop)
+    if len(df_target_hloop) > 0:
+        df_target_hloop = pd.DataFrame(df_target_hloop)
+    return df_target_stem, df_target_iloop, df_target_hloop
+
+
+def _calculate_bb_metrics(df_target, df_pred):
+
+    def is_identical(bb1, bb2):
+        return bb1 == bb2
+
+    def is_overlap(bb1, bb2):
+        bb1_x, bb1_y, siz1_x, siz1_y = bb1
+        bb2_x, bb2_y, siz2_x, siz2_y = bb2
+        # calculate overlap rectangle, check to see if it's empty
+        x0 = max(bb1_x, bb2_x)
+        x1 = min(bb1_x + siz1_x - 1, bb2_x + siz2_x - 1)  # note this is closed end
+        y0 = max(bb1_y - siz1_y + 1, bb2_y - siz2_y + 1)  # closed end
+        y1 = min(bb1_y, bb2_y)
+        if x1 >= x0 and y1 >= y0:
+            return True
+        else:
+            return False
+
+    assert set(df_target.columns) == {'bb_x', 'bb_y', 'siz_x', 'siz_y'}
+    assert set(df_pred.columns) == {'bb_x', 'bb_y', 'siz_x', 'siz_y'}
+
+    # make sure all rows are unique
+    assert not df_target.duplicated().any()
+    assert not df_pred.duplicated().any()
+
+    # w.r.t. target
+    n_target_total = len(df_target)
+    n_target_identical = 0
+    n_target_overlap = 0
+    n_target_nohit = 0
+    for _, row1 in df_target.iterrows():
+        bb1 = (row1['bb_x'], row1['bb_y'], row1['siz_x'], row1['siz_y'])
+        found_identical = False
+        found_overlapping = False
+        for _, row2 in df_pred.iterrows():
+            bb2 = (row2['bb_x'], row2['bb_y'], row2['siz_x'], row2['siz_y'])
+            if is_identical(bb1, bb2):
+                found_identical = True
+            elif is_overlap(bb1, bb2):  # note this is overlapping but NOT identical due to "elif"
+                found_overlapping = True
+            else:
+                pass
+        if found_identical:
+            n_target_identical += 1
+        elif found_overlapping:
+            n_target_overlap += 1
+        else:
+            n_target_nohit += 1
+
+    # FIXME there is some wasted comparison here (can be combined with last step)
+    # w.r.t. pred
+    n_pred_total = len(df_pred)
+    n_pred_identical = 0
+    n_pred_overlap = 0
+    n_pred_nohit = 0
+    for _, row1 in df_pred.iterrows():
+        bb1 = (row1['bb_x'], row1['bb_y'], row1['siz_x'], row1['siz_y'])
+        found_identical = False
+        found_overlapping = False
+        for _, row2 in df_target.iterrows():
+            bb2 = (row2['bb_x'], row2['bb_y'], row2['siz_x'], row2['siz_y'])
+            if is_identical(bb1, bb2):
+                found_identical = True
+            elif is_overlap(bb1, bb2):  # note this is overlapping but NOT identical due to "elif"
+                found_overlapping = True
+            else:
+                pass
+        if found_identical:
+            n_pred_identical += 1
+        elif found_overlapping:
+            n_pred_overlap += 1
+        else:
+            n_pred_nohit += 1
+    result = {
+        'n_target_total': n_target_total,
+        'n_target_identical': n_target_identical,
+        'n_target_overlap': n_target_overlap,
+        'n_target_nohit': n_target_nohit,
+        'n_pred_total': n_pred_total,
+        'n_pred_identical': n_pred_identical,
+        'n_pred_overlap': n_pred_overlap,
+        'n_pred_nohit': n_pred_nohit,
+    }
+    return result
+
+
+def calculate_bb_metrics(df_target, df_pred):
+    if (df_target is None or len(df_target) == 0) and (df_pred is None or len(df_pred) == 0):
+        return {
+            'n_target_total': 0,
+            'n_target_identical': 0,
+            'n_target_overlap': 0,
+            'n_target_nohit': 0,
+            'n_pred_total': 0,
+            'n_pred_identical': 0,
+            'n_pred_overlap': 0,
+            'n_pred_nohit': 0,
+        }
+
+    elif df_target is None or len(df_target) == 0:
+        return {
+            'n_target_total': 0,
+            'n_target_identical': 0,
+            'n_target_overlap': 0,
+            'n_target_nohit': 0,
+            'n_pred_total': len(df_pred),
+            'n_pred_identical': 0,
+            'n_pred_overlap': 0,
+            'n_pred_nohit': 0,
+        }
+    elif df_pred is None or len(df_pred) == 0:
+        return {
+            'n_target_total': len(df_target),
+            'n_target_identical': 0,
+            'n_target_overlap': 0,
+            'n_target_nohit': 0,
+            'n_pred_total': 0,
+            'n_pred_identical': 0,
+            'n_pred_overlap': 0,
+            'n_pred_nohit': 0,
+        }
     else:
-        target = target[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
-        pred = pred[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
+        return _calculate_bb_metrics(df_target, df_pred)
+
+
+def sensitivity_specificity(target_on, pred_box, hard_mask):
+    sensitivity = np.sum(pred_box * target_on) / np.sum(target_on)
+    specificity = np.sum((1-pred_box) * (1-target_on) * hard_mask) / np.sum((1-target_on) * hard_mask)
+    return sensitivity, specificity
+
+
+def calculate_metrics(row, threshold):
+    seq = row['seq']
+    target_bb = row['bounding_boxes']
+    target = row['target_stem_on']
+    pred_on = row['pred_stem_on']
+    pred_loc_x = row['pred_stem_location_x']
+    pred_loc_y = row['pred_stem_location_y']
+    pred_siz_x = row['pred_stem_size']
+    # predict stem bb
+    target_stem_on, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y, m = array_clean_up(len(seq), target, pred_on, pred_loc_x,
+                                                                                        pred_loc_y, pred_siz_x,
+                                                                                        pred_siz_y=None)
+    bb_stem, pred_box_stem = predict_bounidng_box(pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y,
+                                                  thres=threshold)
+    # predict iloop bb
+    target = row['target_iloop_on']
+    pred_on = row['pred_iloop_on']
+    pred_loc_x = row['pred_iloop_location_x']
+    pred_loc_y = row['pred_iloop_location_y']
+    pred_siz_x = row['pred_iloop_size_x']
+    pred_siz_y = row['pred_iloop_size_y']
+    target_iloop_on, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y, m = array_clean_up(len(seq), target, pred_on, pred_loc_x,
+                                                                                        pred_loc_y, pred_siz_x,
+                                                                                        pred_siz_y)
+    bb_iloop, pred_box_iloop = predict_bounidng_box(pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y,
+                                                    thres=threshold)
+    # predict hloop bb
+    target = row['target_hloop_on']
+    pred_on = row['pred_hloop_on']
+    pred_loc_x = row['pred_hloop_location_x']
+    pred_loc_y = row['pred_hloop_location_y']
+    pred_siz_x = row['pred_hloop_size']
+    target_hloop_on, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y, m = array_clean_up(len(seq), target, pred_on, pred_loc_x,
+                                                                                        pred_loc_y, pred_siz_x,
+                                                                                        pred_siz_y=None)
+    bb_hloop, pred_box_hloop = predict_bounidng_box(pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y,
+                                                    thres=threshold)
+    # convert to dfs
+    if len(bb_stem) > 0:
+        df_stem = pd.DataFrame(bb_stem)
+        df_stem = df_stem[['bb_x', 'bb_y', 'siz_x', 'siz_y']].drop_duplicates()
+    else:
+        df_stem = None
+    if len(bb_iloop) > 0:
+        df_iloop = pd.DataFrame(bb_iloop)
+        df_iloop = df_iloop[['bb_x', 'bb_y', 'siz_x', 'siz_y']].drop_duplicates()
+    else:
+        df_iloop = None
+    if len(bb_hloop) > 0:
+        df_hloop = pd.DataFrame(bb_hloop)
+        df_hloop = df_hloop[['bb_x', 'bb_y', 'siz_x', 'siz_y']].drop_duplicates()
+    else:
+        df_hloop = None
+    # process target bb list into different types, store in df
+    df_target_stem, df_target_iloop, df_target_hloop = make_target_df(target_bb)
+    # metric for each bb type
+    m_stem = calculate_bb_metrics(df_target_stem, df_stem)
+    m_iloop = calculate_bb_metrics(df_target_iloop, df_iloop)
+    m_hloop = calculate_bb_metrics(df_target_hloop, df_hloop)
+    # calculate non-bb sensitivity and specificity
+    se_stem, sp_stem = sensitivity_specificity(target_stem_on, pred_box_stem, m)
+    se_iloop, sp_iloop = sensitivity_specificity(target_iloop_on, pred_box_iloop, m)
+    se_hloop, sp_hloop = sensitivity_specificity(target_hloop_on, pred_box_hloop, m)
+    # combine
+    m_stem.update({'struct_type': 'stem', 'sensitivity': se_stem, 'specificity': sp_stem})
+    m_iloop.update({'struct_type': 'iloop', 'sensitivity': se_iloop, 'specificity': sp_iloop})
+    m_hloop.update({'struct_type': 'hloop', 'sensitivity': se_hloop, 'specificity': sp_hloop})
+    df_result = pd.DataFrame([m_stem, m_iloop, m_hloop])
+    df_result['bb_sensitivity_identical'] = df_result['n_target_identical'] / df_result['n_target_total']
+    df_result['bb_sensitivity_overlap'] = (df_result['n_target_identical'] + df_result['n_target_overlap']) / df_result[
+        'n_target_total']
+    return df_result
+
+
+def make_plot_sigmoid(seq, target, pred, title):
+    # tmp = np.sum(target[0, :, :], axis=0)
+    # try:
+    #     first_nonzero_idx_from_right = next(i for i in range(len(tmp)) if tmp[-(i + 1)] > 0)
+    # except StopIteration:
+    #     # target all 0, can't infer index, don't crop FIXME we should save original sequence length in df then we don't need to infer
+    #     first_nonzero_idx_from_right = 0
+    # # crop
+    # if first_nonzero_idx_from_right == 0:  # can't index by -0 <- will be empty!
+    #     # no crop
+    #     pass
+    # else:
+    #     target = target[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
+    #     pred = pred[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
+
+    target = target[:len(seq), :len(seq)]
+    pred = pred[:len(seq), :len(seq)]
 
     # apply 'hard-mask'  (lower triangle)
     assert target.shape == pred.shape  # channel x h x w
@@ -211,22 +457,25 @@ def make_plot_sigmoid(target, pred, title):
     return fig
 
 
-def make_plot_softmax(target, pred, title):
+def make_plot_softmax(seq, target, pred, title):
     pred = softmax(pred, axis=0)
 
-    tmp = np.sum(target[0, :, :], axis=0)
-    try:
-        first_nonzero_idx_from_right = next(i for i in range(len(tmp)) if tmp[-(i + 1)] > 0)
-    except StopIteration:
-        # target all 0, can't infer index, don't crop FIXME we should save original sequence length in df then we don't need to infer
-        first_nonzero_idx_from_right = 0
-    # crop
-    if first_nonzero_idx_from_right == 0:  # can't index by -0 <- will be empty!
-        # no crop
-        pass
-    else:
-        target = target[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
-        pred = pred[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
+    # tmp = np.sum(target[0, :, :], axis=0)
+    # try:
+    #     first_nonzero_idx_from_right = next(i for i in range(len(tmp)) if tmp[-(i + 1)] > 0)
+    # except StopIteration:
+    #     # target all 0, can't infer index, don't crop FIXME we should save original sequence length in df then we don't need to infer
+    #     first_nonzero_idx_from_right = 0
+    # # crop
+    # if first_nonzero_idx_from_right == 0:  # can't index by -0 <- will be empty!
+    #     # no crop
+    #     pass
+    # else:
+    #     target = target[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
+    #     pred = pred[:, :-first_nonzero_idx_from_right, :-first_nonzero_idx_from_right]
+
+    target = target[:len(seq), :len(seq)]
+    pred = pred[:len(seq), :len(seq)]
 
     # predicted index
     pred_idx = pred.argmax(axis=0)
