@@ -134,8 +134,20 @@ CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net_pixel_bb_all_targets.py --da
 plot
 
 ```
-python visualize_prediction_pixel_bb_all_targets.py --in_file result/rf_data_all_targets_2/pred_ep_10.pkl.gz --out_file result/rf_data_all_targets_2/plot/ep_10.bb_all_1.html --threshold 0.1 --row sample --bb --verbose
+python visualize_prediction_pixel_bb_all_targets.py --in_file result/rf_data_all_targets_2/pred_ep_6.pkl.gz --out_file result/rf_data_all_targets_2/plot/ep_6.bb_all_1.html --threshold 0.1 --row sample --bb --verbose
 ```
+
+
+Result: https://drive.google.com/drive/folders/1vXmKVnrSpTAiaXuP6IKoRDWsMco98UTo
+
+training script still running....
+
+
+### Valid path
+
+WIP:
+
+[valid_path_wip.ipynb](valid_path_wip.ipynb)
 
 
 ## Ideas & TODOs
