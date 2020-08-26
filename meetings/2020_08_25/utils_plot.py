@@ -205,7 +205,11 @@ def make_target_df(target_bb):
 def _calculate_bb_metrics(df_target, df_pred):
 
     def is_identical(bb1, bb2):
-        return bb1 == bb2
+        return bb1 == bb2  # this should work? FIXME
+        # bb1_x, bb1_y, siz1_x, siz1_y = bb1
+        # bb2_x, bb2_y, siz2_x, siz2_y = bb2
+        # # FIXME debug! any off-by-1 error?
+        # return abs(bb1_x-bb2_x)<=1 and abs(bb1_y-bb2_y)<=1 and abs(siz1_x-siz2_x)<=1 and abs(siz1_y-siz2_y)<=1
 
     def is_overlap(bb1, bb2):
         bb1_x, bb1_y, siz1_x, siz1_y = bb1
@@ -233,7 +237,9 @@ def _calculate_bb_metrics(df_target, df_pred):
     n_target_overlap = 0
     n_target_nohit = 0
     for _, row1 in df_target.iterrows():
-        bb1 = (row1['bb_x'], row1['bb_y'], row1['siz_x'], row1['siz_y'])
+        # bb1 = (row1['bb_x'], row1['bb_y'], row1['siz_x'], row1['siz_y'])
+        # FIXME data generator returns ledft corner of bb, convert to top right corner to be consistent
+        bb1 = (row1['bb_x'], row1['bb_y'] + row1['siz_y'] -1, row1['siz_x'], row1['siz_y'])
         found_identical = False
         found_overlapping = False
         for _, row2 in df_pred.iterrows():
@@ -262,7 +268,9 @@ def _calculate_bb_metrics(df_target, df_pred):
         found_identical = False
         found_overlapping = False
         for _, row2 in df_target.iterrows():
-            bb2 = (row2['bb_x'], row2['bb_y'], row2['siz_x'], row2['siz_y'])
+            # bb2 = (row2['bb_x'], row2['bb_y'], row2['siz_x'], row2['siz_y'])
+            # FIXME data generator returns ledft corner of bb, convert to top right corner to be consistent
+            bb2 = (row2['bb_x'], row2['bb_y'] + row2['siz_y'] -1, row2['siz_x'], row2['siz_y'])
             if is_identical(bb1, bb2):
                 found_identical = True
             elif is_overlap(bb1, bb2):  # note this is overlapping but NOT identical due to "elif"
@@ -388,6 +396,11 @@ def calculate_metrics(row, threshold):
         df_hloop = None
     # process target bb list into different types, store in df
     df_target_stem, df_target_iloop, df_target_hloop = make_target_df(target_bb)
+
+    # # FIXME debug
+    # print(df_target_stem)
+    # print(df_stem)
+
     # metric for each bb type
     m_stem = calculate_bb_metrics(df_target_stem, df_stem)
     m_iloop = calculate_bb_metrics(df_target_iloop, df_iloop)
