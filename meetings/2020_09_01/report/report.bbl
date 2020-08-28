@@ -1,0 +1,73 @@
+\begin{thebibliography}{10}
+
+\bibitem{lorenz2011viennarna}
+Ronny Lorenz, Stephan~H Bernhart, Christian~H{\"o}ner Zu~Siederdissen, Hakim
+  Tafer, Christoph Flamm, Peter~F Stadler, and Ivo~L Hofacker.
+\newblock Viennarna package 2.0.
+\newblock {\em Algorithms for molecular biology}, 6(1):26, 2011.
+
+\bibitem{zuker2003mfold}
+Michael Zuker.
+\newblock Mfold web server for nucleic acid folding and hybridization
+  prediction.
+\newblock {\em Nucleic acids research}, 31(13):3406--3415, 2003.
+
+\bibitem{andronescu2007efficient}
+Mirela Andronescu, Anne Condon, Holger~H Hoos, David~H Mathews, and Kevin~P
+  Murphy.
+\newblock Efficient parameter estimation for rna secondary structure
+  prediction.
+\newblock {\em Bioinformatics}, 23(13):i19--i28, 2007.
+
+\bibitem{mortimer2014insights}
+Stefanie~A Mortimer, Mary~Anne Kidwell, and Jennifer~A Doudna.
+\newblock Insights into rna structure and function from genome-wide studies.
+\newblock {\em Nature reviews Genetics}, 15(7):469, 2014.
+
+\bibitem{bevilacqua2016genome}
+Philip~C Bevilacqua, Laura~E Ritchey, Zhao Su, and Sarah~M Assmann.
+\newblock Genome-wide analysis of rna secondary structure.
+\newblock {\em Annual review of genetics}, 50:235--266, 2016.
+
+\bibitem{kerpedjiev2015forna}
+Peter Kerpedjiev, Stefan Hammer, and Ivo~L Hofacker.
+\newblock Forna (force-directed rna): simple and effective online rna secondary
+  structure diagrams.
+\newblock {\em Bioinformatics}, 31(20):3377--3379, 2015.
+
+\bibitem{wu2018convolutional}
+Michelle~J Wu.
+\newblock Convolutional models of rna energetics.
+\newblock {\em bioRxiv}, page 470740, 2018.
+
+\bibitem{willmottstate}
+Devin Willmott, David Murrugarra, and Qiang Ye.
+\newblock State inference of rna secondary structures with deep recurrent
+  neural networks.
+
+\bibitem{zhang2019new}
+Hao Zhang, Chunhe Zhang, Zhi Li, Cong Li, Xu~Wei, Borui Zhang, and Yuanning
+  Liu.
+\newblock A new method of rna secondary structure prediction based on
+  convolutional neural network and dynamic programming.
+\newblock {\em Frontiers in genetics}, 10, 2019.
+
+\bibitem{wang2019dmfold}
+Linyu Wang, Yuanning Liu, Xiaodan Zhong, Haiming Liu, Chao Lu, Cong Li, and Hao
+  Zhang.
+\newblock Dmfold: A novel method to predict rna secondary structure with
+  pseudoknots based on deep learning and improved base pair maximization
+  principle.
+\newblock {\em Frontiers in genetics}, 10:143, 2019.
+
+\bibitem{kingma2014adam}
+Diederik~P Kingma and Jimmy Ba.
+\newblock Adam: A method for stochastic optimization.
+\newblock {\em arXiv preprint arXiv:1412.6980}, 2014.
+
+\bibitem{staple2005pseudoknots}
+David~W Staple and Samuel~E Butcher.
+\newblock Pseudoknots: Rna structures with diverse functions.
+\newblock {\em PLoS biology}, 3(6):e213, 2005.
+
+\end{thebibliography}
