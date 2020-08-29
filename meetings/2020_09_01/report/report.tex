@@ -112,6 +112,91 @@ by three pairs of left-right brackets.
 
 
 
+\subsection{Structural components}
+
+Just as sequence motif is defined in the linear sequence space,
+a similar notion of 'structural motif' also exists.
+A commonly adopted way is to break down structure into the following components:
+
+\begin{itemize}
+    \item stem: todo
+    \item hairpin loop: todo
+    \item internal loop: todo
+    \item bulge: todo
+    \item external loop: todo
+    \item multibranch loop: todo
+    \item pseudoknot: todo
+\end{itemize}
+
+Such structural motifs can be easily identified on the graph representation of a structure,
+as shown in Fig \ref{fig:structural_motif_graph}, where we only annotated one instance for each structural motif class for clarity.
+(todo add a minimal example for pseudoknot)
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{plot/structural_motif_graph.png}
+    \caption{TODO}
+    \label{fig:structural_motif_graph}
+    \centering
+\end{figure}
+
+
+In this work, we distinguish structural motifs that are 'local' and 'non-local',
+where local-ness is defined w.r.t. the 2D matrix representation of the structure.
+To illustrate this idea, we plot the 2D matrix corresponding to the above structure,
+as shown in Fig \ref{fig:structural_motif_2d_matrix}(a).
+For each type of structural motif, if it can be fully represented by the interaction between
+two (contiguous) substrings of the original sequence, it is considered a 'local' structure,
+and can be fully identified by a bouning box on 2D matrix representation.
+Note that interaction does not necessarily mean the substrings bind to each other.
+On the other hand, certain structure motifs can only be represented by interaction between
+more than two (contiguous) substrings of the original sequence, then it is a non-local structure.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{plot/structural_motif_2d_matrix.png}
+    \caption{TODO}
+    \label{fig:structural_motif_2d_matrix}
+    \centering
+\end{figure}
+
+
+
+
+
+Using the above defined, we drew all the local structure bounding boxes,
+as shown in Fig \ref{fig:structural_motif_2d_matrix}(b).
+
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{plot/local_bounding_box_examples.png}
+    \caption{TODO}
+    \label{fig:local_bounding_box_examples}
+    \centering
+\end{figure}
+
+
+To precisely define what constitutes each type of local structure,
+we zoom in to each one annotated in Fig \ref{fig:structural_motif_graph},
+and compare it with the corresponding zoomed-in 2D matrix, as shown in
+Fig \ref{fig:local_bounding_box_examples}.
+As we can see:
+
+todo
+
+
+Formal definition and minimal example
+
+
+
+
+no need for additional parameters
+
+
+
+
+
 
 
 \subsection{Related work}
