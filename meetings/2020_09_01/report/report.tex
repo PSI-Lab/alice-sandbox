@@ -1,8 +1,10 @@
-\documentclass{article}
+\documentclass[12pt]{article}
 
 
 \usepackage[utf8]{inputenc} % allow utf-8 input
 \usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{kpfonts}
+
 \usepackage{hyperref}       % hyperlinks
 \usepackage{url}            % simple URL typesetting
 \usepackage{booktabs}       % professional-quality tables
@@ -16,8 +18,13 @@
 \usepackage{wrapfig}
 \usepackage[font=small]{caption}
 \usepackage{enumitem}
-\usepackage{amsmath}
+%\usepackage{amsmath}
 %\usepackage{floatrow}
+
+\usepackage[legalpaper, margin=1in]{geometry}
+
+\usepackage{setspace}
+\setstretch{1.2}
 
 %\addtolength{\belowcaptionskip}{-20pt}
 
@@ -112,15 +119,16 @@ by three pairs of left-right brackets.
 
 
 
-\subsection{Structural components}
+\section{Structural components}
+
 
 Just as sequence motif is defined in the linear sequence space,
 a similar notion of 'structural motif' also exists.
 A commonly adopted way is to break down structure into the following components:
 
 \begin{itemize}
-    \item stem: todo
     \item hairpin loop: todo
+    \item stem: todo
     \item internal loop: todo
     \item bulge: todo
     \item external loop: todo
@@ -129,7 +137,8 @@ A commonly adopted way is to break down structure into the following components:
 \end{itemize}
 
 Such structural motifs can be easily identified on the graph representation of a structure,
-as shown in Fig \ref{fig:structural_motif_graph}, where we only annotated one instance for each structural motif class for clarity.
+as shown in Fig \ref{fig:structural_motif_graph}, where we only annotated one instance for
+each structural motif class for clarity.
 (todo add a minimal example for pseudoknot)
 
 \begin{figure}[h]
@@ -143,14 +152,17 @@ as shown in Fig \ref{fig:structural_motif_graph}, where we only annotated one in
 
 In this work, we distinguish structural motifs that are 'local' and 'non-local',
 where local-ness is defined w.r.t. the 2D matrix representation of the structure.
-To illustrate this idea, we plot the 2D matrix corresponding to the above structure,
-as shown in Fig \ref{fig:structural_motif_2d_matrix}(a).
+The importance of such distinction will become clear in Section (todo).
+To illustrate this idea, we plot the 2D matrix representation of the above structure
+in Fig \ref{fig:structural_motif_2d_matrix}(a),
+where majority of the pixels are in *navy* (unpaired positions),
+and a few pixels in *yellow* (paired positions).
 For each type of structural motif, if it can be fully represented by the interaction between
 two (contiguous) substrings of the original sequence, it is considered a 'local' structure,
-and can be fully identified by a bouning box on 2D matrix representation.
+and can be fully identified by a bounding box on 2D matrix.
 Note that interaction does not necessarily mean the substrings bind to each other.
 On the other hand, certain structure motifs can only be represented by interaction between
-more than two (contiguous) substrings of the original sequence, then it is a non-local structure.
+three or more (contiguous) substrings of the original sequence,which we refer to as non-local structures.
 
 \begin{figure}[h]
     \centering
@@ -161,11 +173,11 @@ more than two (contiguous) substrings of the original sequence, then it is a non
 \end{figure}
 
 
+\subsection{Local structures}
 
 
-
-Using the above defined, we drew all the local structure bounding boxes,
-as shown in Fig \ref{fig:structural_motif_2d_matrix}(b).
+Using the above definition, we drew all the local structure bounding boxes
+in Fig \ref{fig:structural_motif_2d_matrix}(b).
 
 
 \begin{figure}[h]
@@ -178,64 +190,193 @@ as shown in Fig \ref{fig:structural_motif_2d_matrix}(b).
 
 
 To precisely define what constitutes each type of local structure,
-we zoom in to each one annotated in Fig \ref{fig:structural_motif_graph},
-and compare it with the corresponding zoomed-in 2D matrix, as shown in
+we zoom in to each annotated structure in Fig \ref{fig:structural_motif_graph},
+and compare it with the corresponding portion zoomed-in on 2D matrix, as shown in
 Fig \ref{fig:local_bounding_box_examples}.
-As we can see:
+We can see that:
 
-todo
+\begin{itemize}
+    \item hairpin loop: Fig \ref{fig:local_bounding_box_examples}(a),
+    square bounding box across the diagonal, all pixels have value $0$ except the top right corner being $1$,
+    where the top right pixel corresponds to the
+    closing base pair, i.e. the base pair that's 'shared' between the hairpin loop and the stem.
+    Note that hairpin loop does not exist in a stand-alone fashion.
+    There is always a stem next to it.
 
-
-Formal definition and minimal example
-
-
-
-
-no need for additional parameters
-
-
-
+    \item stem: Fig \ref{fig:local_bounding_box_examples}(b),
+    square bounding box with $1$'s on the off-diagonal and $0$'s elsewhere.
 
 
+    \item internal loop: Fig \ref{fig:local_bounding_box_examples}(c),
+    rectangular (or square) bounding box of all $0$'s except the top right and bottom left corner being $1$,
+    where these two pixels correspond to the closing base pairs, one on each side.
+    Note that internal loop does not exist in a stand-alone fashion.
+    There is always two stems next to it, one on each side.
+
+    \item bulge: Fig \ref{fig:local_bounding_box_examples}(d),
+    almost the same as internal loop, except for the bounding box size is constrained
+    to be $2xN$ or $Nx2$, since one of the 'side' only has $2$ consecutive base pairs, by definition.
+\end{itemize}
+
+One notable fact is that all pixel values inside the bounding box are deterministic given the box type and shape.
+This also guarantees that hard constraints are satisfied within each bounding box.
+
+\subsection{Non-local structures}
+
+We're left with $3$ structural motif types that cannot be repsented by a bounding box on 2D matrix.
+We will show that non of these structures contribute pixel value of $1$ in the 2D matrix,
+and that their existence can be described in an alternative way,
+which pinpoint how local structures can be assembled into \textit{valid} global structures.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{plot/non_local_structures_2d_matrix.png}
+    \caption{TODO}
+    \label{fig:non_local_structures_2d_matrix}
+    \centering
+\end{figure}
 
 
-\subsection{Related work}
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{plot/non_local_structures_pseudoknot.png}
+    \caption{TODO}
+    \label{fig:non_local_structures_pseudoknot}
+    \centering
+\end{figure}
+
+
+
+
+\begin{itemize}
+    \item external loop: Fig \ref{fig:non_local_structures_2d_matrix},
+    the presence of external loop beyond $(i, j)$ indicates that
+    bases $0 \dots i$ and $j \dots L$ are all unpaired in the global structure,
+    while $i$ and $j$ are paired (not necessarily to each other).
+    One might claim that in this particular example it can be fully characterized by a 2D bounding box
+    with botton left pixel $(i, j)$ being $1$ since $i$ and $j$ are paired,
+    but in practise external loop can also be multi-branch,
+    i.e. joining multiple stems, in which case $i$ pairs with some other $k$ and $j$ pair with some other $u$.
+
+    \item multibranch loop: Fig \ref{fig:non_local_structures_2d_matrix},
+    the presence of multibranch loop implies that multiple substructures get
+    "assembled" into the same global structure, where each substructure is lead
+    by a stem whose closing base pair is $(i_k, j_k)$.
+
+    \item pseudoknot: We use a different structure to illustrate pseudoknot
+    since the structure we used above does not contain any, see Fig \ref{fig:non_local_structures_pseudoknot}.
+    In this example, stem A defines bases $15 \dots 17$ pair with $27 \dots 29$,
+    and stem B defines bases $23 \dots 26$ pair with $34 \dots 37$.
+    They form a pseudoknot since their ranges cross each other, i.e. non-nested (which is required by most thermodynamic folding).
+
+
+\end{itemize}
 
 
 
 \section{Method}
 
+We propose a 2-stage approach to predict secondary structure from sequence.
+In stage 1, we predict all plausible local structures, represented as various types of bounding boxes.
+In stage 2, we evaluate all \textit{valid} combinations of local structures from stage 1,
+and predict the most likely global structure.
+Non-local structure is being modeled implicitly in stage 2 by defining what combinations are valid.
 
+Benefit of such model:
+
+\begin{itemize}
+    \item Output is guaranteed to satisfy all hard constraints.
+    This is a direct result of the 2-stage approach:
+    local structures predicted from stage 1 is parametrized as bounding boxes whose underlying pixels
+    satisfy constraints by design.
+    Combination of local structure in stage 2 needs to be valid, where validity is precisely defined by hard constraints.
+
+    \item Possibility of predicting sub optimal structure and structure ensemble.
+    Since stage 1 predicts all plausible local structures, and stage 2 evaluates the
+    likelihood/score of all valid combination, we can predict sub optimal structure,
+    and even the entire ensemble.
+
+    \item Support prediction of pseudoknot by design.
+    Historically. pseudoknot is difficult to predict since the traditional methods
+    were based on recursion defined at a base-pair level,
+    thus the nested structure assumption has to be made to result in efficient
+    dynamic programming algorithm.
+    Our approach evaluates valid combinations of local structure
+    (rather than at the base-pair level), whose search space is way smaller than
+    evaluating all valid combination of base pairs, so we no longer require the basic components
+    (local structures in our case) to be nested, thus enabling pseudoknot prediction.
+
+    \item Can be potentially fine-tuned by probing data.
+    Since stage 1 model predicts plausible local structure, and each type of local structure
+    implies certain base-pairing or unpairing for the underlying bases,
+    we can use probing data to fine-tune the prediction.
+    For example, cross-link based RNA probing method detects single and double stranded regions of a RNA,
+    and for the double stranded region, although it does not detect the exact base pairing,
+    it is possible to infer roughly which region binds to which other region.
+    Such information can be incorporated while training the stage 1 model.
+
+\end{itemize}
+
+This report focus on stage 1 model.
+
+
+\section{Stage 1: Predict local structure}
+
+\subsection{Problem formulation}
+
+Given a input sequence of length $L$,
+we would like to predict all plausible local structure bounding boxes in the 2D $L x L$ matrix.
+Such problem is well studied in computer vision under the topic of object detection,
+from which we got a lot of inspiration.
+We notice the following difference compare to computer vision applications:
+
+\begin{itemize}
+    \item In computer vision, the exact pixel location of the bounding box does not matter,
+    as long as the bounding box captures the object of interest.
+    In our case, since a different pixel correspond to different nucleotides,
+    and most of our bounding boxes are small in pixel size, we cannot tolerate even a single pixel shift.
+
+    \item In computer vision, two bounding boxes can overlap
+    if the underlying objects overlap on the image. In our case, for a set of bounding boxes to
+    be part of the same global structure, they cannot overlap (except for corner pixels),
+    since the location and size of each bounding box fully parameterize the pixel values it encapsulates.
+
+    \item todo
+\end{itemize}
+
+
+For each pixel in the output $L x L$ matrix, we predict the presence of $3$ types of bounding boxes:
+
+todo: copy from meeting notes, discretized target
 
 \subsection{Architecture}
 
 
 \subsection{Training}
 
-
+todo: soft mask (due to potential false negative)
 
 \subsection{Inference} \label{sec:inference}
 
-
+todo: copy from meeting notes, plot
 
 \section{Result}
 
-\subsection{Test set performance}
+\section{Ideas for Stage 2: global structure assembly}
 
 
-\subsection{Structures with pesudoknot}
+\section{Future work}
+
+satisfy constraints,
+all possible 2D binary matrix -> huge space, majority does not satisfy biology constraints.
+bounding box: parameterized by a few parameters,
+pixel value implied given parameterized, satisfy (local) constraints.
+
+
 
 
 \bibliographystyle{unsrt}
 \bibliography{report}
-
-%Speed consideration: implement split architecture, only need one forward pass for up to the last layer,
-%then run last layer (triangular convolution) for $L-1$ times.
-%
-%
-%Case study:
-%
-%TODO compare with RNAfold performance
 
 
 \end{document}
