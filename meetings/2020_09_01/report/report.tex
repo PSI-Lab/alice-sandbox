@@ -28,71 +28,54 @@
 
 %\addtolength{\belowcaptionskip}{-20pt}
 
-\title{test}
+\title{Project progress report}
 
 \begin{document}
 
 \maketitle
 
-%\begin{abstract}
-%  TODO
-%\end{abstract}
-
-%\vspace*{-7em}
 
 \section{Introduction}
 
-dp:
-pros: hard-constraint satisfied by design (as reflected by valid recursion steps);
-models distribution
-cons: efficient dp recursion based on nesting assumption, cannot model pseudoknot;
-additive energy terms, hard-coded.
+Traditional approaches for RNA secondary structure prediction uses either dynamic programming
+with experimentally measured hard-coded free energy terms,
+or formulate the folding problem as syntax parsing under some stochastic context free grammar,
+and tries to learn the parameters from training dataset.
+Both types of approaches are very similar in their nature, in the sense that
+they all rely on recursion at the base-pair level.
+These methods predict structures that satisfy all hard constraints since the
+underlying recursion is designed to only generate valid sequence and structures.
+In addition, there is typically an efficient way to sample sub optimal structure by
+stochastic trace back.
+On the other hand, the expressiveness of these models is heavily restricted by the underlying
+recursion, and strong assumptions have to be made for the recursion to be tractable
+(for example, the nested assumption makes predicting pseudoknot an impossible task).
 
-scfg & extension:
-pros: constraints;
-models distribution
-trainable param
-cons: efficient dp recursion based on nesting assumption, cannot model pseudoknot
-
-
-todo: plot explaining dp & scfg approaches
-
-nn:
-pros: expressive, can be trained on lots of data;
-cons: too many parameters, risk of overfitting if trained on dataset not diverse enough;
-hard constraints cannot be captured by default
-(some work using optimization as unrolled rnn, but no guarantee it'll converge,
-and even if it converges there's guarantee the output satisfies the constraints,
-since the original discrete variables need to be relaxed in order to run through the optimization nn,
-so we're no longer operating in discrete space);
-does not model distribution
-
-todo: plot explaining nn approaches
+Recently there have been several work that uses neural network to tackle the structure prediction
+problem end-to-end. These models benefit from the fact that they are highly expressive and can be trained on lot of data,
+but most of the work ignore the hard constraint completely.
+One interesting work (SPOT-RNA) proposed to add a fixed layer RNN representing an unrolled
+constrained optimization, to convert the neural network output to one that satisfy the hard constraints.
+One potential is that there is no convergence guarantee, and even if it converges there's guarantee the output satisfies the constraints,
+since the original discrete optimization problem need to be relaxed in order to run through the optimization RNN.
 
 
-In this work we are aiming at developing a model that makes use of the expressiveness of deep nn
-while respecting the hard constraints.
+In this work we aim at developing a model that makes use of the expressiveness of deep neural network
+while respecting all the hard constraints. This report covers the following topics:
 
-This report covers the following sections:
-
-- predictive problem formulation
-
-- we review the commonly used data representation for rna ss
-
-- we propose an alternative way to represent or parameterized the ss
-
-- under the alternative parametrization, we propose a 2-stage model,
-which satisfies the biological hard constraints by design
-
-- describe stage 1 model: data, training & result.
-
-
-- ideas for stage2
+\begin{itemize}
+    \item review the commonly used data representation for RNA secondary structure
+    \item propose an alternative way to represent the structure, using the idea of local structural components
+    \item describe a 2-stage model under the alternative parametrization,
+which satisfies the hard constraints by design
+    \item present results on stage 1 model
+    \item discussion of ideas for stage2 and future improvement
+\end{itemize}
 
 
 \subsection{Problem formulation}
 
-Given an RNA sequence of length $L$, we are interested in all possible secondary structures.
+Given an RNA sequence of length $L$, we are interested in its secondary structure(s) (most likely single structure, or a distribution of structures).
 %There are three common ways to represent a specific RNA secondary structure:
 To represent a specific secondary structure, there are three commonly used conventions:
 (1) undirected graph, where each node is a base in the sequence, and each edge represents base pairing.
@@ -102,21 +85,25 @@ base pairing between sequence position $i$ and $j$, and $0$ represents no base p
 (3) dot-bracket notation of length $L$ where unpaired bases are denoted as dots,
     and paired bases are represented as left and right brackets.
 %When pseudoknot is present, different styles of bracket needs to be used to represent nested structures.
+We'll be using the \textit{upper triangular matrix} representation throughout this report.
 
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{plot/rna_ss_binary_mat.png}
+    \caption{TODO}
+    \label{fig:rna_ss_binary_mat}
+    \centering
+\end{figure}
 
 As an example, for a short RNA sequence GUUGUGAAAU, one possible structure it can take on
-
-consists of a stem and a loop, as seen in Fig \ref{fig:rna_ss_binary_mat}(a), represented by an undirected graph.
+consists of a stem and a loop, as seen in Fig \ref{fig:rna_ss_binary_mat} on the left, represented by an undirected graph.
 Such structure can also be represented by a $10 \times 10$ upper triangular matrix with all $0$'s,
 except for positions
 %$y_{1, 10}, y_{2, 9}$ and $y_{3, 8}$,
 $(1, 10), (2, 9)$ and $(3, 8)$,
-all being $1$, as shown in Fig \ref{fig:rna_ss_binary_mat}(b).
+all being $1$, as shown in Fig \ref{fig:rna_ss_binary_mat} on the right.
 This contiguous stretch of $1$'s along the diagonal corresponds to the stem formed by the three base pairs: G-U, U-A and U-A.
-The equivalent dot-bracket notation is shown in Fig \ref{fig:rna_ss_binary_mat}(c), where the stem is represented
-by three pairs of left-right brackets.
-%(TODO define x and y first)
-
 
 
 \section{Structural components}
@@ -552,7 +539,7 @@ would probably be left out due to their incompatibility with other bounding boxe
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=\textwidth]{plot/performance_metrics.png}
+    \includegraphics[width=0.8\textwidth]{plot/performance_metrics.png}
     \caption{TODO}
     \label{fig:performance_metrics}
     \centering
@@ -563,9 +550,10 @@ would probably be left out due to their incompatibility with other bounding boxe
 
 
 
-\subsection{Visualize ounding box prediction}
+\subsection{Visualize bounding box prediction}
 
-In Fig xxx, we demonstrate the predicted bounding boxes for one example in the validation set.
+To get a concrete idea on how well the model reconstructs the local structure bounding boxes,
+we visualize the predicted bounding boxes for one example in the validation set, as shown in Fig \ref{fig:visualize_bb_prediction}.
 Here we've applied a cutoff $0.2$ to all sigmoid units to find all pixels where bounding box(es) should be computed.
 Then for each such pixel, we calculate the location and size of bounding box,
 and draw the bounding box with opacity set to the probability of the box.
@@ -573,6 +561,14 @@ Bounding box proposed from neighbouring pixels can overlap partially or entirely
 Visually, a \textit{darker} bounding box is a more confident one,
 since it corresponds to a high probability box and/or identical proposals from multiple pixels.
 Predicted bounding boxes in red, while Solid yellow color blocks are ground truth.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{plot/visualize_bb_prediction.png}
+    \caption{TODO}
+    \label{fig:visualize_bb_prediction}
+    \centering
+\end{figure}
 
 
 
