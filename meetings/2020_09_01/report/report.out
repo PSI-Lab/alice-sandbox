@@ -6,9 +6,9 @@
 \BOOKMARK [1][-]{section.3}{Method}{}% 6
 \BOOKMARK [1][-]{section.4}{Stage 1: Predict local structure}{}% 7
 \BOOKMARK [2][-]{subsection.4.1}{Problem formulation}{section.4}% 8
-\BOOKMARK [2][-]{subsection.4.2}{Architecture}{section.4}% 9
-\BOOKMARK [2][-]{subsection.4.3}{Training}{section.4}% 10
-\BOOKMARK [2][-]{subsection.4.4}{Inference}{section.4}% 11
-\BOOKMARK [1][-]{section.5}{Result}{}% 12
-\BOOKMARK [1][-]{section.6}{Ideas for Stage 2: global structure assembly}{}% 13
-\BOOKMARK [1][-]{section.7}{Future work}{}% 14
+\BOOKMARK [2][-]{subsection.4.2}{Model and training}{section.4}% 9
+\BOOKMARK [2][-]{subsection.4.3}{Inference}{section.4}% 10
+\BOOKMARK [2][-]{subsection.4.4}{Result}{section.4}% 11
+\BOOKMARK [2][-]{subsection.4.5}{Visualize ounding box prediction}{section.4}% 12
+\BOOKMARK [1][-]{section.5}{Ideas for Stage 2: global structure assembly}{}% 13
+\BOOKMARK [1][-]{section.6}{Future work}{}% 14

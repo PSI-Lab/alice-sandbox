@@ -79,7 +79,7 @@ This report covers the following sections:
 
 - we review the commonly used data representation for rna ss
 
-- we propose an alternative way to represent/parameterized the ss
+- we propose an alternative way to represent or parameterized the ss
 
 - under the alternative parametrization, we propose a 2-stage model,
 which satisfies the biological hard constraints by design
@@ -293,7 +293,7 @@ Benefit of such model:
 
     \item Possibility of predicting sub optimal structure and structure ensemble.
     Since stage 1 predicts all plausible local structures, and stage 2 evaluates the
-    likelihood/score of all valid combination, we can predict sub optimal structure,
+    likelihood or score of all valid combination, we can predict sub optimal structure,
     and even the entire ensemble.
 
     \item Support prediction of pseudoknot by design.
@@ -306,7 +306,7 @@ Benefit of such model:
     evaluating all valid combination of base pairs, so we no longer require the basic components
     (local structures in our case) to be nested, thus enabling pseudoknot prediction.
 
-    \item Can be potentially fine-tuned by probing data.
+    \item Can be potentially fine-tuned using probing data.
     Since stage 1 model predicts plausible local structure, and each type of local structure
     implies certain base-pairing or unpairing for the underlying bases,
     we can use probing data to fine-tune the prediction.
@@ -328,7 +328,7 @@ Given a input sequence of length $L$,
 we would like to predict all plausible local structure bounding boxes in the 2D $L x L$ matrix.
 Such problem is well studied in computer vision under the topic of object detection,
 from which we got a lot of inspiration.
-We notice the following difference compare to computer vision applications:
+We notice the following difference compare to object detection in computer vision applications:
 
 \begin{itemize}
     \item In computer vision, the exact pixel location of the bounding box does not matter,
@@ -341,26 +341,240 @@ We notice the following difference compare to computer vision applications:
     be part of the same global structure, they cannot overlap (except for corner pixels),
     since the location and size of each bounding box fully parameterize the pixel values it encapsulates.
 
-    \item todo
+    \item In computer vision training dataset, the bounding box annotations can be considered
+    accurate enough in the sense that most positive examples are being annotated with bounding boxes,
+    and regions without bounding boxes typically have no objects of interest (unless it was wrongly annotated).
+    In contrast, a typical RNA SS training dataset consists of sequence-structure pairs,
+    where there is *one* structure per sequence. Such structure typically represent the \textit{most likely}
+    global structure. There can be some other sub optimal global structure that are \textit{less likely globally},
+    but their underlying local structure could still be plausible.
+    This means that if we parse this particular global structure into local structure components and use them for training,
+    these local structures can be considered positive examples without any problem,
+    but in regions where no local structure is present where we consider all being negative examples there could potentially be false negatives.
+\end{itemize}
+
+With the above in mind, we propose the following setup for model training.
+For each pixel in the output $L x L$ matrix, we would like to assign it to some bounding box(es),
+and we would also want the location and size of the bounding boxes to be encoded with pixel-precision,
+so that we can try to predict the presence, location and size of the bounding boxes.
+
+
+
+Most of the time, each pixel can be uniquely assigned to one bounding box.
+In the case of closing pair of a loop, it's assigned to both the stem and the loop,
+for example, see the pixel where two bounding boxes overlap in Fig \ref{fig:local_bounding_box_examples}.
+In the rare case where the stem is of length $1$, and the stem has $2$ loops, one on each side,
+the pixel is assigned to $2$ loops. We'll ignore this rare case for now and work on it as part of future improvement.
+Furthermore, we notice the fact that the bounding box for bulge can can be considered a special case of internal loop,
+where the height or width is constrained to be $2$, so for now we combine these two into one category and we will refer to
+it as \textit{internal loop}.
+Thus, it can be observed that each pixel can be assigned to:
+
+\begin{itemize}
+    \item 0 or 1 stem box
+    \item 0 or 1 internal loop box
+    \item 0 or 1 hairpin loop
+\end{itemize}
+
+From the above, we can easily see that for each pixel we need at most 3 bounding boxes,
+each with its unique type (stem/internal loop/hairpin loop),
+and each bounding box can be on/off independent of the others.
+Using the above formulation, we only need to predict the on/off of each box (sigmoid),
+without the need to predict its type (avoid problem of multiple box permutation in computer vision).
+
+For each pixel, we set the corresponding bounding box to be \textbf{on} if the pixel is within the bounding box.
+To encode the location od bounding box (w.r.t. the pixel),
+we use the top right corner odf bounding box as the reference point,
+and calculate the distance of the current pixel to the reference,
+both horizontally and vertically.
+The idea is to predict it using a softmax over finite classes so we can predict the pixel-precision location.
+Horizontal distance (y/columns) is always $<= 0$: $ 0, -1, \dots, -9, -10, -10_beyond$,
+and vertical distance (x/rows) is always $>= 0$: $0, 1, \dots, 9, 10, 10_beyond$,
+i.e. we assign one class for each integer distance until some distance away ($10$ in the above example).
+
+
+To encode the size, we use different number of softmax, depending on the box type.
+For stem there is one softmax over $1, \dots, 9, 10, 10_beyond$, since it's square shaped.
+For internal loop we have two softmax over $1, \dots, 9, 10, 10_beyond$, one for height one for width.
+For hairpin loop there is one softmax over $1, \dots, 9, 10, 10_beyond$, since it's square shaped.
+Note that for both location and size, the integer cutoff of $10$ is an arbitrary choice for now,
+and we'll look into how to support larger ones in future work.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{plot/training_pixel_targets.png}
+    \caption{TODO}
+    \label{fig:training_pixel_targets}
+    \centering
+\end{figure}
+
+In summary, each pixel in the training dataset has $13$ targets,
+as demonstrated in Fig \ref{fig:training_pixel_targets}:
+
+\begin{itemize}
+%    \item stem\_on
+    \item \textit{stem\_on}: stem on off probability, sigmoid
+    \item \textit{stem\_location\_x}: vertical distance between stem bounding box reference and current pixel, softmax with 12 classes
+    \item \textit{stem\_location\_y}: horizontal distance between stem bounding box reference and current pixel, softmax with 12 classes
+    \item \textit{stem\_size}: stem bounding box size, softmax with 11 classes
+
+    \item \textit{iloop\_on}: internal loop on\/off probability, sigmoid
+    \item \textit{iloop\_location\_x}: vertical distance between internal loop bounding box reference and current pixel, softmax with 12 classes
+    \item \textit{iloop\_location\_y}: horizontal distance between internal loop bounding box reference and current pixel, softmax with 12 classes
+    \item \textit{iloop\_size\_x}: internal loop bounding box height, softmax with 11 classes
+    \item \textit{iloop\_size\_y}: internal loop bounding box width, softmax with 11 classes
+
+    \item \textit{hloop\_on}: hairpin loop on\/off probability, sigmoid
+    \item \textit{hloop\_location\_x}: vertical distance between hairpin loop bounding box reference and current pixel, softmax with 12 classes
+    \item \textit{hloop\_location\_y}: horizontal distance between hairpin loop bounding box reference and current pixel, softmax with 12 classes
+    \item \textit{hloop\_size}: hairpin loop bounding box size, softmax with 11 classes
 \end{itemize}
 
 
-For each pixel in the output $L x L$ matrix, we predict the presence of $3$ types of bounding boxes:
 
-todo: copy from meeting notes, discretized target
+\subsection{Model and training}
 
-\subsection{Architecture}
+We use 2D conv net to predict the bounding boxes for all pixels in parallel.
+For a sequence $s$ of size $L$, the input $x$ is of size $L x L x 8$, where $x[i, j, :]$
+in the concatenation of one-hot encoding of nucleotide $s[i]$ and $s[j]$.
+There are $13$ targets (a combination of sigmoid and softmax) for each pixel,
+as indicated in the previous section.
 
 
-\subsection{Training}
+We use a synthetic dataset to train the bounding box model (we're reserving the 'real' dataset for stage 2 model to predict global structure).
+Specifically, we generate random sequences of various length up to $200$, and use RNAfold to generate the
+minimum free energy structure and split into into local structures and annotate the corresponding bounding boxes.
+For each pixel, we check whether it's within a bounding box (for each of the $3$ types),
+if so we calculate the location of bounding box w.r.t. the pixel and assign the corresponding target values for the sigmoid and softmax.
 
-todo: soft mask (due to potential false negative)
+For pixels whose bounding box is set to off, the location and size softmax target losses are being masked out,
+since we do not have a target value for those and we do not care about the model prediction.
+In addition, to account for the fact that training dataset contains many potential false negatives
+from the perspective of local structure bounding boxes
+(i.e. pixels that do not belong to a bounding box in the particular example, but has a plausible local structure nearby, see Section ???),
+we re-weight losses on pixels outside the bounding boxes by a factor of $0.1$ (hard-coded for now, can be treated as hyperparameter).
+
+
 
 \subsection{Inference} \label{sec:inference}
 
-todo: copy from meeting notes, plot
+At inference time, each pixel can predict up to $3$ bounding boxes, one for each type.
+In this section we describe how to predict the stem bounding box, and the other two type are done in a similar way.
+For each pixel $(i, j)$, we do the following:
 
-\section{Result}
+\begin{enumerate}
+    \item Apply a threshold on sigmoid output \textit{stem\_on} to determine whether to compute bounding box for that pixel.
+    A typical threshold is $0.5$, but a different one can be used considering training data class imbalance,
+    as well as loss re-weighting.
+    In general, a lower threshold results in more bounding boxes (more false positives and less false negatives),
+    which might be desirable to feed as input to stage 2 model.
+    \item Compute the maximum likelihood bounding box location and size.
+    We maximize probabilities of \textit{stem\_location\_x}, \textit{stem\_location\_y} and \textit{stem\_size},
+    by taking the argmax index of each softmax.
+    Let the indices be \textit{idx\_x}, \textit{idx\_y}, \textit{idx\_siz}, respectively.
+    The location of the predicted bounding box reference point (top right corner) is:
+
+    \begin{equation}
+        \begin{align}
+            i\_ref = i - idx\_x \\
+            j\_ref = j + idx\_y
+        \end{align}
+    \end{equation}
+
+    and size of bounding box ($+1$ since idx 0 corresponds to size 1):
+
+    \begin{equation}
+        size = idx\_size + 1
+    \end{equation}
+
+    Note the above does not produce accurate result for bounding box location and size beyond the softmax length (to be worked on in the future).
+
+    \item We can also compute the probability of this bounding box,
+    by multiplying the sigmoid probability and 3 softmax probability corresponding to the argmax index:
+
+    \begin{equation}
+        p\_box = stem\_on * stem\_location\_x[idx\_x] * stem\_location\_y[idx\_y] * stem\_size[idx\_size]
+    \end{equation}
+
+\end{enumerate}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{plot/inference_bb_prediction.png}
+    \caption{TODO}
+    \label{fig:inference_bb_prediction}
+    \centering
+\end{figure}
+
+
+See Fig \ref{fig:inference_bb_prediction} for an example.
+
+
+\subsection{Result}
+
+Results presented in this section are from the following model:
+
+\begin{itemize}
+    \item $7$ 2D conv layers with Relu activation and batch norm
+    \item shared hidden layer with $50$ units
+    \item each output has its own hidden layer with $20$ units
+    \item sigmoid or softmax activation depend on output type
+    \item Adam optimizer with learning rate $0.0001$
+    \item model trained for $20$ epoches
+    \item Dataset of $500,000$ random sequences, $80\%$ used for training and $20\%$ for validation
+\end{itemize}
+
+We compute the following performance metrics, for each type of bounding box:
+
+\begin{enumerate}
+    \item Sensitivity for identical bounding box:
+    given a ground truth bounding box, what's the probability that at least one predicted bounding box is identical.
+    \item Sensitivity for overlapping (including identical) bounding box:
+    given a ground truth bounding box, what's the probability that at least one predicted bounding box overlaps it.
+
+    \item Pixel specificity:
+    for all pixels that overlap predicted bounding box(es), what's the probability it also overlaps a ground truth bounding box.
+\end{enumerate}
+
+
+For each example in the validation set, we compute the above metrics for all bounding box types,
+and plot the distribution of these metrics across all examples, as shown in Fig \ref{fig:performance_metrics}.
+We can see that for most examples in the validation set the ground truth bounding box can be perfectly reconstructed,
+as indicated by high sensitivity for identical bounding box.
+Further more, if we relax the reconstruction criteria to be overlapping instead of identical,
+sensitivity gets close to $100\%$.
+On the other hand, specificity is much lower overall,
+which is expected due to false negatives in the training dataset.
+We want to also point out that at this stage a high sensitivity and lower specificity is desired,
+since in stage 2 where we combine local structures into global structure, many of the proposed bounding boxes
+would probably be left out due to their incompatibility with other bounding boxes.
+
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{plot/performance_metrics.png}
+    \caption{TODO}
+    \label{fig:performance_metrics}
+    \centering
+\end{figure}
+
+
+
+
+
+
+\subsection{Visualize ounding box prediction}
+
+In Fig xxx, we demonstrate the predicted bounding boxes for one example in the validation set.
+Here we've applied a cutoff $0.2$ to all sigmoid units to find all pixels where bounding box(es) should be computed.
+Then for each such pixel, we calculate the location and size of bounding box,
+and draw the bounding box with opacity set to the probability of the box.
+Bounding box proposed from neighbouring pixels can overlap partially or entirely.
+Visually, a \textit{darker} bounding box is a more confident one,
+since it corresponds to a high probability box and/or identical proposals from multiple pixels.
+Predicted bounding boxes in red, while Solid yellow color blocks are ground truth.
+
+
 
 \section{Ideas for Stage 2: global structure assembly}
 
@@ -374,9 +588,14 @@ pixel value implied given parameterized, satisfy (local) constraints.
 
 
 
+todo larger sequence efficient
 
-\bibliographystyle{unsrt}
-\bibliography{report}
+conv filter redundancy
+
+incompatibility of softmax
+
+%\bibliographystyle{unsrt}
+%\bibliography{report}
 
 
 \end{document}
