@@ -1,14 +1,13 @@
 \BOOKMARK [1][-]{section.1}{Introduction}{}% 1
-\BOOKMARK [2][-]{subsection.1.1}{Problem formulation}{section.1}% 2
-\BOOKMARK [1][-]{section.2}{Structural components}{}% 3
-\BOOKMARK [2][-]{subsection.2.1}{Local structures}{section.2}% 4
-\BOOKMARK [2][-]{subsection.2.2}{Non-local structures}{section.2}% 5
-\BOOKMARK [1][-]{section.3}{Method}{}% 6
-\BOOKMARK [1][-]{section.4}{Stage 1: Predict local structure}{}% 7
-\BOOKMARK [2][-]{subsection.4.1}{Problem formulation}{section.4}% 8
-\BOOKMARK [2][-]{subsection.4.2}{Model and training}{section.4}% 9
-\BOOKMARK [2][-]{subsection.4.3}{Inference}{section.4}% 10
-\BOOKMARK [2][-]{subsection.4.4}{Result}{section.4}% 11
-\BOOKMARK [2][-]{subsection.4.5}{Visualize ounding box prediction}{section.4}% 12
-\BOOKMARK [1][-]{section.5}{Ideas for Stage 2: global structure assembly}{}% 13
-\BOOKMARK [1][-]{section.6}{Future work}{}% 14
+\BOOKMARK [1][-]{section.2}{Structural components}{}% 2
+\BOOKMARK [2][-]{subsection.2.1}{Local structures}{section.2}% 3
+\BOOKMARK [2][-]{subsection.2.2}{Non-local structures}{section.2}% 4
+\BOOKMARK [1][-]{section.3}{Method}{}% 5
+\BOOKMARK [1][-]{section.4}{Stage 1: Predict local structure}{}% 6
+\BOOKMARK [2][-]{subsection.4.1}{Problem formulation}{section.4}% 7
+\BOOKMARK [2][-]{subsection.4.2}{Model and training}{section.4}% 8
+\BOOKMARK [2][-]{subsection.4.3}{Inference}{section.4}% 9
+\BOOKMARK [2][-]{subsection.4.4}{Result}{section.4}% 10
+\BOOKMARK [2][-]{subsection.4.5}{Visualize bounding box prediction}{section.4}% 11
+\BOOKMARK [1][-]{section.5}{Ideas for Stage 2: global structure assembly}{}% 12
+\BOOKMARK [1][-]{section.6}{Issues and future work}{}% 13

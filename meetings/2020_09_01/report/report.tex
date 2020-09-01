@@ -29,7 +29,7 @@
 %\addtolength{\belowcaptionskip}{-20pt}
 
 \title{Project progress report}
-
+\date{}
 \begin{document}
 
 \maketitle
@@ -37,27 +37,27 @@
 
 \section{Introduction}
 
-Traditional approaches for RNA secondary structure prediction uses either dynamic programming
+Traditional approaches for RNA secondary structure prediction use either dynamic programming
 with experimentally measured hard-coded free energy terms,
 or formulate the folding problem as syntax parsing under some stochastic context free grammar,
-and tries to learn the parameters from training dataset.
+and try to learn the parameters from training dataset.
 Both types of approaches are very similar in their nature, in the sense that
-they all rely on recursion at the base-pair level.
+they rely on recursion at the base-pair level.
 These methods predict structures that satisfy all hard constraints since the
 underlying recursion is designed to only generate valid sequence and structures.
 In addition, there is typically an efficient way to sample sub optimal structure by
 stochastic trace back.
 On the other hand, the expressiveness of these models is heavily restricted by the underlying
 recursion, and strong assumptions have to be made for the recursion to be tractable
-(for example, the nested assumption makes predicting pseudoknot an impossible task).
+(for example, the nested assumption which makes predicting pseudoknot an impossible task).
 
 Recently there have been several work that uses neural network to tackle the structure prediction
-problem end-to-end. These models benefit from the fact that they are highly expressive and can be trained on lot of data,
-but most of the work ignore the hard constraint completely.
-One interesting work (SPOT-RNA) proposed to add a fixed layer RNN representing an unrolled
+problem end-to-end. These models benefit from the fact that they are highly expressive and can be trained on lots of data,
+but most of the work ignore the hard constraints completely.
+One interesting work SPOT-RNA proposed to add a RNN representing an unrolled
 constrained optimization, to convert the neural network output to one that satisfy the hard constraints.
-One potential is that there is no convergence guarantee, and even if it converges there's guarantee the output satisfies the constraints,
-since the original discrete optimization problem need to be relaxed in order to run through the optimization RNN.
+One potential risk is that there is no convergence guarantee, and even if it converges there's no guarantee the output satisfies the constraints,
+since the original discrete optimization problem need to be relaxed in order to be fed through the optimization RNN.
 
 
 In this work we aim at developing a model that makes use of the expressiveness of deep neural network
@@ -73,9 +73,9 @@ which satisfies the hard constraints by design
 \end{itemize}
 
 
-\subsection{Problem formulation}
+%\subsection{Problem formulation}
 
-Given an RNA sequence of length $L$, we are interested in its secondary structure(s) (most likely single structure, or a distribution of structures).
+Given an RNA sequence of length $L$, we are interested in its secondary structure(s) (most likely single structure, and/or a distribution of structures).
 %There are three common ways to represent a specific RNA secondary structure:
 To represent a specific secondary structure, there are three commonly used conventions:
 (1) undirected graph, where each node is a base in the sequence, and each edge represents base pairing.
@@ -90,8 +90,8 @@ We'll be using the \textit{upper triangular matrix} representation throughout th
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.8\textwidth]{plot/rna_ss_binary_mat.png}
-    \caption{TODO}
+    \includegraphics[width=0.6\textwidth]{plot/rna_ss_binary_mat.png}
+    \caption{Graph and matrix representation of a structure.}
     \label{fig:rna_ss_binary_mat}
     \centering
 \end{figure}
@@ -103,7 +103,7 @@ except for positions
 %$y_{1, 10}, y_{2, 9}$ and $y_{3, 8}$,
 $(1, 10), (2, 9)$ and $(3, 8)$,
 all being $1$, as shown in Fig \ref{fig:rna_ss_binary_mat} on the right.
-This contiguous stretch of $1$'s along the diagonal corresponds to the stem formed by the three base pairs: G-U, U-A and U-A.
+This contiguous stretch of $1$'s in the 2D matrix corresponds to the stem formed by the three base pairs: G-U, U-A and U-A.
 
 
 \section{Structural components}
@@ -114,24 +114,23 @@ a similar notion of 'structural motif' also exists.
 A commonly adopted way is to break down structure into the following components:
 
 \begin{itemize}
-    \item hairpin loop: todo
-    \item stem: todo
-    \item internal loop: todo
-    \item bulge: todo
-    \item external loop: todo
-    \item multibranch loop: todo
-    \item pseudoknot: todo
+    \item hairpin loop: a contiguous stretch of unpaired bases with the two ends paired to each other
+    \item stem: stack of paired bases
+    \item internal loop: 'bubble' inside a stem, where there are unpaired bases on both sides
+    \item bulge: one-sided 'bubble' inside a stem, where only one side has unpaired bases
+    \item external loop: unpaired bases at the 5' and 3' end of the entire RNA
+    \item multibranch loop: multiple contiguous stretches of unpaired bases, each connecting two stems
+    \item pseudoknot: two stems that cross each other, see Fig \ref{fig:non_local_structures_pseudoknot} for an example
 \end{itemize}
 
 Such structural motifs can be easily identified on the graph representation of a structure,
 as shown in Fig \ref{fig:structural_motif_graph}, where we only annotated one instance for
 each structural motif class for clarity.
-(todo add a minimal example for pseudoknot)
 
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.8\textwidth]{plot/structural_motif_graph.png}
-    \caption{TODO}
+    \caption{Example of structural components.}
     \label{fig:structural_motif_graph}
     \centering
 \end{figure}
@@ -139,11 +138,11 @@ each structural motif class for clarity.
 
 In this work, we distinguish structural motifs that are 'local' and 'non-local',
 where local-ness is defined w.r.t. the 2D matrix representation of the structure.
-The importance of such distinction will become clear in Section (todo).
+The importance of such distinction will become clear later, when we formulate the predictive task as 2-stage.
 To illustrate this idea, we plot the 2D matrix representation of the above structure
 in Fig \ref{fig:structural_motif_2d_matrix}(a),
-where majority of the pixels are in *navy* (unpaired positions),
-and a few pixels in *yellow* (paired positions).
+where majority of the pixels are in \textit{navy} (unpaired positions),
+and a few pixels in \textit{yellow} (paired positions).
 For each type of structural motif, if it can be fully represented by the interaction between
 two (contiguous) substrings of the original sequence, it is considered a 'local' structure,
 and can be fully identified by a bounding box on 2D matrix.
@@ -154,7 +153,7 @@ three or more (contiguous) substrings of the original sequence,which we refer to
 \begin{figure}[h]
     \centering
     \includegraphics[width=\textwidth]{plot/structural_motif_2d_matrix.png}
-    \caption{TODO}
+    \caption{Matrix representation of the structure and local structure bounding boxes.}
     \label{fig:structural_motif_2d_matrix}
     \centering
 \end{figure}
@@ -170,7 +169,7 @@ in Fig \ref{fig:structural_motif_2d_matrix}(b).
 \begin{figure}[h]
     \centering
     \includegraphics[width=\textwidth]{plot/local_bounding_box_examples.png}
-    \caption{TODO}
+    \caption{Example of bounding box for different types of local structures.}
     \label{fig:local_bounding_box_examples}
     \centering
 \end{figure}
@@ -213,12 +212,12 @@ This also guarantees that hard constraints are satisfied within each bounding bo
 We're left with $3$ structural motif types that cannot be repsented by a bounding box on 2D matrix.
 We will show that non of these structures contribute pixel value of $1$ in the 2D matrix,
 and that their existence can be described in an alternative way,
-which pinpoint how local structures can be assembled into \textit{valid} global structures.
+which describe how local structures can be assembled into \textit{valid} global structures.
 
 \begin{figure}[h]
     \centering
     \includegraphics[width=\textwidth]{plot/non_local_structures_2d_matrix.png}
-    \caption{TODO}
+    \caption{Non-local structures imply valid combination of local structures.}
     \label{fig:non_local_structures_2d_matrix}
     \centering
 \end{figure}
@@ -227,7 +226,7 @@ which pinpoint how local structures can be assembled into \textit{valid} global 
 \begin{figure}[h]
     \centering
     \includegraphics[width=\textwidth]{plot/non_local_structures_pseudoknot.png}
-    \caption{TODO}
+    \caption{Non-local structures imply valid combination of local structures.}
     \label{fig:non_local_structures_pseudoknot}
     \centering
 \end{figure}
@@ -254,7 +253,10 @@ which pinpoint how local structures can be assembled into \textit{valid} global 
     since the structure we used above does not contain any, see Fig \ref{fig:non_local_structures_pseudoknot}.
     In this example, stem A defines bases $15 \dots 17$ pair with $27 \dots 29$,
     and stem B defines bases $23 \dots 26$ pair with $34 \dots 37$.
-    They form a pseudoknot since their ranges cross each other, i.e. non-nested (which is required by most thermodynamic folding).
+    They form a pseudoknot since their ranges cross each other, i.e. non-nested.
+    We just need to make sure to allow this combination when we construct all valid combinations.
+    Note that this will be tractable in our case since we only need to evaluate valid combinations of all local structures,
+    as opposed to all valid combinations of base-pairs ub the traditional recursion.
 
 
 \end{itemize}
@@ -266,7 +268,7 @@ which pinpoint how local structures can be assembled into \textit{valid} global 
 We propose a 2-stage approach to predict secondary structure from sequence.
 In stage 1, we predict all plausible local structures, represented as various types of bounding boxes.
 In stage 2, we evaluate all \textit{valid} combinations of local structures from stage 1,
-and predict the most likely global structure.
+and predict the most likely global structure, or a distribution of structures.
 Non-local structure is being modeled implicitly in stage 2 by defining what combinations are valid.
 
 Benefit of such model:
@@ -274,7 +276,7 @@ Benefit of such model:
 \begin{itemize}
     \item Output is guaranteed to satisfy all hard constraints.
     This is a direct result of the 2-stage approach:
-    local structures predicted from stage 1 is parametrized as bounding boxes whose underlying pixels
+    local structures predicted from stage 1 are parametrized via bounding boxes whose underlying pixels
     satisfy constraints by design.
     Combination of local structure in stage 2 needs to be valid, where validity is precisely defined by hard constraints.
 
@@ -304,7 +306,7 @@ Benefit of such model:
 
 \end{itemize}
 
-This report focus on stage 1 model.
+This report focus mostly on stage 1 model.
 
 
 \section{Stage 1: Predict local structure}
@@ -332,7 +334,7 @@ We notice the following difference compare to object detection in computer visio
     accurate enough in the sense that most positive examples are being annotated with bounding boxes,
     and regions without bounding boxes typically have no objects of interest (unless it was wrongly annotated).
     In contrast, a typical RNA SS training dataset consists of sequence-structure pairs,
-    where there is *one* structure per sequence. Such structure typically represent the \textit{most likely}
+    where there is \textit{one} structure per sequence. Such structure typically represent the \textit{most likely}
     global structure. There can be some other sub optimal global structure that are \textit{less likely globally},
     but their underlying local structure could still be plausible.
     This means that if we parse this particular global structure into local structure components and use them for training,
@@ -341,16 +343,16 @@ We notice the following difference compare to object detection in computer visio
 \end{itemize}
 
 With the above in mind, we propose the following setup for model training.
-For each pixel in the output $L x L$ matrix, we would like to assign it to some bounding box(es),
+For each pixel, we would like to assign it to some bounding box(es),
 and we would also want the location and size of the bounding boxes to be encoded with pixel-precision,
-so that we can try to predict the presence, location and size of the bounding boxes.
+so that at inference time we can predict the presence, location and size of the bounding boxes.
 
 
 
 Most of the time, each pixel can be uniquely assigned to one bounding box.
 In the case of closing pair of a loop, it's assigned to both the stem and the loop,
 for example, see the pixel where two bounding boxes overlap in Fig \ref{fig:local_bounding_box_examples}.
-In the rare case where the stem is of length $1$, and the stem has $2$ loops, one on each side,
+In the rare case where the stem is of length $1$, and the stem is connected to $2$ loops, one on each side,
 the pixel is assigned to $2$ loops. We'll ignore this rare case for now and work on it as part of future improvement.
 Furthermore, we notice the fact that the bounding box for bulge can can be considered a special case of internal loop,
 where the height or width is constrained to be $2$, so for now we combine these two into one category and we will refer to
@@ -371,26 +373,26 @@ without the need to predict its type (avoid problem of multiple box permutation 
 
 For each pixel, we set the corresponding bounding box to be \textbf{on} if the pixel is within the bounding box.
 To encode the location od bounding box (w.r.t. the pixel),
-we use the top right corner odf bounding box as the reference point,
+we use the top right corner of bounding box as the reference point,
 and calculate the distance of the current pixel to the reference,
 both horizontally and vertically.
 The idea is to predict it using a softmax over finite classes so we can predict the pixel-precision location.
-Horizontal distance (y/columns) is always $<= 0$: $ 0, -1, \dots, -9, -10, -10_beyond$,
-and vertical distance (x/rows) is always $>= 0$: $0, 1, \dots, 9, 10, 10_beyond$,
+Horizontal distance (y/columns) is always $<= 0$: $ 0, -1, \dots, -9, -10, -10\_beyond$,
+and vertical distance (x/rows) is always $>= 0$: $0, 1, \dots, 9, 10, 10\_beyond$,
 i.e. we assign one class for each integer distance until some distance away ($10$ in the above example).
 
 
 To encode the size, we use different number of softmax, depending on the box type.
-For stem there is one softmax over $1, \dots, 9, 10, 10_beyond$, since it's square shaped.
-For internal loop we have two softmax over $1, \dots, 9, 10, 10_beyond$, one for height one for width.
-For hairpin loop there is one softmax over $1, \dots, 9, 10, 10_beyond$, since it's square shaped.
+For stem there is one softmax over $1, \dots, 9, 10, 10\_beyond$, since it's square shaped.
+For internal loop we have two softmax over $1, \dots, 9, 10, 10\_beyond$, one for height one for width.
+For hairpin loop there is one softmax over $1, \dots, 9, 10, 10\_beyond$, since it's square shaped.
 Note that for both location and size, the integer cutoff of $10$ is an arbitrary choice for now,
 and we'll look into how to support larger ones in future work.
 
 \begin{figure}[h]
     \centering
     \includegraphics[width=\textwidth]{plot/training_pixel_targets.png}
-    \caption{TODO}
+    \caption{Target encoding.}
     \label{fig:training_pixel_targets}
     \centering
 \end{figure}
@@ -438,7 +440,7 @@ For pixels whose bounding box is set to off, the location and size softmax targe
 since we do not have a target value for those and we do not care about the model prediction.
 In addition, to account for the fact that training dataset contains many potential false negatives
 from the perspective of local structure bounding boxes
-(i.e. pixels that do not belong to a bounding box in the particular example, but has a plausible local structure nearby, see Section ???),
+(i.e. pixels that do not belong to a bounding box in the particular example, but has a plausible local structure nearby, as discussed previously),
 we re-weight losses on pixels outside the bounding boxes by a factor of $0.1$ (hard-coded for now, can be treated as hyperparameter).
 
 
@@ -446,7 +448,7 @@ we re-weight losses on pixels outside the bounding boxes by a factor of $0.1$ (h
 \subsection{Inference} \label{sec:inference}
 
 At inference time, each pixel can predict up to $3$ bounding boxes, one for each type.
-In this section we describe how to predict the stem bounding box, and the other two type are done in a similar way.
+In this section we describe how to predict the stem bounding box, and the other two types are processed in a similar way.
 For each pixel $(i, j)$, we do the following:
 
 \begin{enumerate}
@@ -454,7 +456,7 @@ For each pixel $(i, j)$, we do the following:
     A typical threshold is $0.5$, but a different one can be used considering training data class imbalance,
     as well as loss re-weighting.
     In general, a lower threshold results in more bounding boxes (more false positives and less false negatives),
-    which might be desirable to feed as input to stage 2 model.
+    which might be desirable to be fed as input to stage 2 model.
     \item Compute the maximum likelihood bounding box location and size.
     We maximize probabilities of \textit{stem\_location\_x}, \textit{stem\_location\_y} and \textit{stem\_size},
     by taking the argmax index of each softmax.
@@ -488,7 +490,7 @@ For each pixel $(i, j)$, we do the following:
 \begin{figure}[h]
     \centering
     \includegraphics[width=\textwidth]{plot/inference_bb_prediction.png}
-    \caption{TODO}
+    \caption{Inference: predict bounding box with pixel-precision.}
     \label{fig:inference_bb_prediction}
     \centering
 \end{figure}
@@ -540,32 +542,28 @@ would probably be left out due to their incompatibility with other bounding boxe
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.8\textwidth]{plot/performance_metrics.png}
-    \caption{TODO}
+    \caption{Validation set performance.}
     \label{fig:performance_metrics}
     \centering
 \end{figure}
-
-
-
-
 
 
 \subsection{Visualize bounding box prediction}
 
 To get a concrete idea on how well the model reconstructs the local structure bounding boxes,
 we visualize the predicted bounding boxes for one example in the validation set, as shown in Fig \ref{fig:visualize_bb_prediction}.
-Here we've applied a cutoff $0.2$ to all sigmoid units to find all pixels where bounding box(es) should be computed.
-Then for each such pixel, we calculate the location and size of bounding box,
+Here we've applied a cutoff $0.1$ to sigmoid outputs to find all pixels where bounding box(es) should be proposed.
+Then for each such pixel, we find the maximum likelihood location and size of bounding box,
 and draw the bounding box with opacity set to the probability of the box.
 Bounding box proposed from neighbouring pixels can overlap partially or entirely.
 Visually, a \textit{darker} bounding box is a more confident one,
 since it corresponds to a high probability box and/or identical proposals from multiple pixels.
-Predicted bounding boxes in red, while Solid yellow color blocks are ground truth.
+Predicted bounding boxes are drawn in red, while solid yellow color blocks represent ground truth.
 
 \begin{figure}[h]
     \centering
     \includegraphics[width=\textwidth]{plot/visualize_bb_prediction.png}
-    \caption{TODO}
+    \caption{Visualization of predicted bounding boxes.}
     \label{fig:visualize_bb_prediction}
     \centering
 \end{figure}
@@ -574,21 +572,32 @@ Predicted bounding boxes in red, while Solid yellow color blocks are ground trut
 
 \section{Ideas for Stage 2: global structure assembly}
 
-
-\section{Future work}
-
-satisfy constraints,
-all possible 2D binary matrix -> huge space, majority does not satisfy biology constraints.
-bounding box: parameterized by a few parameters,
-pixel value implied given parameterized, satisfy (local) constraints.
+Given the proposed bounding boxes and their associated probabilties from stage 1 model,
+one naive approach is to enumerate all valid combinations and train a model to assign
+highest score to the ground truth global structure.
+Note that the number of valid combinations should be reasonably small, since all hard
+constraints need to be satisfied.
 
 
+\section{Issues and future work}
 
-todo larger sequence efficient
+\begin{itemize}
+    \item Encode discrete targets such as bounding box location and size, such that we can decode arbitrary large size (right now it's up to $10$).
+    This can also be achieved by breaking down larger bounding boxes into smaller ones, although we need to make sure to do it in a way
+    that doesn't introduce any ambiguity.
+    \item Support corner case where one pixel can be assigned to two loop bounding boxes of the same type.
+    \item Sometimes the maximum likelihood prediction of bounding box can have incompatible location and size.
+    For example, in Fig \ref{fig:inference_bb_prediction}, if the predicted size is $1$, then the pixel will be
+    outside of the predicted bounding box which contradicts with the prediction that stem is on.
+    \item Due to the way we encode the sequence input (we did an outer product of the one-hot encoded vector to get $L x L x 8$ array),
+    there is some redundancy in first layer 2D conv filters. In theory, each filter only needs to see values at the
+    center row and column.
+    \item For stage 2 model, we would like to investigate whether there exists any approach to evaluate all valid
+    combinations in parallel (or maybe it can even figure out what is valid/invalid?).
+\end{itemize}
 
-conv filter redundancy
 
-incompatibility of softmax
+
 
 %\bibliographystyle{unsrt}
 %\bibliography{report}
