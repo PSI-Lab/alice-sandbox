@@ -579,50 +579,6 @@ class Evaluator(object):
         return sensitivity, specificity
 
     def calculate_metrics(self):
-        # seq = row['seq']
-        # target_bb = row['bounding_boxes']
-        # target = row['target_stem_on']
-        # pred_on = row['pred_stem_on']
-        # pred_loc_x = row['pred_stem_location_x']
-        # pred_loc_y = row['pred_stem_location_y']
-        # pred_siz_x = row['pred_stem_size']
-        # # predict stem bb
-        # target_stem_on, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y, m = array_clean_up(len(seq), target,
-        #                                                                                             pred_on, pred_loc_x,
-        #                                                                                             pred_loc_y,
-        #                                                                                             pred_siz_x,
-        #                                                                                             pred_siz_y=None)
-        # bb_stem, pred_box_stem = predict_bounidng_box(pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y,
-        #                                               thres=threshold)
-        # # predict iloop bb
-        # target = row['target_iloop_on']
-        # pred_on = row['pred_iloop_on']
-        # pred_loc_x = row['pred_iloop_location_x']
-        # pred_loc_y = row['pred_iloop_location_y']
-        # pred_siz_x = row['pred_iloop_size_x']
-        # pred_siz_y = row['pred_iloop_size_y']
-        # target_iloop_on, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y, m = array_clean_up(len(seq), target,
-        #                                                                                              pred_on,
-        #                                                                                              pred_loc_x,
-        #                                                                                              pred_loc_y,
-        #                                                                                              pred_siz_x,
-        #                                                                                              pred_siz_y)
-        # bb_iloop, pred_box_iloop = predict_bounidng_box(pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y,
-        #                                                 thres=threshold)
-        # # predict hloop bb
-        # target = row['target_hloop_on']
-        # pred_on = row['pred_hloop_on']
-        # pred_loc_x = row['pred_hloop_location_x']
-        # pred_loc_y = row['pred_hloop_location_y']
-        # pred_siz_x = row['pred_hloop_size']
-        # target_hloop_on, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y, m = array_clean_up(len(seq), target,
-        #                                                                                              pred_on,
-        #                                                                                              pred_loc_x,
-        #                                                                                              pred_loc_y,
-        #                                                                                              pred_siz_x,
-        #                                                                                              pred_siz_y=None)
-        # bb_hloop, pred_box_hloop = predict_bounidng_box(pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y,
-        #                                                 thres=threshold)
         # convert to dfs
         if len(self.pred_bb_stem) > 0:
             df_stem = pd.DataFrame(self.pred_bb_stem)
@@ -642,10 +598,6 @@ class Evaluator(object):
         # process target bb list into different types, store in df
         df_target_stem, df_target_iloop, df_target_hloop = self.make_target_bb_df(self.data_encoder.y_bb)
 
-        # # FIXME debug
-        # print(df_target_stem)
-        # print(df_stem)
-
         # metric for each bb type
         m_stem = self.calculate_bb_metrics(df_target_stem, df_stem)
         m_iloop = self.calculate_bb_metrics(df_target_iloop, df_iloop)
@@ -654,20 +606,22 @@ class Evaluator(object):
         m_stem['struct_type'] = 'stem'
         m_iloop['struct_type'] = 'iloop'
         m_hloop['struct_type'] = 'hloop'
-        # # calculate non-bb sensitivity and specificity
-        # se_stem, sp_stem = sensitivity_specificity(target_stem_on, pred_box_stem, m)
-        # se_iloop, sp_iloop = sensitivity_specificity(target_iloop_on, pred_box_iloop, m)
-        # se_hloop, sp_hloop = sensitivity_specificity(target_hloop_on, pred_box_hloop, m)
-        # # combine
-        # m_stem.update({'struct_type': 'stem', 'sensitivity': se_stem, 'specificity': sp_stem})
-        # m_iloop.update({'struct_type': 'iloop', 'sensitivity': se_iloop, 'specificity': sp_iloop})
-        # m_hloop.update({'struct_type': 'hloop', 'sensitivity': se_hloop, 'specificity': sp_hloop})
         df_result = pd.DataFrame([m_stem, m_iloop, m_hloop])
         df_result['bb_sensitivity_identical'] = df_result['n_target_identical'] / df_result['n_target_total']
         df_result['bb_sensitivity_overlap'] = (df_result['n_target_identical'] + df_result['n_target_overlap']) / \
                                               df_result[
                                                   'n_target_total']
-        return df_result
+        # also extract the sensitivities
+        assert len(df_result) == 3
+        metrics = {
+            'stem_identical': df_result[df_result['struct_type'] == 'stem'].iloc[0]['bb_sensitivity_identical'],
+            'stem_overlap': df_result[df_result['struct_type'] == 'stem'].iloc[0]['bb_sensitivity_overlap'],
+            'iloop_identical': df_result[df_result['struct_type'] == 'iloop'].iloc[0]['bb_sensitivity_identical'],
+            'iloop_overlap': df_result[df_result['struct_type'] == 'iloop'].iloc[0]['bb_sensitivity_overlap'],
+            'hloop_identical': df_result[df_result['struct_type'] == 'hloop'].iloc[0]['bb_sensitivity_identical'],
+            'hloop_overlap': df_result[df_result['struct_type'] == 'hloop'].iloc[0]['bb_sensitivity_overlap'],
+        }
+        return df_result, metrics
 
     def predict(self, seq, y, threshold):
         assert 0 <= threshold <= 1
@@ -687,7 +641,6 @@ class Evaluator(object):
         fig_hloop = self.make_plot_bb(self.data_encoder.y_arrs['hloop_on'], self.pred_bb_hloop)
         fig_hloop['layout'].update(title='Hairpin loop')
         # TODO add more plots
-        # TODO metric (also save in class)
         # TODO bb counts etc. (also save in class)
         return fig_stem, fig_iloop, fig_hloop
 
