@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from scipy.special import softmax
 import torch
 import torch.nn as nn
@@ -267,111 +268,6 @@ class DataEncoder(object):
             return bounding_boxes, y
 
 
-
-def _make_mask(l):
-    m = np.ones((l, l))
-    m[np.tril_indices(l)] = 0
-    return m
-
-
-def predict_bounidng_box(pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y, thres=0.5):
-    # remove singleton dimensions
-    pred_on = np.squeeze(pred_on)
-    pred_loc_x = np.squeeze(pred_loc_x)
-    pred_loc_y = np.squeeze(pred_loc_y)
-    pred_siz_x = np.squeeze(pred_siz_x)
-    if pred_siz_y is None:
-        pred_siz_y = np.copy(pred_siz_x)
-    # TODO assert on input shape
-
-    # hard-mask
-    m = _make_mask(pred_on.shape[1])
-    # apply mask (for pred, only apply to pred_on since our processing starts from that array)
-    pred_on = pred_on * m
-    # binary array with all 0's, we'll set the predicted bounding box region to 1
-    # this will be used to calculate 'sensitivity'
-    pred_box = np.zeros_like(pred_on)
-    # also save box locations and probabilities
-    proposed_boxes = []
-
-    for i, j in np.transpose(np.where(pred_on > thres)):
-        loc_x = np.argmax(pred_loc_x[:, i, j])
-        loc_y = np.argmax(pred_loc_y[:, i, j])
-        siz_x = np.argmax(pred_siz_x[:, i, j]) + 1  # size starts at 1 for index=0
-        siz_y = np.argmax(pred_siz_y[:, i, j]) + 1
-        # compute joint probability of taking the max value
-        prob = pred_on[i, j] * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y] * \
-               softmax(pred_siz_x[:, i, j])[siz_x - 1] * softmax(pred_siz_y[:, i, j])[siz_y - 1]  # FIXME multiplying twice for case where y is set to x
-        # top right corner
-        bb_x = i - loc_x
-        bb_y = j + loc_y
-        # save box
-        proposed_boxes.append({
-            'bb_x': bb_x,
-            'bb_y': bb_y,
-            'siz_x': siz_x,
-            'siz_y': siz_y,
-            'prob': prob,   # TODO shall we store 4 probabilities separately?
-        })
-        # set value in pred box, be careful with out of bound index
-        x0 = bb_x
-        y0 = bb_y - siz_y + 1  # 0-based
-        wx = siz_x
-        wy = siz_y
-        ix0 = max(0, x0)
-        iy0 = max(0, y0)
-        ix1 = min(x0 + wx, pred_box.shape[0])
-        iy1 = min(y0 + wy, pred_box.shape[1])
-        pred_box[ix0:ix1, iy0:iy1] = 1
-
-    # apply hard-mask to pred box
-    pred_box = pred_box * m
-    return proposed_boxes, pred_box
-
-
-
-def make_plot_bb(target, pred_box):
-    fig = px.imshow(target)
-    for bb in pred_box:
-        bb_x = bb['bb_x']
-        bb_y = bb['bb_y']
-        siz_x = bb['siz_x']
-        siz_y = bb['siz_y']
-        prob = bb['prob']
-
-        x0 = bb_x
-        y0 = bb_y - siz_y + 1  # 0-based
-        wx = siz_x
-        wy = siz_y
-        fig.add_shape(
-            type='rect',
-            y0=x0 - 0.5, y1=x0 + wx - 0.5, x0=y0 - 0.5, x1=y0 + wy - 0.5,  # image plot axis is swaped
-            xref='x', yref='y',
-            opacity=prob,  # opacity proportional to probability of bounding box
-            line_color='red'
-        )
-
-    # update figure
-    fig['layout'].update(height=800, width=800, title="test")
-
-    return fig
-
-
-def cleanup_hloop(bbs, l):
-    # remove hloop that's not on diagonal
-    bbs_new = []
-    for bb in bbs:
-        bb_x = bb['bb_x']
-        bb_y = bb['bb_y']
-        siz_x = bb['siz_x']
-        siz_y = bb['siz_y']
-        y0 = bb_y - siz_y + 1
-        x1 = bb_x + siz_x - 1
-        if bb_x == y0 and bb_y == x1:
-            bbs_new.append(bb)
-    return bbs_new
-
-
 class Predictor(object):
 
     def __init__(self, model_ckpt):
@@ -383,21 +279,98 @@ class Predictor(object):
         # TODO print model summary
         self.model = model
 
+    @staticmethod
+    def cleanup_hloop(bbs, l):
+        # remove hloop that's not on diagonal
+        bbs_new = []
+        for bb in bbs:
+            bb_x = bb['bb_x']
+            bb_y = bb['bb_y']
+            siz_x = bb['siz_x']
+            siz_y = bb['siz_y']
+            y0 = bb_y - siz_y + 1
+            x1 = bb_x + siz_x - 1
+            if bb_x == y0 and bb_y == x1:
+                bbs_new.append(bb)
+        return bbs_new
+
+    @staticmethod
+    def predict_bounidng_box(pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y, thres=0.5):
+
+        def _make_mask(l):
+            m = np.ones((l, l))
+            m[np.tril_indices(l)] = 0
+            return m
+
+        # remove singleton dimensions
+        pred_on = np.squeeze(pred_on)
+        pred_loc_x = np.squeeze(pred_loc_x)
+        pred_loc_y = np.squeeze(pred_loc_y)
+        pred_siz_x = np.squeeze(pred_siz_x)
+        if pred_siz_y is None:
+            pred_siz_y = np.copy(pred_siz_x)
+        # TODO assert on input shape
+
+        # hard-mask
+        m = _make_mask(pred_on.shape[1])
+        # apply mask (for pred, only apply to pred_on since our processing starts from that array)
+        pred_on = pred_on * m
+        # binary array with all 0's, we'll set the predicted bounding box region to 1
+        # this will be used to calculate 'sensitivity'
+        pred_box = np.zeros_like(pred_on)
+        # also save box locations and probabilities
+        proposed_boxes = []
+
+        for i, j in np.transpose(np.where(pred_on > thres)):
+            loc_x = np.argmax(pred_loc_x[:, i, j])
+            loc_y = np.argmax(pred_loc_y[:, i, j])
+            siz_x = np.argmax(pred_siz_x[:, i, j]) + 1  # size starts at 1 for index=0
+            siz_y = np.argmax(pred_siz_y[:, i, j]) + 1
+            # compute joint probability of taking the max value
+            prob = pred_on[i, j] * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y] * \
+                   softmax(pred_siz_x[:, i, j])[siz_x - 1] * softmax(pred_siz_y[:, i, j])[
+                       siz_y - 1]  # FIXME multiplying twice for case where y is set to x
+            # top right corner
+            bb_x = i - loc_x
+            bb_y = j + loc_y
+            # save box
+            proposed_boxes.append({
+                'bb_x': bb_x,
+                'bb_y': bb_y,
+                'siz_x': siz_x,
+                'siz_y': siz_y,
+                'prob': prob,  # TODO shall we store 4 probabilities separately?
+            })
+            # set value in pred box, be careful with out of bound index
+            x0 = bb_x
+            y0 = bb_y - siz_y + 1  # 0-based
+            wx = siz_x
+            wy = siz_y
+            ix0 = max(0, x0)
+            iy0 = max(0, y0)
+            ix1 = min(x0 + wx, pred_box.shape[0])
+            iy1 = min(y0 + wy, pred_box.shape[1])
+            pred_box[ix0:ix1, iy0:iy1] = 1
+
+        # apply hard-mask to pred box
+        pred_box = pred_box * m
+        return proposed_boxes, pred_box
+
     def predict_bb(self, seq, threshold):
         de = DataEncoder(seq)
         yp = self.model(torch.tensor(de.x_torch))
         yp = {k: v.detach().cpu().numpy()[0, :, :, :] for k, v in yp.items()}
         # bb
-        pred_bb_stem, _ = predict_bounidng_box(pred_on=yp['stem_on'], pred_loc_x=yp['stem_location_x'],
+        pred_bb_stem, _ = self.predict_bounidng_box(pred_on=yp['stem_on'], pred_loc_x=yp['stem_location_x'],
                                                pred_loc_y=yp['stem_location_y'], pred_siz_x=yp['stem_size'],
                                                pred_siz_y=None, thres=threshold)
-        pred_bb_iloop, _ = predict_bounidng_box(pred_on=yp['iloop_on'], pred_loc_x=yp['iloop_location_x'],
+        pred_bb_iloop, _ = self.predict_bounidng_box(pred_on=yp['iloop_on'], pred_loc_x=yp['iloop_location_x'],
                                                 pred_loc_y=yp['iloop_location_y'], pred_siz_x=yp['iloop_size_x'],
                                                 pred_siz_y=yp['iloop_size_y'], thres=threshold)
-        pred_bb_hloop, _ = predict_bounidng_box(pred_on=yp['hloop_on'], pred_loc_x=yp['hloop_location_x'],
+        pred_bb_hloop, _ = self.predict_bounidng_box(pred_on=yp['hloop_on'], pred_loc_x=yp['hloop_location_x'],
                                                 pred_loc_y=yp['hloop_location_y'], pred_siz_x=yp['hloop_size'],
                                                 pred_siz_y=None, thres=threshold)
-        pred_bb_hloop = cleanup_hloop(pred_bb_hloop, len(seq))
+        pred_bb_hloop = self.cleanup_hloop(pred_bb_hloop, len(seq))
         return yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop
 
 
@@ -414,6 +387,288 @@ class Evaluator(object):
         self.pred_bb_iloop = None
         self.pred_bb_hloop = None
 
+    @staticmethod
+    def make_plot_bb(target, pred_box):
+        fig = px.imshow(target)
+        for bb in pred_box:
+            bb_x = bb['bb_x']
+            bb_y = bb['bb_y']
+            siz_x = bb['siz_x']
+            siz_y = bb['siz_y']
+            prob = bb['prob']
+
+            x0 = bb_x
+            y0 = bb_y - siz_y + 1  # 0-based
+            wx = siz_x
+            wy = siz_y
+            fig.add_shape(
+                type='rect',
+                y0=x0 - 0.5, y1=x0 + wx - 0.5, x0=y0 - 0.5, x1=y0 + wy - 0.5,  # image plot axis is swaped
+                xref='x', yref='y',
+                opacity=prob,  # opacity proportional to probability of bounding box
+                line_color='red'
+            )
+
+        # update figure
+        fig['layout'].update(height=800, width=800)
+
+        return fig
+
+    @staticmethod
+    def make_target_bb_df(target_bb):
+        df_target_stem = []
+        df_target_iloop = []
+        df_target_hloop = []
+        for (bb_x, bb_y), (siz_x, siz_y), bb_type in target_bb:
+            row = {
+                'bb_x': bb_x,
+                'bb_y': bb_y,
+                'siz_x': siz_x,
+                'siz_y': siz_y,
+            }
+            if bb_type == 'stem':
+                df_target_stem.append(row)
+            elif bb_type in ['bulge', 'internal_loop']:
+                df_target_iloop.append(row)
+            elif bb_type == 'hairpin_loop':
+                df_target_hloop.append(row)
+            elif bb_type == 'pseudo_knot':
+                pass  # do not process
+            else:
+                raise ValueError  # TODO pseudo knot?
+        if len(df_target_stem) > 0:
+            df_target_stem = pd.DataFrame(df_target_stem)
+        if len(df_target_iloop) > 0:
+            df_target_iloop = pd.DataFrame(df_target_iloop)
+        if len(df_target_hloop) > 0:
+            df_target_hloop = pd.DataFrame(df_target_hloop)
+        return df_target_stem, df_target_iloop, df_target_hloop
+
+    @staticmethod
+    def _calculate_bb_metrics(df_target, df_pred):
+
+        def is_identical(bb1, bb2):
+            return bb1 == bb2  # this should work? FIXME
+            # bb1_x, bb1_y, siz1_x, siz1_y = bb1
+            # bb2_x, bb2_y, siz2_x, siz2_y = bb2
+            # # FIXME debug! any off-by-1 error?
+            # return abs(bb1_x-bb2_x)<=1 and abs(bb1_y-bb2_y)<=1 and abs(siz1_x-siz2_x)<=1 and abs(siz1_y-siz2_y)<=1
+
+        def is_overlap(bb1, bb2):
+            bb1_x, bb1_y, siz1_x, siz1_y = bb1
+            bb2_x, bb2_y, siz2_x, siz2_y = bb2
+            # calculate overlap rectangle, check to see if it's empty
+            x0 = max(bb1_x, bb2_x)
+            x1 = min(bb1_x + siz1_x - 1, bb2_x + siz2_x - 1)  # note this is closed end
+            y0 = max(bb1_y - siz1_y + 1, bb2_y - siz2_y + 1)  # closed end
+            y1 = min(bb1_y, bb2_y)
+            if x1 >= x0 and y1 >= y0:
+                return True
+            else:
+                return False
+
+        assert set(df_target.columns) == {'bb_x', 'bb_y', 'siz_x', 'siz_y'}
+        assert set(df_pred.columns) == {'bb_x', 'bb_y', 'siz_x', 'siz_y'}
+
+        # make sure all rows are unique
+        assert not df_target.duplicated().any()
+        assert not df_pred.duplicated().any()
+
+        # w.r.t. target
+        n_target_total = len(df_target)
+        n_target_identical = 0
+        n_target_overlap = 0
+        n_target_nohit = 0
+        for _, row1 in df_target.iterrows():
+            bb1 = (row1['bb_x'], row1['bb_y'], row1['siz_x'], row1['siz_y'])
+            found_identical = False
+            found_overlapping = False
+            for _, row2 in df_pred.iterrows():
+                bb2 = (row2['bb_x'], row2['bb_y'], row2['siz_x'], row2['siz_y'])
+                if is_identical(bb1, bb2):
+                    found_identical = True
+                elif is_overlap(bb1, bb2):  # note this is overlapping but NOT identical due to "elif"
+                    found_overlapping = True
+                else:
+                    pass
+            if found_identical:
+                n_target_identical += 1
+            elif found_overlapping:
+                n_target_overlap += 1
+            else:
+                n_target_nohit += 1
+
+        # FIXME there is some wasted comparison here (can be combined with last step)
+        # w.r.t. pred
+        n_pred_total = len(df_pred)
+        n_pred_identical = 0
+        n_pred_overlap = 0
+        n_pred_nohit = 0
+        for _, row1 in df_pred.iterrows():
+            bb1 = (row1['bb_x'], row1['bb_y'], row1['siz_x'], row1['siz_y'])
+            found_identical = False
+            found_overlapping = False
+            for _, row2 in df_target.iterrows():
+                bb2 = (row2['bb_x'], row2['bb_y'], row2['siz_x'], row2['siz_y'])
+                if is_identical(bb1, bb2):
+                    found_identical = True
+                elif is_overlap(bb1, bb2):  # note this is overlapping but NOT identical due to "elif"
+                    found_overlapping = True
+                else:
+                    pass
+            if found_identical:
+                n_pred_identical += 1
+            elif found_overlapping:
+                n_pred_overlap += 1
+            else:
+                n_pred_nohit += 1
+        result = {
+            'n_target_total': n_target_total,
+            'n_target_identical': n_target_identical,
+            'n_target_overlap': n_target_overlap,
+            'n_target_nohit': n_target_nohit,
+            'n_pred_total': n_pred_total,
+            'n_pred_identical': n_pred_identical,
+            'n_pred_overlap': n_pred_overlap,
+            'n_pred_nohit': n_pred_nohit,
+        }
+        return result
+
+    def calculate_bb_metrics(self, df_target, df_pred):
+        if (df_target is None or len(df_target) == 0) and (df_pred is None or len(df_pred) == 0):
+            return {
+                'n_target_total': 0,
+                'n_target_identical': 0,
+                'n_target_overlap': 0,
+                'n_target_nohit': 0,
+                'n_pred_total': 0,
+                'n_pred_identical': 0,
+                'n_pred_overlap': 0,
+                'n_pred_nohit': 0,
+            }
+
+        elif df_target is None or len(df_target) == 0:
+            return {
+                'n_target_total': 0,
+                'n_target_identical': 0,
+                'n_target_overlap': 0,
+                'n_target_nohit': 0,
+                'n_pred_total': len(df_pred),
+                'n_pred_identical': 0,
+                'n_pred_overlap': 0,
+                'n_pred_nohit': 0,
+            }
+        elif df_pred is None or len(df_pred) == 0:
+            return {
+                'n_target_total': len(df_target),
+                'n_target_identical': 0,
+                'n_target_overlap': 0,
+                'n_target_nohit': 0,
+                'n_pred_total': 0,
+                'n_pred_identical': 0,
+                'n_pred_overlap': 0,
+                'n_pred_nohit': 0,
+            }
+        else:
+            return self._calculate_bb_metrics(df_target, df_pred)
+
+    @staticmethod
+    def sensitivity_specificity(target_on, pred_box, hard_mask):
+        sensitivity = np.sum(pred_box * target_on) / np.sum(target_on)
+        specificity = np.sum((1 - pred_box) * (1 - target_on) * hard_mask) / np.sum((1 - target_on) * hard_mask)
+        return sensitivity, specificity
+
+    def calculate_metrics(self):
+        # seq = row['seq']
+        # target_bb = row['bounding_boxes']
+        # target = row['target_stem_on']
+        # pred_on = row['pred_stem_on']
+        # pred_loc_x = row['pred_stem_location_x']
+        # pred_loc_y = row['pred_stem_location_y']
+        # pred_siz_x = row['pred_stem_size']
+        # # predict stem bb
+        # target_stem_on, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y, m = array_clean_up(len(seq), target,
+        #                                                                                             pred_on, pred_loc_x,
+        #                                                                                             pred_loc_y,
+        #                                                                                             pred_siz_x,
+        #                                                                                             pred_siz_y=None)
+        # bb_stem, pred_box_stem = predict_bounidng_box(pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y,
+        #                                               thres=threshold)
+        # # predict iloop bb
+        # target = row['target_iloop_on']
+        # pred_on = row['pred_iloop_on']
+        # pred_loc_x = row['pred_iloop_location_x']
+        # pred_loc_y = row['pred_iloop_location_y']
+        # pred_siz_x = row['pred_iloop_size_x']
+        # pred_siz_y = row['pred_iloop_size_y']
+        # target_iloop_on, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y, m = array_clean_up(len(seq), target,
+        #                                                                                              pred_on,
+        #                                                                                              pred_loc_x,
+        #                                                                                              pred_loc_y,
+        #                                                                                              pred_siz_x,
+        #                                                                                              pred_siz_y)
+        # bb_iloop, pred_box_iloop = predict_bounidng_box(pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y,
+        #                                                 thres=threshold)
+        # # predict hloop bb
+        # target = row['target_hloop_on']
+        # pred_on = row['pred_hloop_on']
+        # pred_loc_x = row['pred_hloop_location_x']
+        # pred_loc_y = row['pred_hloop_location_y']
+        # pred_siz_x = row['pred_hloop_size']
+        # target_hloop_on, pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y, m = array_clean_up(len(seq), target,
+        #                                                                                              pred_on,
+        #                                                                                              pred_loc_x,
+        #                                                                                              pred_loc_y,
+        #                                                                                              pred_siz_x,
+        #                                                                                              pred_siz_y=None)
+        # bb_hloop, pred_box_hloop = predict_bounidng_box(pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y,
+        #                                                 thres=threshold)
+        # convert to dfs
+        if len(self.pred_bb_stem) > 0:
+            df_stem = pd.DataFrame(self.pred_bb_stem)
+            df_stem = df_stem[['bb_x', 'bb_y', 'siz_x', 'siz_y']].drop_duplicates()
+        else:
+            df_stem = None
+        if len(self.pred_bb_iloop) > 0:
+            df_iloop = pd.DataFrame(self.pred_bb_iloop)
+            df_iloop = df_iloop[['bb_x', 'bb_y', 'siz_x', 'siz_y']].drop_duplicates()
+        else:
+            df_iloop = None
+        if len(self.pred_bb_hloop) > 0:
+            df_hloop = pd.DataFrame(self.pred_bb_hloop)
+            df_hloop = df_hloop[['bb_x', 'bb_y', 'siz_x', 'siz_y']].drop_duplicates()
+        else:
+            df_hloop = None
+        # process target bb list into different types, store in df
+        df_target_stem, df_target_iloop, df_target_hloop = self.make_target_bb_df(self.data_encoder.y_bb)
+
+        # # FIXME debug
+        # print(df_target_stem)
+        # print(df_stem)
+
+        # metric for each bb type
+        m_stem = self.calculate_bb_metrics(df_target_stem, df_stem)
+        m_iloop = self.calculate_bb_metrics(df_target_iloop, df_iloop)
+        m_hloop = self.calculate_bb_metrics(df_target_hloop, df_hloop)
+        # add type annotation
+        m_stem['struct_type'] = 'stem'
+        m_iloop['struct_type'] = 'iloop'
+        m_hloop['struct_type'] = 'hloop'
+        # # calculate non-bb sensitivity and specificity
+        # se_stem, sp_stem = sensitivity_specificity(target_stem_on, pred_box_stem, m)
+        # se_iloop, sp_iloop = sensitivity_specificity(target_iloop_on, pred_box_iloop, m)
+        # se_hloop, sp_hloop = sensitivity_specificity(target_hloop_on, pred_box_hloop, m)
+        # # combine
+        # m_stem.update({'struct_type': 'stem', 'sensitivity': se_stem, 'specificity': sp_stem})
+        # m_iloop.update({'struct_type': 'iloop', 'sensitivity': se_iloop, 'specificity': sp_iloop})
+        # m_hloop.update({'struct_type': 'hloop', 'sensitivity': se_hloop, 'specificity': sp_hloop})
+        df_result = pd.DataFrame([m_stem, m_iloop, m_hloop])
+        df_result['bb_sensitivity_identical'] = df_result['n_target_identical'] / df_result['n_target_total']
+        df_result['bb_sensitivity_overlap'] = (df_result['n_target_identical'] + df_result['n_target_overlap']) / \
+                                              df_result[
+                                                  'n_target_total']
+        return df_result
+
     def predict(self, seq, y, threshold):
         assert 0 <= threshold <= 1
         # y: in one_idx format, tuple of two lists of i's and j's
@@ -425,11 +680,15 @@ class Evaluator(object):
         self.pred_bb_hloop = pred_bb_hloop
 
     def plot(self):
-        # TODO plot titles
-        fig_stem = make_plot_bb(self.data_encoder.y_arrs['stem_on'], self.pred_bb_stem)
-        fig_iloop = make_plot_bb(self.data_encoder.y_arrs['iloop_on'], self.pred_bb_iloop)
-        fig_hloop = make_plot_bb(self.data_encoder.y_arrs['hloop_on'], self.pred_bb_hloop)
+        fig_stem = self.make_plot_bb(self.data_encoder.y_arrs['stem_on'], self.pred_bb_stem)
+        fig_stem['layout'].update(title='Stem')
+        fig_iloop = self.make_plot_bb(self.data_encoder.y_arrs['iloop_on'], self.pred_bb_iloop)
+        fig_iloop['layout'].update(title='Internal loop')
+        fig_hloop = self.make_plot_bb(self.data_encoder.y_arrs['hloop_on'], self.pred_bb_hloop)
+        fig_hloop['layout'].update(title='Hairpin loop')
         # TODO add more plots
+        # TODO metric (also save in class)
+        # TODO bb counts etc. (also save in class)
         return fig_stem, fig_iloop, fig_hloop
 
     # TODO metrics
