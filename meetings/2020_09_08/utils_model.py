@@ -191,7 +191,8 @@ class DataEncoder(object):
         self.x_1d = self.encode_seq(self.x)
         self.x_2d = self.encode_x(self.x_1d)
         self.x_torch = self.encode_torch_input(self.x_2d)
-        self.y_bb, self.y_arrs = self.encode_y(self.y, len(self.x))
+        if y:
+            self.y_bb, self.y_arrs = self.encode_y(self.y, len(self.x))
 
 
     def encode_seq(self, x):
@@ -355,3 +356,80 @@ def make_plot_bb(target, pred_box):
 
     return fig
 
+
+def cleanup_hloop(bbs, l):
+    # remove hloop that's not on diagonal
+    bbs_new = []
+    for bb in bbs:
+        bb_x = bb['bb_x']
+        bb_y = bb['bb_y']
+        siz_x = bb['siz_x']
+        siz_y = bb['siz_y']
+        y0 = bb_y - siz_y + 1
+        x1 = bb_x + siz_x - 1
+        if bb_x == y0 and bb_y == x1:
+            bbs_new.append(bb)
+    return bbs_new
+
+
+class Predictor(object):
+
+    def __init__(self, model_ckpt):
+        # model_ckpt: model params checkpoint
+        # FIXME fixed architecture for now, training workflow need to save this in a config
+        model = SimpleConvNet(num_filters=[32, 32, 64, 64, 64, 128, 128],
+                              filter_width=[9, 9, 9, 9, 9, 9, 9], dropout=0)
+        model.load_state_dict(torch.load(model_ckpt, map_location=torch.device('cpu')))
+        # TODO print model summary
+        self.model = model
+
+    def predict_bb(self, seq, threshold):
+        de = DataEncoder(seq)
+        yp = self.model(torch.tensor(de.x_torch))
+        yp = {k: v.detach().cpu().numpy()[0, :, :, :] for k, v in yp.items()}
+        # bb
+        pred_bb_stem, _ = predict_bounidng_box(pred_on=yp['stem_on'], pred_loc_x=yp['stem_location_x'],
+                                               pred_loc_y=yp['stem_location_y'], pred_siz_x=yp['stem_size'],
+                                               pred_siz_y=None, thres=threshold)
+        pred_bb_iloop, _ = predict_bounidng_box(pred_on=yp['iloop_on'], pred_loc_x=yp['iloop_location_x'],
+                                                pred_loc_y=yp['iloop_location_y'], pred_siz_x=yp['iloop_size_x'],
+                                                pred_siz_y=yp['iloop_size_y'], thres=threshold)
+        pred_bb_hloop, _ = predict_bounidng_box(pred_on=yp['hloop_on'], pred_loc_x=yp['hloop_location_x'],
+                                                pred_loc_y=yp['hloop_location_y'], pred_siz_x=yp['hloop_size'],
+                                                pred_siz_y=None, thres=threshold)
+        pred_bb_hloop = cleanup_hloop(pred_bb_hloop, len(seq))
+        return yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop
+
+
+class Evaluator(object):
+
+    def __init__(self, predictor):
+        assert isinstance(predictor, Predictor)
+        self.predictor = predictor
+        # hold on to data for one example, for convenience
+        self.data_encoder = None
+        # predictions
+        self.yp = None
+        self.pred_bb_stem = None
+        self.pred_bb_iloop = None
+        self.pred_bb_hloop = None
+
+    def predict(self, seq, y, threshold):
+        assert 0 <= threshold <= 1
+        # y: in one_idx format, tuple of two lists of i's and j's
+        self.data_encoder = DataEncoder(seq, y, bb_ref='top_right')
+        yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop = self.predictor.predict_bb(seq, threshold)
+        self.yp = yp
+        self.pred_bb_stem = pred_bb_stem
+        self.pred_bb_iloop = pred_bb_iloop
+        self.pred_bb_hloop = pred_bb_hloop
+
+    def plot(self):
+        # TODO plot titles
+        fig_stem = make_plot_bb(self.data_encoder.y_arrs['stem_on'], self.pred_bb_stem)
+        fig_iloop = make_plot_bb(self.data_encoder.y_arrs['iloop_on'], self.pred_bb_iloop)
+        fig_hloop = make_plot_bb(self.data_encoder.y_arrs['hloop_on'], self.pred_bb_hloop)
+        # TODO add more plots
+        return fig_stem, fig_iloop, fig_hloop
+
+    # TODO metrics
