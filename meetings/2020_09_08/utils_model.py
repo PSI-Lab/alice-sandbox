@@ -3,6 +3,7 @@ import pandas as pd
 from scipy.special import softmax
 import torch
 import torch.nn as nn
+import os
 import sys
 sys.path.insert(0, '../../rna_ss/')
 from utils import db2pairs
@@ -10,6 +11,7 @@ from local_struct_utils import one_idx2arr, sort_pairs, LocalStructureParser, ma
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import datacorral as dc
 
 
 class SimpleConvNet(nn.Module):
@@ -269,13 +271,31 @@ class DataEncoder(object):
 
 
 class Predictor(object):
+    model_versions = {
+        'v0.1': 'UGGg0e',   # trained on random sequence, ep6
+    }
+
 
     def __init__(self, model_ckpt):
         # model_ckpt: model params checkpoint
+        # can be any of the following:
+        # version id
+        # DC ID
+        # path to the file
+
+        # model file path
+        dc_client = dc.Client()
+        if model_ckpt in self.model_versions:
+            model_file = dc_client.get_path(self.model_versions[model_ckpt])
+        elif os.path.isfile(model_ckpt):
+            model_file = model_ckpt
+        else:
+            model_file = dc_client.get_path(model_ckpt)
+
         # FIXME fixed architecture for now, training workflow need to save this in a config
         model = SimpleConvNet(num_filters=[32, 32, 64, 64, 64, 128, 128],
                               filter_width=[9, 9, 9, 9, 9, 9, 9], dropout=0)
-        model.load_state_dict(torch.load(model_ckpt, map_location=torch.device('cpu')))
+        model.load_state_dict(torch.load(model_file, map_location=torch.device('cpu')))
         # TODO print model summary
         self.model = model
 
@@ -361,17 +381,17 @@ class Predictor(object):
         yp = self.model(torch.tensor(de.x_torch))
         yp = {k: v.detach().cpu().numpy()[0, :, :, :] for k, v in yp.items()}
         # bb
-        pred_bb_stem, _ = self.predict_bounidng_box(pred_on=yp['stem_on'], pred_loc_x=yp['stem_location_x'],
+        pred_bb_stem, pred_box_stem = self.predict_bounidng_box(pred_on=yp['stem_on'], pred_loc_x=yp['stem_location_x'],
                                                pred_loc_y=yp['stem_location_y'], pred_siz_x=yp['stem_size'],
                                                pred_siz_y=None, thres=threshold)
-        pred_bb_iloop, _ = self.predict_bounidng_box(pred_on=yp['iloop_on'], pred_loc_x=yp['iloop_location_x'],
+        pred_bb_iloop, pred_box_iloop = self.predict_bounidng_box(pred_on=yp['iloop_on'], pred_loc_x=yp['iloop_location_x'],
                                                 pred_loc_y=yp['iloop_location_y'], pred_siz_x=yp['iloop_size_x'],
                                                 pred_siz_y=yp['iloop_size_y'], thres=threshold)
-        pred_bb_hloop, _ = self.predict_bounidng_box(pred_on=yp['hloop_on'], pred_loc_x=yp['hloop_location_x'],
+        pred_bb_hloop, pred_box_hloop = self.predict_bounidng_box(pred_on=yp['hloop_on'], pred_loc_x=yp['hloop_location_x'],
                                                 pred_loc_y=yp['hloop_location_y'], pred_siz_x=yp['hloop_size'],
                                                 pred_siz_y=None, thres=threshold)
         pred_bb_hloop = self.cleanup_hloop(pred_bb_hloop, len(seq))
-        return yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop
+        return yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop, pred_box_stem, pred_box_iloop, pred_box_hloop
 
 
 class Evaluator(object):
@@ -395,7 +415,7 @@ class Evaluator(object):
             bb_y = bb['bb_y']
             siz_x = bb['siz_x']
             siz_y = bb['siz_y']
-            prob = bb['prob']
+            prob = bb['prob'] if 'prob' in bb else 1.0
 
             x0 = bb_x
             y0 = bb_y - siz_y + 1  # 0-based
@@ -409,8 +429,8 @@ class Evaluator(object):
                 line_color='red'
             )
 
-        # update figure
-        fig['layout'].update(height=800, width=800)
+        # # update figure
+        # fig['layout'].update(height=800, width=800)
 
         return fig
 
@@ -432,10 +452,10 @@ class Evaluator(object):
                 df_target_iloop.append(row)
             elif bb_type == 'hairpin_loop':
                 df_target_hloop.append(row)
-            elif bb_type == 'pseudo_knot':
+            elif bb_type in ['pseudo_knot', 'pesudo_knot']:  # allow for typo -_-
                 pass  # do not process
             else:
-                raise ValueError  # TODO pseudo knot?
+                raise ValueError(bb_type)  # should never be here
         if len(df_target_stem) > 0:
             df_target_stem = pd.DataFrame(df_target_stem)
         if len(df_target_iloop) > 0:
@@ -602,10 +622,24 @@ class Evaluator(object):
         m_stem = self.calculate_bb_metrics(df_target_stem, df_stem)
         m_iloop = self.calculate_bb_metrics(df_target_iloop, df_iloop)
         m_hloop = self.calculate_bb_metrics(df_target_hloop, df_hloop)
-        # add type annotation
-        m_stem['struct_type'] = 'stem'
-        m_iloop['struct_type'] = 'iloop'
-        m_hloop['struct_type'] = 'hloop'
+        # calculate non-bb sensitivity and specificity
+
+        def _make_mask(l):
+            m = np.ones((l, l))
+            m[np.tril_indices(l)] = 0
+            return m
+
+        m = _make_mask(len(self.data_encoder.x))
+        se_stem, sp_stem = self.sensitivity_specificity(self.data_encoder.y_arrs['stem_on'],
+                                                        self.pred_box_stem, m)
+        se_iloop, sp_iloop = self.sensitivity_specificity(self.data_encoder.y_arrs['iloop_on'],
+                                                          self.pred_box_iloop, m)
+        se_hloop, sp_hloop = self.sensitivity_specificity(self.data_encoder.y_arrs['hloop_on'],
+                                                          self.pred_box_hloop, m)
+        # combine
+        m_stem.update({'struct_type': 'stem', 'pixel_sensitivity': se_stem, 'pixel_specificity': sp_stem})
+        m_iloop.update({'struct_type': 'iloop', 'pixel_sensitivity': se_iloop, 'pixel_specificity': sp_iloop})
+        m_hloop.update({'struct_type': 'hloop', 'pixel_sensitivity': se_hloop, 'pixel_specificity': sp_hloop})
         df_result = pd.DataFrame([m_stem, m_iloop, m_hloop])
         df_result['bb_sensitivity_identical'] = df_result['n_target_identical'] / df_result['n_target_total']
         df_result['bb_sensitivity_overlap'] = (df_result['n_target_identical'] + df_result['n_target_overlap']) / \
@@ -614,34 +648,76 @@ class Evaluator(object):
         # also extract the sensitivities
         assert len(df_result) == 3
         metrics = {
-            'stem_identical': df_result[df_result['struct_type'] == 'stem'].iloc[0]['bb_sensitivity_identical'],
-            'stem_overlap': df_result[df_result['struct_type'] == 'stem'].iloc[0]['bb_sensitivity_overlap'],
-            'iloop_identical': df_result[df_result['struct_type'] == 'iloop'].iloc[0]['bb_sensitivity_identical'],
-            'iloop_overlap': df_result[df_result['struct_type'] == 'iloop'].iloc[0]['bb_sensitivity_overlap'],
-            'hloop_identical': df_result[df_result['struct_type'] == 'hloop'].iloc[0]['bb_sensitivity_identical'],
-            'hloop_overlap': df_result[df_result['struct_type'] == 'hloop'].iloc[0]['bb_sensitivity_overlap'],
+            # bb sensitivity
+            'bb_stem_identical': df_result[df_result['struct_type'] == 'stem'].iloc[0]['bb_sensitivity_identical'],
+            'bb_stem_overlap': df_result[df_result['struct_type'] == 'stem'].iloc[0]['bb_sensitivity_overlap'],
+            'bb_iloop_identical': df_result[df_result['struct_type'] == 'iloop'].iloc[0]['bb_sensitivity_identical'],
+            'bb_iloop_overlap': df_result[df_result['struct_type'] == 'iloop'].iloc[0]['bb_sensitivity_overlap'],
+            'bb_hloop_identical': df_result[df_result['struct_type'] == 'hloop'].iloc[0]['bb_sensitivity_identical'],
+            'bb_hloop_overlap': df_result[df_result['struct_type'] == 'hloop'].iloc[0]['bb_sensitivity_overlap'],
+            # pixel
+            'px_stem_sensitivity': df_result[df_result['struct_type'] == 'stem'].iloc[0]['pixel_sensitivity'],
+            'px_stem_specificity': df_result[df_result['struct_type'] == 'stem'].iloc[0]['pixel_specificity'],
+            'px_iloop_sensitivity': df_result[df_result['struct_type'] == 'iloop'].iloc[0]['pixel_sensitivity'],
+            'px_iloop_specificity': df_result[df_result['struct_type'] == 'iloop'].iloc[0]['pixel_specificity'],
+            'px_hloop_sensitivity': df_result[df_result['struct_type'] == 'hloop'].iloc[0]['pixel_sensitivity'],
+            'px_hloop_specificity': df_result[df_result['struct_type'] == 'hloop'].iloc[0]['pixel_specificity'],
         }
         return df_result, metrics
+
+    @staticmethod
+    def bb_unique(bb):
+        # convert list of bb to unique bb
+        # input:
+        # [{'bb_x': 0, 'bb_y': 16, 'siz_x': 3, 'siz_y': 3, 'prob': 0.1654079953181778},
+        # {'bb_x': 0, 'bb_y': 72, 'siz_x': 8, 'siz_y': 8, 'prob': 0.11180505377843244}, ...]
+        df_tmp = pd.DataFrame(bb)
+        df_tmp = df_tmp[['bb_x', 'bb_y', 'siz_x', 'siz_y']].drop_duplicates()
+        return df_tmp.to_dict('records')
 
     def predict(self, seq, y, threshold):
         assert 0 <= threshold <= 1
         # y: in one_idx format, tuple of two lists of i's and j's
         self.data_encoder = DataEncoder(seq, y, bb_ref='top_right')
-        yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop = self.predictor.predict_bb(seq, threshold)
+        yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop, pred_box_stem, pred_box_iloop, pred_box_hloop = self.predictor.predict_bb(seq, threshold)
         self.yp = yp
         self.pred_bb_stem = pred_bb_stem
         self.pred_bb_iloop = pred_bb_iloop
         self.pred_bb_hloop = pred_bb_hloop
+        # extract unique ones, drop prob
+        self.pred_bb_stem_uniq = self.bb_unique(self.pred_bb_stem)
+        self.pred_bb_iloop_uniq = self.bb_unique(self.pred_bb_iloop)
+        self.pred_bb_hloop_uniq = self.bb_unique(self.pred_bb_hloop)
+        # pred box (filled in)
+        self.pred_box_stem = pred_box_stem
+        self.pred_box_iloop = pred_box_iloop
+        self.pred_box_hloop = pred_box_hloop
 
-    def plot(self):
+    def plot_bb_prob(self):
         fig_stem = self.make_plot_bb(self.data_encoder.y_arrs['stem_on'], self.pred_bb_stem)
         fig_stem['layout'].update(title='Stem')
         fig_iloop = self.make_plot_bb(self.data_encoder.y_arrs['iloop_on'], self.pred_bb_iloop)
         fig_iloop['layout'].update(title='Internal loop')
         fig_hloop = self.make_plot_bb(self.data_encoder.y_arrs['hloop_on'], self.pred_bb_hloop)
         fig_hloop['layout'].update(title='Hairpin loop')
-        # TODO add more plots
-        # TODO bb counts etc. (also save in class)
         return fig_stem, fig_iloop, fig_hloop
 
-    # TODO metrics
+    def plot_bb_uniq(self):
+        # # TODO bb counts etc. (also save in class)
+        # # subplot
+        # fig = make_subplots(rows=1, cols=3, print_grid=False, shared_yaxes=True, shared_xaxes=True)
+        fig_stem = self.make_plot_bb(self.data_encoder.y_arrs['stem_on'], self.pred_bb_stem_uniq)
+        # fig.append_trace(fig_stem.data[0], 1, 1)
+        # fig['layout']['xaxis1'].update(title='stem: {}'.format(len(self.pred_bb_stem_uniq)))
+        # fig['layout']['yaxis1']['autorange'] = "reversed"
+        fig_iloop = self.make_plot_bb(self.data_encoder.y_arrs['iloop_on'], self.pred_bb_iloop_uniq)
+        # fig.append_trace(fig_iloop.data[0], 1, 2)
+        # fig['layout']['xaxis2'].update(title='iloop: {}'.format(len(self.pred_bb_iloop_uniq)))
+        # fig['layout']['yaxis2']['autorange'] = "reversed"
+        fig_hloop = self.make_plot_bb(self.data_encoder.y_arrs['hloop_on'], self.pred_bb_hloop_uniq)
+        # fig.append_trace(fig_hloop.data[0], 1, 3)
+        # fig['layout']['xaxis3'].update(title='hloop: {}'.format(len(self.pred_bb_hloop_uniq)))
+        # fig['layout']['yaxis3']['autorange'] = "reversed"
+        # fig['layout'].update(height=400, width=400 * 3, title="todo")
+        # fig['layout']['yaxis']['autorange'] = "reversed"
+        return fig_stem, fig_iloop, fig_hloop
