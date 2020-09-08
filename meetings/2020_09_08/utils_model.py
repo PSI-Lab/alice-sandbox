@@ -276,7 +276,7 @@ class Predictor(object):
     }
 
 
-    def __init__(self, model_ckpt):
+    def __init__(self, model_ckpt, num_filters=None, filter_width=None, dropout=None):
         # model_ckpt: model params checkpoint
         # can be any of the following:
         # version id
@@ -292,9 +292,16 @@ class Predictor(object):
         else:
             model_file = dc_client.get_path(model_ckpt)
 
-        # FIXME fixed architecture for now, training workflow need to save this in a config
-        model = SimpleConvNet(num_filters=[32, 32, 64, 64, 64, 128, 128],
-                              filter_width=[9, 9, 9, 9, 9, 9, 9], dropout=0)
+        # default params
+        if num_filters is None:
+            num_filters = [32, 32, 64, 64, 64, 128, 128]
+        if filter_width is None:
+            filter_width = [9, 9, 9, 9, 9, 9, 9]
+        if dropout is None:
+            dropout = 0.0
+
+        model = SimpleConvNet(num_filters=num_filters,
+                              filter_width=filter_width, dropout=dropout)
         model.load_state_dict(torch.load(model_file, map_location=torch.device('cpu')))
         # TODO print model summary
         self.model = model
@@ -671,9 +678,12 @@ class Evaluator(object):
         # input:
         # [{'bb_x': 0, 'bb_y': 16, 'siz_x': 3, 'siz_y': 3, 'prob': 0.1654079953181778},
         # {'bb_x': 0, 'bb_y': 72, 'siz_x': 8, 'siz_y': 8, 'prob': 0.11180505377843244}, ...]
-        df_tmp = pd.DataFrame(bb)
-        df_tmp = df_tmp[['bb_x', 'bb_y', 'siz_x', 'siz_y']].drop_duplicates()
-        return df_tmp.to_dict('records')
+        if len(bb) > 0:
+            df_tmp = pd.DataFrame(bb)
+            df_tmp = df_tmp[['bb_x', 'bb_y', 'siz_x', 'siz_y']].drop_duplicates()
+            return df_tmp.to_dict('records')
+        else:
+            return bb
 
     def predict(self, seq, y, threshold):
         assert 0 <= threshold <= 1
