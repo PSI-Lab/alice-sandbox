@@ -60,7 +60,7 @@ in `meetings/2020_08_25`, git hash `8e604f6569d60f18ce28c42e70014684dd27f865`
 
 Script: [eval_dataset.ipynb](eval_dataset.ipynb)
 
-As a sanity check, we evaluated on te first 200 data points:
+As a sanity check, we evaluated on the first 200 data points:
 
 ![plot/rand_seed_model_on_bprna.png](plot/rand_seed_model_on_bprna.png)
 
@@ -76,6 +76,7 @@ Conclusion: Not a lot. Hairpin loop shows the most significant difference.
 In bpRNA vast majority of the bounding boxes are with size <= 10, which means that
 in theory we should be able to predict the majority correctly (which is not the case above).
 
+Produced by [bb_lengths.ipynb](bb_lengths.ipynb)
 
 ### Train all-target model using bpRNA dataset, save model
 
@@ -83,16 +84,11 @@ in theory we should be able to predict the majority correctly (which is not the 
 CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net_pixel_bb_all_targets.py --data DmNgdP --result result/rf_data_all_targets_bprna_1 --num_filters 32 32 64 64 64 128 128 --filter_width 9 9 9 9 9 9 9 --epoch 50 --mask 0.1 --batch_size 20 --max_length 200 --cpu 12
 ```
 
-running
+Evaluated ep 11 model:
 
+![plot/bprna_model_1_ep11_on_bprna.png](plot/bprna_model_1_ep11_on_bprna.png)
 
-model upload to DC
-
-eval on bpRNA compare
-
-
-check how many structures >10 in size?
-
+(using `tmp/bprna/model_ckpt_ep_11.pth` in [eval_dataset-ipynb](eval_dataset-ipynb))
 
 ### less params
 
@@ -100,6 +96,24 @@ check how many structures >10 in size?
 ```
 CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net_pixel_bb_all_targets.py --data DmNgdP --result result/rf_data_all_targets_bprna_2 --num_filters 32 32 32 32 32 32 32 --filter_width 9 9 9 9 9 9 9 --epoch 50 --mask 0.1 --batch_size 20 --max_length 200 --cpu 12
 ```
+
+
+todo plot?
+
+
+add dropout:
+
+```
+CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net_pixel_bb_all_targets.py --data DmNgdP --result result/rf_data_all_targets_bprna_3 --dropout 0.5 --num_filters 32 32 32 32 32 32 32 --filter_width 9 9 9 9 9 9 9 --epoch 50 --mask 0.1 --batch_size 20 --max_length 200 --cpu 12
+```
+
+
+todo training performance should be good. check it
+
+### Experiment
+
+todo: Use bpRNA sequence, but generate structure using RNAfold, then train model
+
 
 
 ## New todos
