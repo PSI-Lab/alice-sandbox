@@ -303,6 +303,8 @@ class Predictor(object):
         model = SimpleConvNet(num_filters=num_filters,
                               filter_width=filter_width, dropout=dropout)
         model.load_state_dict(torch.load(model_file, map_location=torch.device('cpu')))
+        # set to be in inference mode
+        model.eval()
         # TODO print model summary
         self.model = model
 
