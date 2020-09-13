@@ -9,16 +9,23 @@ import torch
 from time import time
 from utils_model import Predictor, Evaluator
 import datacorral as dc
+import dgutils.pandas as dgp
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from plotly.io import to_html
 from plotly.subplots import make_subplots
 
 
-def main(data_path, num_datapoints, model_path, out_csv, out_plot):
+def main(data_path, num_datapoints, max_len, model_path, out_csv, out_plot):
     dc_client = dc.Client()
 
     df_data = pd.read_pickle(data_path, compression='gzip')
+    # drop those > max_len
+    df_data = dgp.add_column(df_data, 'tmp', ['seq'], len)
+    df_data = df_data[df_data['tmp'] <= max_len]
+    df_data = df_data.drop(columns=['tmp'])
+
     # sample data points
     df_data = df_data.sample(n=min(num_datapoints, len(df_data)))
 
@@ -81,7 +88,7 @@ def main(data_path, num_datapoints, model_path, out_csv, out_plot):
 
     # export
     df_result.to_csv(out_csv, index=False)
-    fig.to_html(out_plot)
+    to_html(fig, out_plot)
     print("Saved to:\n{}\n{}".format(out_csv, out_plot))
 
 
@@ -89,9 +96,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--data', type=str, help='Path to dataset')
     parser.add_argument('--num', type=int, help='Number of data points to sample')
+    parser.add_argument('--maxl', type=int, help='Max sequence length')
     parser.add_argument('--model', type=str, help='Path to pytorch model params')
     parser.add_argument('--out_csv', type=str, help='Path to output csv')
     parser.add_argument('--out_plot', type=str, help='Path to output plot')
     args = parser.parse_args()
-    main(args.data, args.num, args.model, args.out_csv, args.out_plot)
+    main(args.data, args.num, args.maxl, args.model, args.out_csv, args.out_plot)
 
