@@ -43,11 +43,9 @@ df_from_interface = df_from_interface.drop_duplicates(subset=['bb_x', 'bb_y', 's
 # check intermediate numpy array match
 pred_diff = np.abs(pred_on[0, :len(seq), len(seq)] - yp['stem_on'][0, :, :])
 # these should be small
-print(np.mean(pred_diff))
-print(np.median(pred_diff))
-print(np.max(pred_diff))
-
-
+print(np.mean(pred_diff))  # 0.032623436
+print(np.median(pred_diff))  # 0.002665792
+print(np.max(pred_diff))  # 0.9999042
 
 # bb's
 print(row.subset)
@@ -59,6 +57,44 @@ print(row.bounding_boxes)  # note this is top left corner!
 
 ```
 
+
+df prints:
+
+```
+In [32]: print(df_from_interface)
+     bb_x  bb_y  siz_x  siz_y      prob
+0       1    32      7      7  0.076316
+1       1   115      9      9  0.083428
+2       1   116      9      9  0.592853
+3       1   116      8      8  0.212208
+11      2    32      7      7  0.189764
+..    ...   ...    ...    ...       ...
+571    97   107     11     11  0.006249
+575    90   116      9      9  0.032013
+576    97   107      1      1  0.017415
+577    97   109      2      2  0.014114
+578    89   116     11     11  0.003138
+
+
+In [33]: print(df_from_training)
+     bb_x  bb_y  siz_x  siz_y      prob
+0       1   115      9      9  0.040270
+1       1   116      9      9  0.530546
+6       1   116      8      8  0.370881
+10      2    32      7      7  0.106882
+11      2    31      6      6  0.097403
+..    ...   ...    ...    ...       ...
+560    89   107      1      1  0.006923
+561    98   108      2      2  0.013944
+562   142   150      7      7  0.020158
+563   142   151      8      8  0.014032
+564   146   151      8      8  0.007203
+
+[115 rows x 5 columns]
+```
+
+
+Not perfect match but close enough?
 
 ### less params (checking result from from 2020_09_08)
 
@@ -115,18 +151,86 @@ Dataset upload to DC: `TM4u8E`
 
 train model:
 
-todo
+```
+CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net_pixel_bb_all_targets.py --data TM4u8E --result result/exp_bprna_rnafold_1 --num_filters 32 32 64 64 64 128 128 --filter_width 9 9 9 9 9 9 9 --epoch 50 --mask 0.1 --batch_size 20 --max_length 200 --cpu 12
+```
+
+
+Visualize training progress:
+
+```
+python plot_training.py --in_log result/exp_bprna_rnafold_1/run.log --out_plot result/exp_bprna_rnafold_1/training_progress.html
+```
+
+
+![plot/training_progress_exp_bprna_rnafold_1.png](plot/training_progress_exp_bprna_rnafold_1.png)
+
+Analyze ep25 model on ep25 minibatch data:
+
+```
+python eval_model_minibatch_data.py --data result/exp_bprna_rnafold_1/pred_ep_25.pkl.gz --model result/exp_bprna_rnafold_1/model_ckpt_ep_25.pth --out_csv result/exp_bprna_rnafold_1/tmp/ep_25.csv --out_plot result/exp_bprna_rnafold_1/tmp/ep_25.html
+```
+
+Analyze ep25 model on full dataset (sample 200 data points, limit to length 200 for speed until we vectorize bounding box code):
+
+```
+python eval_model_dataset.py --data "`dcl path TM4u8E`" --num 200 --maxl 200 --model result/exp_bprna_rnafold_1/model_ckpt_ep_25.pth --out_csv result/exp_bprna_rnafold_1/tmp/ep_25.l200.s200.csv --out_plot result/exp_bprna_rnafold_1/tmp/ep_25.l200.s200.html
+```
+
+Analyze ep25 model on full dataset (sample 200 data points, limit to length 400 for speed until we vectorize bounding box code):
+
+```
+python eval_model_dataset.py --data "`dcl path TM4u8E`" --num 200 --maxl 400 --model result/exp_bprna_rnafold_1/model_ckpt_ep_25.pth --out_csv result/exp_bprna_rnafold_1/tmp/ep_25.l400.s200.csv --out_plot result/exp_bprna_rnafold_1/tmp/ep_25.l400.s200.html
+```
 
 
 todo: how similar/different is the RNAfold generated structure compare to the target?
 
 
 
+### Train on RNAstralign dataset
+
+Process the dataset into bounding box format:
+
+```
+python process_rnastralign.py
+```
+
+upload dataset to DC: `6PvUty`
+
+
+training:
+
+```
+CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net_pixel_bb_all_targets.py --data 6PvUty --result result/rnastralign_1 --num_filters 32 32 64 64 64 128 128 --filter_width 9 9 9 9 9 9 9 --epoch 50 --mask 0.1 --batch_size 20 --max_length 200 --cpu 12
+```
+
+running
+
+
+
+training with longer max sequence length threshold:
+
+```
+CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net_pixel_bb_all_targets.py --data 6PvUty --result result/rnastralign_2 --num_filters 32 32 64 64 64 128 128 --filter_width 9 9 9 9 9 9 9 --epoch 50 --mask 0.1 --batch_size 5 --max_length 500 --cpu 12
+```
+
+running
+
+### Try toy example, overfitting?
+
+
+### Vectorize bounding box proposal code
+
+
+### train on RNAstralign dataset, use their train/valid split
 
 ### Read paper: NN on combinatorial problem
 
 
 ## New todos
+
+- dynamic batch size depend on max length?
 
 - training script: instead of saving all predictions,
 save the predicted boudning boxes at threshold 0.1 (move inference code to top level?)
@@ -150,6 +254,7 @@ is the performance better now?
 
 - RL combinatorics
 
+- bounding box indices: memory address, nucleotide: memory content?  RNN?
 
 - ensemble? bb union of v0.1 and v0.2 model
 
