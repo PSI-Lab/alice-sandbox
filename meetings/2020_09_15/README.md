@@ -235,7 +235,7 @@ python eval_model_minibatch_data.py --data result/rnastralign_1/pred_ep_10.pkl.g
 ```
 
 
-![minibatch_perf_rnastralign_1_ep10.png](minibatch_perf_rnastralign_1_ep10.png)
+![plot/minibatch_perf_rnastralign_1_ep10.png](plot/minibatch_perf_rnastralign_1_ep10.png)
 
 Analyze ep10 model on full dataset (sample 200 data points, limit to length 200 for speed until we vectorize bounding box code):
 
