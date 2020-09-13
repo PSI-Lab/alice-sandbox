@@ -216,11 +216,17 @@ training:
 CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net_pixel_bb_all_targets.py --data 6PvUty --result result/rnastralign_1 --num_filters 32 32 64 64 64 128 128 --filter_width 9 9 9 9 9 9 9 --epoch 50 --mask 0.1 --batch_size 20 --max_length 200 --cpu 12
 ```
 
-running
+Visualize training progress:
+
+```
+python plot_training.py --in_log result/rnastralign_1/run.log --out_plot result/rnastralign_1/training_progress.html
+```
+
+![plot/training_progress_rnastralign_1.png](plot/training_progress_rnastralign_1.png)
 
 
 
-training with longer max sequence length threshold:
+### training with longer max sequence length threshold:
 
 ```
 CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net_pixel_bb_all_targets.py --data 6PvUty --result result/rnastralign_2 --num_filters 32 32 64 64 64 128 128 --filter_width 9 9 9 9 9 9 9 --epoch 50 --mask 0.1 --batch_size 5 --max_length 500 --cpu 12
