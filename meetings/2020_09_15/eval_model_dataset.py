@@ -33,7 +33,9 @@ def main(data_path, model_path, out_csv, out_plot):
         df_result, metrics = evaluator.calculate_metrics()
         print(idx, time() - ctime)
         ctime = time()
+        metrics['subset'] = row['subset']
         result.append(metrics)
+
     result = pd.DataFrame(result)
 
     # restructure data to re-use previous plotting code
@@ -50,11 +52,13 @@ def main(data_path, model_path, out_csv, out_plot):
             })
     df_result = pd.DataFrame(df_result)
 
-    fig = make_subplots(rows=4, cols=1, vertical_spacing=0.1,
-                        subplot_titles=['Sensitivity (identical bounding box)',
-                                        'Sensitivity (overlapping bounding box)',
-                                        'Sensitivity (pixel)',
-                                        'Specificity (pixel)'])
+    fig = make_subplots(rows=4, cols=2, vertical_spacing=0.1,
+                        subplot_titles=['Sensitivity (identical bounding box) training',
+                                        'Sensitivity (identical bounding box) validation'
+                                        'Sensitivity (overlapping bounding box) training',
+                                        'Sensitivity (overlapping bounding box) validation',
+                                        'Sensitivity (pixel) training', 'Sensitivity (pixel) validation',
+                                        'Specificity (pixel) training', 'Specificity (pixel) validation'])
     bb2color = {
         'stem': px.colors.qualitative.Plotly[0],
         'iloop': px.colors.qualitative.Plotly[1],
@@ -65,9 +69,13 @@ def main(data_path, model_path, out_csv, out_plot):
         for i, col_name in enumerate(
                 ['bb_sensitivity_identical', 'bb_sensitivity_overlap', 'sensitivity', 'specificity']):
             df_plot = df_result[df_result['struct_type'] == bb_type][[col_name]]
-            fig.append_trace(go.Histogram(x=df_plot[col_name], showlegend=True if i == 0 else False,
+            fig.append_trace(go.Histogram(x=df_plot[df_plot['subset'] == 'training'][col_name], showlegend=True if i == 0 else False,
                                           name=bb_type, nbinsx=20, marker_color=bb2color[bb_type],
                                           histnorm='percent'), i + 1, 1)
+            fig.append_trace(
+                go.Histogram(x=df_plot[df_plot['subset'] == 'validation'][col_name], showlegend=True if i == 0 else False,
+                             name=bb_type, nbinsx=20, marker_color=bb2color[bb_type],
+                             histnorm='percent'), i + 1, 2)
 
     fig.update_layout(
         autosize=False,
