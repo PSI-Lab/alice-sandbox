@@ -78,7 +78,7 @@ def main(data_path, model_path, out_csv, out_plot):
                 go.Histogram(x=df_plot[df_plot['subset'] == 'validation'][col_name], showlegend=True if i == 0 else False,
                              name=bb_type, nbinsx=20, marker_color=bb2color[bb_type],
                              histnorm='percent'), i + 1, 2)
-
+    fig.update_xaxes(range=[0, 1])
     fig.update_layout(
         autosize=False,
         width=600,
