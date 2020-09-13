@@ -39,6 +39,15 @@ def main(data_path, num_datapoints, max_len, model_path, out_csv, out_plot):
     for idx, row in df_data.iterrows():
         seq = row['seq']
         one_idx = row['one_idx']
+        
+        # for now drop weird sequence
+        if not set(seq.upper().replace('U', 'T')).issubset(set(list('ACGTN'))):
+            continue
+        # skip example with no structures
+        if len(row['one_idx'][0]) == 0:
+            assert len(row['one_idx'][1]) == 0
+            continue
+
         evaluator.predict(seq, one_idx, 0.1)
         df_result, metrics = evaluator.calculate_metrics()
         print(idx, time() - ctime)
