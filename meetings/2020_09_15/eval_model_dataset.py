@@ -49,6 +49,7 @@ def main(data_path, model_path, out_csv, out_plot):
                 'bb_sensitivity_overlap': m['bb_{}_overlap'.format(struct_type)],
                 'sensitivity': m['px_{}_sensitivity'.format(struct_type)],
                 'specificity': m['px_{}_specificity'.format(struct_type)],
+                'subset': m['subset'],
             })
     df_result = pd.DataFrame(df_result)
 
