@@ -18,7 +18,7 @@ from plotly.subplots import make_subplots
 def main(data_path, model_path, out_csv, out_plot):
     dc_client = dc.Client()
 
-    df_data = pd.read_pickle(data_path)
+    df_data = pd.read_pickle(data_path, compression='gzip')
     predictor = Predictor(model_path)
 
     evaluator = Evaluator(predictor)

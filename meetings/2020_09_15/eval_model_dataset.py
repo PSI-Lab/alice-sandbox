@@ -18,7 +18,7 @@ from plotly.subplots import make_subplots
 def main(data_path, num_datapoints, model_path, out_csv, out_plot):
     dc_client = dc.Client()
 
-    df_data = pd.read_pickle(data_path)
+    df_data = pd.read_pickle(data_path, compression='gzip')
     # sample data points
     df_data = df_data.sample(n=min(num_datapoints, len(df_data)))
 
