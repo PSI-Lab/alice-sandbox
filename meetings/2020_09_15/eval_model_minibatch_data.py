@@ -12,6 +12,7 @@ import datacorral as dc
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import plotly.io as pio
 from plotly.subplots import make_subplots
 
 
@@ -86,7 +87,7 @@ def main(data_path, model_path, out_csv, out_plot):
 
     # export
     df_result.to_csv(out_csv, index=False)
-    fig.to_html(out_plot)
+    pio.write_html(fig, file=out_plot)
     print("Saved to:\n{}\n{}".format(out_csv, out_plot))
 
 
