@@ -224,6 +224,36 @@ python plot_training.py --in_log result/rnastralign_1/run.log --out_plot result/
 
 ![plot/training_progress_rnastralign_1.png](plot/training_progress_rnastralign_1.png)
 
+As shown above, there is no sign of overfitting (unlike the above bpRNA-rnafold experiment).
+
+
+
+Analyze ep10 model on ep10 minibatch data (run on workstation):
+
+```
+python eval_model_minibatch_data.py --data result/rnastralign_1/pred_ep_10.pkl.gz --model result/rnastralign_1/model_ckpt_ep_10.pth --out_csv result/rnastralign_1/tmp/ep_10.csv --out_plot result/rnastralign_1/tmp/ep_10.html
+```
+
+
+![minibatch_perf_rnastralign_1_ep10.png](minibatch_perf_rnastralign_1_ep10.png)
+
+Analyze ep10 model on full dataset (sample 200 data points, limit to length 200 for speed until we vectorize bounding box code):
+
+```
+python eval_model_dataset.py --data "`dcl path 6PvUty`" --num 200 --maxl 200 --model result/rnastralign_1/model_ckpt_ep_10.pth --out_csv result/rnastralign_1/tmp/ep_10.l200.s200.csv --out_plot result/rnastralign_1/tmp/ep_10.l200.s200.html
+```
+
+![plot/dataset_l200_s200_perf_rnastralign_1_ep10.png](plot/dataset_l200_s200_perf_rnastralign_1_ep10.png)
+
+Analyze ep10 model on full dataset (sample 200 data points, limit to length 400 for speed until we vectorize bounding box code):
+
+```
+python eval_model_dataset.py --data "`dcl path 6PvUty`" --num 200 --maxl 400 --model result/rnastralign_1/model_ckpt_ep_10.pth --out_csv result/rnastralign_1/tmp/ep_10.l400.s200.csv --out_plot result/rnastralign_1/tmp/ep_10.l400.s200.html
+```
+
+![plot/dataset_l400_s200_perf_rnastralign_1_ep10.png](plot/dataset_l400_s200_perf_rnastralign_1_ep10.png)
+
+This dataset (rnastralign) seems to be much easier than bpRNA.
 
 
 ### training with longer max sequence length threshold:
