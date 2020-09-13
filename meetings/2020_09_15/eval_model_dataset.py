@@ -61,7 +61,7 @@ def main(data_path, num_datapoints, max_len, model_path, out_csv, out_plot):
             })
     df_result = pd.DataFrame(df_result)
 
-    fig = make_subplots(rows=4, cols=2, vertical_spacing=0.1,
+    fig = make_subplots(rows=4, cols=1, vertical_spacing=0.1,
                         subplot_titles=['Sensitivity (identical bounding box)',
                                         'Sensitivity (overlapping bounding box)',
                                         'Sensitivity (pixel) training',
