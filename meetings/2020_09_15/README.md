@@ -165,23 +165,34 @@ python plot_training.py --in_log result/exp_bprna_rnafold_1/run.log --out_plot r
 
 ![plot/training_progress_exp_bprna_rnafold_1.png](plot/training_progress_exp_bprna_rnafold_1.png)
 
-Analyze ep25 model on ep25 minibatch data:
+As shown above, if we look at the loss (top left figure), the model start overfitting from around epoch 5,
+although the metrics do not seem to overfit even after that.
+
+Analyze ep5 model on ep5 minibatch data (run on workstation):
 
 ```
-python eval_model_minibatch_data.py --data result/exp_bprna_rnafold_1/pred_ep_25.pkl.gz --model result/exp_bprna_rnafold_1/model_ckpt_ep_25.pth --out_csv result/exp_bprna_rnafold_1/tmp/ep_25.csv --out_plot result/exp_bprna_rnafold_1/tmp/ep_25.html
+python eval_model_minibatch_data.py --data result/exp_bprna_rnafold_1/pred_ep_5.pkl.gz --model result/exp_bprna_rnafold_1/model_ckpt_ep_5.pth --out_csv result/exp_bprna_rnafold_1/tmp/ep_5.csv --out_plot result/exp_bprna_rnafold_1/tmp/ep_5.html
 ```
 
-Analyze ep25 model on full dataset (sample 200 data points, limit to length 200 for speed until we vectorize bounding box code):
+![plot/minibatch_perf_exp_bprna_rnafold_1_ep5.png](plot/minibatch_perf_exp_bprna_rnafold_1_ep5.png)
+
+
+Analyze ep5 model on full dataset (sample 200 data points, limit to length 200 for speed until we vectorize bounding box code):
 
 ```
-python eval_model_dataset.py --data "`dcl path TM4u8E`" --num 200 --maxl 200 --model result/exp_bprna_rnafold_1/model_ckpt_ep_25.pth --out_csv result/exp_bprna_rnafold_1/tmp/ep_25.l200.s200.csv --out_plot result/exp_bprna_rnafold_1/tmp/ep_25.l200.s200.html
+python eval_model_dataset.py --data "`dcl path TM4u8E`" --num 200 --maxl 200 --model result/exp_bprna_rnafold_1/model_ckpt_ep_5.pth --out_csv result/exp_bprna_rnafold_1/tmp/ep_5.l200.s200.csv --out_plot result/exp_bprna_rnafold_1/tmp/ep_5.l200.s200.html
 ```
 
-Analyze ep25 model on full dataset (sample 200 data points, limit to length 400 for speed until we vectorize bounding box code):
+![plot/dataset_l200_s200_perf_exp_bprna_rnafold_1_ep5.png](plot/dataset_l200_s200_perf_exp_bprna_rnafold_1_ep5.png)
+
+Analyze ep5 model on full dataset (sample 200 data points, limit to length 400 for speed until we vectorize bounding box code):
 
 ```
-python eval_model_dataset.py --data "`dcl path TM4u8E`" --num 200 --maxl 400 --model result/exp_bprna_rnafold_1/model_ckpt_ep_25.pth --out_csv result/exp_bprna_rnafold_1/tmp/ep_25.l400.s200.csv --out_plot result/exp_bprna_rnafold_1/tmp/ep_25.l400.s200.html
+python eval_model_dataset.py --data "`dcl path TM4u8E`" --num 200 --maxl 400 --model result/exp_bprna_rnafold_1/model_ckpt_ep_5.pth --out_csv result/exp_bprna_rnafold_1/tmp/ep_5.l400.s200.csv --out_plot result/exp_bprna_rnafold_1/tmp/ep_5.l400.s200.html
 ```
+
+![plot/dataset_l400_s200_perf_exp_bprna_rnafold_1_ep5.png](plot/dataset_l400_s200_perf_exp_bprna_rnafold_1_ep5.png)
+
 
 
 todo: how similar/different is the RNAfold generated structure compare to the target?
