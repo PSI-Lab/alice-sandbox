@@ -68,7 +68,7 @@ def main(data_path, model_path, out_csv, out_plot):
     for bb_type in ['stem', 'iloop', 'hloop']:
         for i, col_name in enumerate(
                 ['bb_sensitivity_identical', 'bb_sensitivity_overlap', 'sensitivity', 'specificity']):
-            df_plot = df_result[df_result['struct_type'] == bb_type][[col_name]]
+            df_plot = df_result[df_result['struct_type'] == bb_type][[col_name, 'subset']]
             fig.append_trace(go.Histogram(x=df_plot[df_plot['subset'] == 'training'][col_name], showlegend=True if i == 0 else False,
                                           name=bb_type, nbinsx=20, marker_color=bb2color[bb_type],
                                           histnorm='percent'), i + 1, 1)
