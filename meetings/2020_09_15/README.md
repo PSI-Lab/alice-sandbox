@@ -310,6 +310,24 @@ Setting `model_path = 'result/rnastralign_1/model_ckpt_ep_10.pth'`:
  'px_stem_specificity': 0.5087719298245614}
 ```
 
+
+Setting `model_path = 'result/rnastralign_1/model_ckpt_ep_0.pth'`:
+
+```
+{'bb_hloop_identical': 0.0,
+ 'bb_hloop_overlap': 0.0,
+ 'bb_iloop_identical': nan,
+ 'bb_iloop_overlap': nan,
+ 'bb_stem_identical': 0.0,
+ 'bb_stem_overlap': 1.0,
+ 'px_hloop_sensitivity': 0.0,
+ 'px_hloop_specificity': 1.0,
+ 'px_iloop_sensitivity': nan,
+ 'px_iloop_specificity': 1.0,
+ 'px_stem_sensitivity': 1.0,
+ 'px_stem_specificity': 0.017543859649122806}
+```
+
 Looks like the model trained on `bprna_rnafold` dataset generalizes to toy example at least,
 but the model trained on `rnastralign` has significantly overfitted
 (although it was not observed from validation performance, probably same reason why E2Efold overfitted).
