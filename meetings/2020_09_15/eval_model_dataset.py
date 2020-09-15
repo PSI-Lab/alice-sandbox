@@ -39,7 +39,7 @@ def main(data_path, num_datapoints, max_len, model_path, out_csv, out_plot):
     for idx, row in df_data.iterrows():
         seq = row['seq']
         one_idx = row['one_idx']
-        
+
         # for now drop weird sequence
         if not set(seq.upper().replace('U', 'T')).issubset(set(list('ACGTN'))):
             continue

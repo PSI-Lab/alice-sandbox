@@ -254,7 +254,7 @@ python eval_model_dataset.py --data "`dcl path 6PvUty`" --num 200 --maxl 400 --m
 ![plot/dataset_l400_s200_perf_rnastralign_1_ep10.png](plot/dataset_l400_s200_perf_rnastralign_1_ep10.png)
 
 This dataset (rnastralign) seems to be much easier than bpRNA.
-
+Also note that our model generalizes: it was trained on sequences <= 200bp, and its performance on <=400bp sequences is quite good.
 
 ### training with longer max sequence length threshold:
 
@@ -265,6 +265,57 @@ CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net_pixel_bb_all_targets.py --da
 running
 
 ### Try toy example, overfitting?
+
+```
+from pprint import pprint
+from utils_model import Predictor, Evaluator
+predictor = Predictor(model_path)
+evaluator = Evaluator(predictor)
+evaluator.predict('AGGGTTTTCCCA', [[1, 2, 3], [10, 9, 8]], 0.1)
+df_result, metrics = evaluator.calculate_metrics()
+pprint(metrics)
+```
+
+Setting `model_path = 'result/exp_bprna_rnafold_1/model_ckpt_ep_5.pth'`:
+
+```
+{'bb_hloop_identical': 1.0,
+ 'bb_hloop_overlap': 1.0,
+ 'bb_iloop_identical': nan,
+ 'bb_iloop_overlap': nan,
+ 'bb_stem_identical': 1.0,
+ 'bb_stem_overlap': 1.0,
+ 'px_hloop_sensitivity': 0.4166666666666667,
+ 'px_hloop_specificity': 0.058823529411764705,
+ 'px_iloop_sensitivity': nan,
+ 'px_iloop_specificity': 0.48484848484848486,
+ 'px_stem_sensitivity': 1.0,
+ 'px_stem_specificity': 1.0}
+```
+
+Setting `model_path = 'result/rnastralign_1/model_ckpt_ep_10.pth'`:
+
+```
+{'bb_hloop_identical': 0.0,
+ 'bb_hloop_overlap': 0.0,
+ 'bb_iloop_identical': nan,
+ 'bb_iloop_overlap': nan,
+ 'bb_stem_identical': 0.0,
+ 'bb_stem_overlap': 0.0,
+ 'px_hloop_sensitivity': 0.0,
+ 'px_hloop_specificity': 1.0,
+ 'px_iloop_sensitivity': nan,
+ 'px_iloop_specificity': 1.0,
+ 'px_stem_sensitivity': 0.0,
+ 'px_stem_specificity': 0.5087719298245614}
+```
+
+Looks like the model trained on `bprna_rnafold` dataset generalizes to toy example at least,
+but the model trained on `rnastralign` has significantly overfitted
+(although it was not observed from validation performance, probably same reason why E2Efold overfitted).
+
+
+### Train on other dataset?
 
 
 ### Vectorize bounding box proposal code
