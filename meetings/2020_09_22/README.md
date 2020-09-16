@@ -16,7 +16,7 @@ CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net_pixel_bb_all_targets.py --da
 ```
 
 
-![plot/rf_data_all_targets_bprna_2.png](plot/rf_data_all_targets_bprna_2.png)
+![plot/rf_data_all_targets_bprna_3.png](plot/rf_data_all_targets_bprna_3.png)
 
 with dropout, but more params, more epochs:
 
@@ -24,18 +24,16 @@ with dropout, but more params, more epochs:
 CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net_pixel_bb_all_targets.py --data DmNgdP --result result/rf_data_all_targets_bprna_4 --dropout 0.5 --num_filters 32 32 64 64 64 128 128 --filter_width 9 9 9 9 9 9 9 --epoch 100 --mask 0.1 --batch_size 20 --max_length 200 --cpu 12
 ```
 
+![plot/rf_data_all_targets_bprna_4.png](plot/rf_data_all_targets_bprna_4.png)
 
 With dropout, looks like we need even more parameters and epochs?
 
+### With dropout, more params, more epochs
 
-### training with longer max sequence length threshold (checking result from from 2020_09_15)
 
 ```
-CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net_pixel_bb_all_targets.py --data 6PvUty --result result/rnastralign_2 --num_filters 32 32 64 64 64 128 128 --filter_width 9 9 9 9 9 9 9 --epoch 50 --mask 0.1 --batch_size 5 --max_length 500 --cpu 12
+CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net_pixel_bb_all_targets.py --data DmNgdP --result result/rf_data_all_targets_bprna_4 --dropout 0.5 --num_filters 128 128 128 128 128 128 128 --filter_width 9 9 9 9 9 9 9 --epoch 200 --mask 0.1 --batch_size 10 --max_length 200 --cpu 12
 ```
-
-running
-
 
 
 
