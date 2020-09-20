@@ -1,3 +1,197 @@
+### debug bpRNA dataset
+
+```
+import datacorral as dc
+import pandas as pd
+import sys
+sys.path.insert(0, '../../rna_ss/')
+from utils import idx2arr, arr2db
+
+dc_client = dc.Client()
+df = pd.read_pickle(dc_client.get_path('DmNgdP'), compression='gzip')
+
+row = df.iloc[0]
+seq = row['seq']
+one_idx = row['one_idx']
+bb = row['bounding_boxes']
+
+a = idx2arr(one_idx, len(seq))
+db_str, is_pn = arr2db(a)
+assert not is_pn
+
+print(seq)
+print(db_str)
+```
+
+Above prints:
+
+```
+GGAGCGAUUGGACCACCUUGCAGUUUCAUGGCACACUCUCUCCAUUUCUCUACCGUUCAUGCAGCGGUUGAUCGAUUGGGUUGCUGGUUGAUUGAUCGAUCGAUGGUCAGGAGUUGGAAGAGAAUUGGAGAGAGUGCAUUGUGAAUUGCGGGGUUGACGAGGCGGAGGG
+...............(((((((((((.(((((.(((((((((((.(((((((.((...............((((((((..................))))))))...........))).))))).))))))))))).)))))))))))))))))...............
+```
+
+Using http://rna.tbi.univie.ac.at/forna/forna.html to visualize:
+
+![plot/bprna_dataset_forna.png](plot/bprna_dataset_forna.png)
+
+Base pairing doesn't look right! Maybe the dataset was not processed properly?
+
+Validation:
+
+data downloaded from SPOT-RNA: bpRNA_dataset/VL0/bpRNA_RFAM_22522.st
+
+```
+#Name: bpRNA_RFAM_22522
+#Length: 169
+#PageNumber: 1
+GGAGCGAUUGGACCACCUUGCAGUUUCAUGGCACACUCUCUCCAUUUCUCUACCGUUCAUGCAGCGGUUGAUCGAUUGGGUUGCUGGUUGAUUGAUCGAUCGAUGGUCAGGAGUUGGAAGAGAAUUGGAGAGAGUGCAUUGUGAAUUGCGGGGUUGACGAGGCGGAGGG
+...............(((((((((((.(((((.(((((((((((.(((((((.((...............((((((((..................))))))))...........))).))))).))))))))))).)))))))))))))))))...............
+```
+
+This is the same as what we recontructed above.
+
+Found on bpRNA website:  http://bprna.cgrb.oregonstate.edu/search.php?query=bpRNA_RFAM_22522
+
+'dot bracket file' has the same dot-bracket notation as the above ones.
+
+
+bpRNA sub structures (1-based):
+
+```
+S1 16..26 "CCUUGCAGUUU" 144..154 "AAUUGCGGGGU"
+S2 28..32 "AUGGC" 139..143 "UUGUG"
+S3 34..34 "C" 138..138 "A"
+S4 35..44 "ACUCUCUCCA" 127..136 "GGAGAGAGUG"
+S5 46..46 "U" 126..126 "U"
+S6 47..51 "UCUCU" 120..124 "GAGAA"
+S7 52..52 "A" 118..118 "A"
+S8 54..55 "CG" 116..117 "GG"
+S9 71..78 "AUCGAUUG" 97..104 "CGAUCGAU"
+H1 79..96 "GGUUGCUGGUUGAUUGAU" (78,97) G:C
+B1 27..27 "C" (26,144) U:A (28,143) A:G
+B2 33..33 "A" (32,139) C:U (34,138) C:A
+B3 45..45 "U" (44,127) A:G (46,126) U:U
+B4 53..53 "C" (52,118) A:A (54,117) C:G
+B5 119..119 "A" (118,52) A:A (120,51) G:U
+B6 125..125 "U" (124,47) A:U (126,46) U:U
+B7 137..137 "C" (136,35) G:A (138,34) A:C
+I1.1 56..70 "UUCAUGCAGCGGUUG" (55,116) G:G
+I1.2 105..115 "GGUCAGGAGUU" (104,71) U:A
+E1 1..15 "GGAGCGAUUGGACCA"
+E2 155..169 "UGACGAGGCGGAGGG"
+```
+
+Compare to our implementation (0-based):
+
+```
+[((15, 143), (11, 11), 'stem'),
+ ((27, 138), (5, 5), 'stem'),
+ ((33, 137), (1, 1), 'stem'),
+ ((34, 126), (10, 10), 'stem'),
+ ((45, 125), (1, 1), 'stem'),
+ ((46, 119), (5, 5), 'stem'),
+ ((51, 117), (1, 1), 'stem'),
+ ((53, 115), (2, 2), 'stem'),
+ ((70, 96), (8, 8), 'stem'),
+ ((25, 142), (3, 2), 'bulge'),
+ ((31, 137), (3, 2), 'bulge'),
+ ((43, 125), (3, 2), 'bulge'),
+ ((51, 116), (3, 2), 'bulge'),
+ ((33, 135), (2, 3), 'bulge'),
+ ((45, 123), (2, 3), 'bulge'),
+ ((50, 117), (2, 3), 'bulge'),
+ ((54, 103), (17, 13), 'internal_loop'),
+ ((77, 77), (20, 20), 'hairpin_loop')]
+```
+
+Identical (up to some notation difference). <= reassuring!
+
+Conclusion:
+
+- our processing code seems to be correct
+
+- our local structure and bounding box code seems to be correct
+
+- bpRNA dataset has quite a lot of non-canonical base pairs (not just GU!)
+(as a result from comparative methods?)
+
+
+### bpRNA non-canonical base pairing
+
+todo
+
+
+
+### Evaluate bounding box prediction on other dataset
+
+Using model trained on random sequences.
+
+
+#### rnastralign
+
+(run on workstation)
+
+```
+python eval_model_dataset.py --data "`dcl path 6PvUty`" --num 200 --maxl 200 --model UGGg0e --out_csv result/rand_model/rnastralign.l200.s200.csv --out_plot result/rand_model/rnastralign.l200.s200.html
+```
+
+![plot/rand_model.rnastralign.l200.s200.png](plot/rand_model.rnastralign.l200.s200.png)
+
+
+#### rfam151
+
+make dataset with bounding boxes:
+
+```
+python make_dataset_pixel_bb.py --in_file ../../rna_ss/data_processing/rna_cg/data/rfam.pkl --out_file data/local_struct_pixel_bb.rfam.pkl
+```
+
+
+Upload to DC: `903rfx`
+
+(run on workstation)
+
+```
+python eval_model_dataset.py --data "`dcl path 903rfx`" --num 200 --maxl 200 --model UGGg0e --out_csv result/rand_model/rfam151.l200.s200.csv --out_plot result/rand_model/rfam151.l200.s200.html
+```
+
+![plot/rand_model.rfam.l200.s200.png](plot/rand_model.rfam.l200.s200.png)
+
+
+
+
+#### s_processed
+
+make dataset with bounding boxes:
+
+```
+python make_dataset_pixel_bb.py --in_file ../../rna_ss/data_processing/rna_cg/data/s_processed.pkl --out_file data/local_struct_pixel_bb.s_processed.pkl
+```
+
+Upload to DC: `a16nRG`
+
+(run on workstation)
+
+```
+python eval_model_dataset.py --data "`dcl path a16nRG`" --num 200 --maxl 200 --model UGGg0e --out_csv result/rand_model/s_processed.l200.s200.csv --out_plot result/rand_model/s_processed.l200.s200.html
+```
+
+![plot/rand_model.s_processed.l200.s200.png](plot/rand_model.s_processed.l200.s200.png)
+
+#### rand (as sanity check)
+
+
+(run on workstation)
+
+```
+python eval_model_dataset.py --data "`dcl path xs5Soq`" --num 200 --maxl 200 --model UGGg0e --out_csv result/rand_model/rand.l200.s200.csv --out_plot result/rand_model/rand.l200.s200.html
+```
+
+![plot/rand_model.rand.l200.s200.png](plot/rand_model.rand.l200.s200.png)
+
+
+Sanity check: looking ok!
+
 ### less params (checking result from from 2020_09_08)
 
 
@@ -45,11 +239,20 @@ CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net_pixel_bb_all_targets.py --da
 
 ## New todos
 
+- process all datasets
+
+- bpRNA dataset might be weird, evaluate random-seq-trained model on other datasets,
+rnastralign? rfam151?
+
 - upload a few existing models to DC
 
 - bpRNA local structure size histogram
 
+- process bpRNA 1M(90) dataset, also compare my code with their local structures, any mistakes in my code? (why is iloop_loc_y performance always 100%?)
+
 - try to control overfit on bpRNA, regularization?
+
+- bounding box assembly <-> shotgun sequencing? (although we know the location)
 
 - add real value output for loc & size, so we can predict on those with size > 10
 
