@@ -62,9 +62,9 @@ def main(data_path, num_datapoints, threshold, model_path, out_file):
             uniq_hloop = uniq_boxes(pred_bb_hloop)
             new_row['bb_hloop'] = uniq_hloop
 
-
-        print(idx, time() - ctime)
-        ctime = time()
+        if len(result) % 100 == 0:
+            print(len(result), time() - ctime)
+            ctime = time()
         result.append(new_row)
 
     result = pd.DataFrame(result)
