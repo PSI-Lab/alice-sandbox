@@ -192,6 +192,21 @@ python eval_model_dataset.py --data "`dcl path xs5Soq`" --num 200 --maxl 200 --m
 
 Sanity check: looking ok!
 
+
+### Stage 2 experiment using synthetic dataset
+
+
+#### Run stage 1 model
+
+Predict all unique bounding boxes at threshold `0.1`.
+Store bounding box location and probabiliti(es).
+
+(set num=-1 to run all)
+```
+python run_predictor_bb.py --data "`dcl path xs5Soq`" --num -1 --threshold 0.1 --model UGGg0e --out_file data/rand_s1_bb_0p1.pkl.gz
+```
+
+
 ### less params (checking result from from 2020_09_08)
 
 
@@ -230,19 +245,18 @@ CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net_pixel_bb_all_targets.py --da
 ```
 
 
+### Pointer net
 
-### Train on other dataset?
-
-
-### Vectorize bounding box proposal code
+Working on preparing features and targets: `generate_bb_target_idx.py`
 
 
 ## New todos
 
-- process all datasets
+- Vectorize bounding box proposal code
 
-- bpRNA dataset might be weird, evaluate random-seq-trained model on other datasets,
-rnastralign? rfam151?
+- implement (efficient) hard-wired logic to find all (locally maximum) stem boxes: stage 1 training data, stage 2 input data
+
+- how to propagate background/global information (sequence?)
 
 - upload a few existing models to DC
 
@@ -264,6 +278,8 @@ rnastralign? rfam151?
 
 - training script: instead of saving all predictions,
 save the predicted boudning boxes at threshold 0.1 (move inference code to top level?)
+
+- stem bb (hard-wired logic, complexity?) + pointer net?
 
 - debug inference & eval code
 
