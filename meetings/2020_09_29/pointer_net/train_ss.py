@@ -35,7 +35,7 @@ parser.add_argument('--emb-dim', type=int, default=8, help='embedding dimension 
 parser.add_argument('--batch-size', type=int, default=256, help='input batch size for training (default: 256)')
 parser.add_argument('--epochs', type=int, default=100, help='number of epochs to train (default: 100)')
 
-parser.add_argument('--lr', type=float, default=1e-3, help='learning rate (default: 1e-3)')
+parser.add_argument('--lr', type=float, default=1e-5, help='learning rate (default: 1e-5)')
 parser.add_argument('--wd', default=1e-5, type=float, help='weight decay (default: 1e-5)')
 
 parser.add_argument('--workers', type=int, default=4, help='number of data loading workers (default: 4)')
@@ -126,12 +126,29 @@ def main():
             optimizer.zero_grad()
             log_pointer_score, argmax_pointer, mask = model(seq, length)
 
+            # FIXME debug
+            # print(log_pointer_score)
+            # print(log_pointer_score.shape)
+            # print(argmax_pointer)
+            # print(argmax_pointer.shape)
+            # print(mask)
+            # print(mask.shape)
+            #
+            # print(target)
+            # print(target.shape)
+
+            # print(log_pointer_score)
+            # print(target)
+
             unrolled = log_pointer_score.view(-1, log_pointer_score.size(-1))
             loss = F.nll_loss(unrolled, target.view(-1), ignore_index=-1)
             assert not np.isnan(loss.item()), 'Model diverged with loss = NaN'
 
             loss.backward()
             optimizer.step()
+
+            # FIXME debug
+            print('gradient', model.embedding.weight.grad)
 
             train_loss.update(loss.item(), seq.size(0))
 

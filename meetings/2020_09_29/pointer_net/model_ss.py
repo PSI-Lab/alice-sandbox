@@ -111,7 +111,7 @@ class Attention(nn.Module):
 
 
 class PointerNet(nn.Module):
-    def __init__(self, input_dim, embedding_dim, hidden_size, bidirectional=True, batch_first=True):
+    def __init__(self, input_dim, embedding_dim, hidden_size, bidirectional=False, batch_first=True):
         super(PointerNet, self).__init__()
 
         # Embedding dimension
@@ -145,14 +145,20 @@ class PointerNet(nn.Module):
             batch_size = input_seq.size(1)
             max_seq_len = input_seq.size(0)
 
+        print('input_seq', input_seq[0][0, :])
+        print('embedding weights', self.embedding.weight)
+
         # Embedding
         embedded = self.embedding(input_seq)
         # (batch_size, max_seq_len, embedding_dim)
+        print('embedded', embedded[0][0, :])
 
         # encoder_output => (batch_size, max_seq_len, hidden_size) if batch_first else (max_seq_len, batch_size, hidden_size)
         # hidden_size is usually set same as embedding size
         # encoder_hidden => (num_layers * num_directions, batch_size, hidden_size) for each of h_n and c_n
         encoder_outputs, encoder_hidden = self.encoder(embedded, input_lengths)
+        print('encoder_outputs', encoder_outputs[0][0, :])
+        print('encoder_hidden', encoder_hidden[0][0, :])
 
         if self.bidirectional:
             # Optionally, Sum bidirectional RNN outputs
