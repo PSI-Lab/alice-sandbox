@@ -78,7 +78,16 @@ def bb_collate_fn(batch):
     # sequence lengths
     length_tensor = torch.LongTensor(sorted_lengths)
 
+    # TODO our input/output length are different, problem? how is output masking being used?
+
     # pad target index
+    # FIXME better way to do this? re-write NN?
+    # since our output labels is shorter than input, we'll also pad to max input size
+    l_longest = sorted_lengths[0]
+    # print(l_longest, len(sorted_labels[0]))
+    # print(sorted_labels[0] + [-1] * (l_longest - len(sorted_labels[0])))
+    # print(sorted_labels)
+    sorted_labels[0].extend([-1] * (l_longest - len(sorted_labels[0])))
     padded_labels = list(zip(*(itertools.zip_longest(*sorted_labels, fillvalue=-1))))
     # batch_size X max_seq_len (-1 padding)
     label_tensor = torch.LongTensor(padded_labels).view(batch_size, -1)
