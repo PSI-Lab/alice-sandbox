@@ -20,7 +20,7 @@ class BoundingBoxDataset(Dataset):
         # verify that feature dimensions are consistent, and store it (needed for initializing encode)
         feature_dims = df['features'].apply(lambda x: x.shape[1])
         assert feature_dims.nunique() == 1
-        self.feature_dim = feature_dims.iloc[0]
+        self.feature_dim = int(feature_dims.iloc[0])
 
         # save df
         self.df = df
