@@ -111,30 +111,32 @@ class Attention(nn.Module):
 
 
 class PointerNet(nn.Module):
-    def __init__(self, input_dim, embedding_dim, hidden_size, bidirectional=False, batch_first=True):
+    def __init__(self, input_dim, hidden_size, num_layers=1, bidirectional=False, batch_first=True):
         super(PointerNet, self).__init__()
 
         # Embedding dimension
-        self.embedding_dim = embedding_dim
+        # self.embedding_dim = embedding_dim
         # (Decoder) hidden size
         self.hidden_size = hidden_size
         # Bidirectional Encoder
         self.bidirectional = bidirectional
         self.num_directions = 2 if bidirectional else 1
-        self.num_layers = 1
+        self.num_layers = num_layers
         self.batch_first = batch_first
 
         # We use an embedding layer for more complicate application usages later, e.g., word sequences.
-        self.embedding = nn.Linear(in_features=input_dim, out_features=embedding_dim, bias=False)
-        self.encoder = Encoder(embedding_dim=embedding_dim, hidden_size=hidden_size, num_layers=self.num_layers,
+        # self.embedding = nn.Linear(in_features=input_dim, out_features=embedding_dim, bias=False)
+        # self.encoder = Encoder(embedding_dim=embedding_dim, hidden_size=hidden_size, num_layers=self.num_layers,
+        #                        bidirectional=bidirectional, batch_first=batch_first)
+        self.encoder = Encoder(embedding_dim=input_dim, hidden_size=hidden_size, num_layers=self.num_layers,
                                bidirectional=bidirectional, batch_first=batch_first)
         self.decoding_rnn = nn.LSTMCell(input_size=hidden_size, hidden_size=hidden_size)
         self.attn = Attention(hidden_size=hidden_size)
 
-        for m in self.modules():
-            if isinstance(m, nn.Linear):
-                if m.bias is not None:
-                    torch.nn.init.zeros_(m.bias)
+        # for m in self.modules():
+        #     if isinstance(m, nn.Linear):
+        #         if m.bias is not None:
+        #             torch.nn.init.zeros_(m.bias)
 
     def forward(self, input_seq, input_lengths):
 
@@ -145,20 +147,22 @@ class PointerNet(nn.Module):
             batch_size = input_seq.size(1)
             max_seq_len = input_seq.size(0)
 
-        print('input_seq', input_seq[0][0, :])
-        print('embedding weights', self.embedding.weight)
+        # print('input_seq', input_seq[0][0, :])
+        # print('embedding weights', self.embedding.weight)
 
-        # Embedding
-        embedded = self.embedding(input_seq)
-        # (batch_size, max_seq_len, embedding_dim)
-        print('embedded', embedded[0][0, :])
+        # # Embedding
+        # embedded = self.embedding(input_seq)
+        # # (batch_size, max_seq_len, embedding_dim)
+        # print('embedded', embedded[0][0, :])
+        # print(input_seq.shape, embedded.shape)
 
         # encoder_output => (batch_size, max_seq_len, hidden_size) if batch_first else (max_seq_len, batch_size, hidden_size)
         # hidden_size is usually set same as embedding size
         # encoder_hidden => (num_layers * num_directions, batch_size, hidden_size) for each of h_n and c_n
-        encoder_outputs, encoder_hidden = self.encoder(embedded, input_lengths)
-        print('encoder_outputs', encoder_outputs[0][0, :])
-        print('encoder_hidden', encoder_hidden[0][0, :])
+        encoder_outputs, encoder_hidden = self.encoder(input_seq, input_lengths)
+        # # encoder_outputs, encoder_hidden = self.encoder(embedded, input_lengths)
+        # print('encoder_outputs', encoder_outputs[0][0, :])
+        # print('encoder_hidden', encoder_hidden[0][0, :])
 
         if self.bidirectional:
             # Optionally, Sum bidirectional RNN outputs

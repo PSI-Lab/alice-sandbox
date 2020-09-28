@@ -19,6 +19,9 @@ Out[6]: (29, 13)
 In [7]: df.iloc[0].target_idx
 Out[7]: [0, 2, 5, 10, 27, 1]
 
+In [8]: df.iloc[0].bb_overlap
+Out[8]: [1, 1.0, 1.0, 1.0, 1.0, 1]
+
 In [10]: df.iloc[0].input_len
 Out[10]: 29
 ```
@@ -34,16 +37,75 @@ closing base pair positions, summary statistics of stage 1 probabilities.
 - `input_len`: redundant, stored for convenience. Number of bounding boxes proposed by stage 1 model,
 this is also the number of timestamps in PointerNet encoder.
 
+- `bb_overlap`: overlap with ground truth for each target bounding box (output index).
+First and last entry are always `1.0` since they are `start` and `end` placeholders.
+
+
 Caveats:
 
 - Haven't finalized bounding box ordering, might cause conflicting gradient while training NN.
 
 
-### Pointer net
+### Pointer net - org
+
+Implementation adapted from https://github.com/ast0414/pointer-networks-pytorch/tree/27aec4e011a37f96270e3d6ac7423225d4c40ef3
+
+Some small improvements:
+
+- code reformating: tab replaced by 4 spaces
+
+- fix deprecation warning: use bool for masked_fill()
+
+Test the original implementation on sorting example:
+
+```
+python train_sort.py --low 2 --high 10 --min-length 2 --max-length 5 --train-samples 1000 --test-samples 20 --emb-dim 20 --batch-size 20 --no-cuda --epochs 20
+```
+
+Seems to be working:
+
+```
+Epoch 19: Train [0/1000 (0%)]	Loss: 0.392546	Accuracy: 0.848495
+Epoch 19: Train [400/1000 (40%)]	Loss: 0.386630	Accuracy: 0.851058
+Epoch 19: Train [800/1000 (80%)]	Loss: 0.380774	Accuracy: 0.853624
+Epoch 19: Test	Loss: 0.401322	Accuracy: 0.860000
+```
 
 
-Data generator: for this experiment, we'll be focusing on examples where
+### Data Generator update
+
+Update data generator to use our dataset.
+
+For this experiment, we'll be focusing on examples where
 stage 1 bounding box sensitivity is `100%`.
+
+[pointer_net/dataset_ss.py](pointer_net/dataset_ss.py)
+
+
+### Model update
+
+[pointer_net/model_ss.py](pointer_net/model_ss.py)
+
+- removed linear embedding layer since it's causing NaN gradient (not sure why?)
+
+### Training update
+
+[pointer_net/train_ss.py](pointer_net/train_ss.py)
+
+### Training
+
+Sanity check:
+
+```
+python train_ss.py --dataset ../data/rand_s1_bb_0p1_features.pkl.gz --num-layers 1 --hid-dim 20 --batch-size 20 --no-cuda --epochs 2 --wd 0
+```
+
+Run on GPU:
+
+```
+CUDA_VISIBLE_DEVICES=0 python train_ss.py --dataset ../data/rand_s1_bb_0p1_features.pkl.gz --num-layers 3 --hid-dim 50 --batch-size 200 --epochs 100
+```
+
 
 
 ## bb assembly with constraints
@@ -55,6 +117,8 @@ stage 1 bounding box sensitivity is `100%`.
 
 
 ## New todos
+
+- 'feature' of a proposed stem can be summarized to fixed dimension by an RNN
 
 - cubic time for finding all stem bbs
 

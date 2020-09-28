@@ -31,11 +31,13 @@ parser = argparse.ArgumentParser(description='PtrNet-bounding-box')
 
 parser.add_argument('--dataset', type=str, help='path to training dataset')
 
-parser.add_argument('--emb-dim', type=int, default=8, help='embedding dimension (default: 8)')
+# parser.add_argument('--emb-dim', type=int, default=8, help='embedding dimension (default: 8)')
+parser.add_argument('--num-layers', type=int, default=1, help='RNN layers (default: 1)')
+parser.add_argument('--hid-dim', type=int, default=50, help='hidden dimension (default: 50)')
 parser.add_argument('--batch-size', type=int, default=256, help='input batch size for training (default: 256)')
 parser.add_argument('--epochs', type=int, default=100, help='number of epochs to train (default: 100)')
 
-parser.add_argument('--lr', type=float, default=1e-5, help='learning rate (default: 1e-5)')
+parser.add_argument('--lr', type=float, default=1e-4, help='learning rate (default: 1e-4)')
 parser.add_argument('--wd', default=1e-5, type=float, help='weight decay (default: 1e-5)')
 
 parser.add_argument('--workers', type=int, default=4, help='number of data loading workers (default: 4)')
@@ -109,7 +111,8 @@ def main():
     # extra checks
     assert train_set.feature_dim == test_set.feature_dim
 
-    model = PointerNet(input_dim=train_set.feature_dim, embedding_dim=args.emb_dim, hidden_size=args.emb_dim).to(device)
+    # model = PointerNet(input_dim=train_set.feature_dim, embedding_dim=args.emb_dim, hidden_size=args.emb_dim).to(device)
+    model = PointerNet(input_dim=train_set.feature_dim, hidden_size=args.hid_dim, num_layers=args.num_layers).to(device)
     optimizer = Adam(model.parameters(), lr=args.lr, weight_decay=args.wd)
 
     train_loss = AverageMeter()
@@ -147,8 +150,9 @@ def main():
             loss.backward()
             optimizer.step()
 
-            # FIXME debug
-            print('gradient', model.embedding.weight.grad)
+            # # FIXME debug
+            # print('embedding gradient', model.embedding.weight.grad)
+            # print('encoder gradient', model.encoder.rnn.weight_ih_l0.grad)
 
             train_loss.update(loss.item(), seq.size(0))
 
