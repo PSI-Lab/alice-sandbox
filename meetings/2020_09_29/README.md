@@ -106,17 +106,70 @@ Run on GPU:
 CUDA_VISIBLE_DEVICES=0 python train_ss.py --dataset ../data/rand_s1_bb_0p1_features.pkl.gz --num-layers 3 --hid-dim 50 --batch-size 200 --epochs 100
 ```
 
+Very slow, and seems to be stuck at 11% accuracy:
+
+```
+Epoch 381: Train [36000/41132 (87%)]    Loss: 1.015708  Accuracy: 0.115985
+Epoch 381: Train [38000/41132 (92%)]    Loss: 1.015693  Accuracy: 0.115986
+Epoch 381: Train [40000/41132 (97%)]    Loss: 1.015686  Accuracy: 0.115986
+Epoch 381: Test Loss: 1.116277  Accuracy: 0.112626
+```
+
+## Hard-wired stem-only bounding box
+
+idea:
+
+- reverse the sequence, sliding window over itself, and find contiguous chunk of complementary substring
+
+- allow both GC & GU
+
+- for overlapping portion for each sliding offset,
+we can efficiently find all common substring whose indices are identical
+(contiguous chunk in numpy boolean array)
+
+- sliding window two directions: left/right
+
+- de-dup and merge (discard bounding box within other boxes)
+
+Sanity check on a simple sequence:
+
+![plot/all_stems.png](plot/all_stems.png)
 
 
-## bb assembly with constraints
+Processing the synthetic dataset, run:
+
+```
+python find_all_stems.py --in_file "`dcl path xs5Soq`" --out_file data/rand_seqs_var_len_sample_mfe_10_100_100000_all_stems.pkl.gz
+```
 
 
 
-## Hard-wired stem-only bb
+Result has been validated:
 
 
+(add notebook and plot)
+
+and uploaded to DC:
+
+(todo)
+
+
+
+For downstream use cases, consider the following:
+
+- we always allow both GC and GU pairs, which might have missed local structure that only pair GU sometimes?
+
+- might want to drop stem with length 1
+
+
+
+## bounding box assembly with constraints
+
+WIP
 
 ## New todos
+
+- pointer network to mimic linearfold?
 
 - 'feature' of a proposed stem can be summarized to fixed dimension by an RNN
 
