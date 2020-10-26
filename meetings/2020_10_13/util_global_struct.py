@@ -283,16 +283,21 @@ class GrowGlobalStruct(object):
 
         # add one chain from the list of compatible ones
         for chain in comp_chains:
+            comp_chains_copy = copy.copy(comp_chains)
             struct_new = copy.copy(struct)  # important to make copy inside loop
             struct_new.append(copy.copy(chain))
             # update compatibility list
             chain_id_compatible = set(self.df_chain_compatibility[chain.id].index[self.df_chain_compatibility[chain.id]].to_list())
+            # to avoid duplicated assembly, wlog, use only chain with higher numbering
+            # TODO a better way to do this is pre-set lower triangular of self.df_chain_compatibility to False
+            chain_id_compatible = [x for x in chain_id_compatible if int(x.split('_')[1]) > int(chain.id.split('_')[1])]
 
             #         print(chain, chain_id_compatible)
-            comp_chains = [x for x in comp_chains if x.id in chain_id_compatible]
+            comp_chains_copy = [x for x in comp_chains_copy if x.id in chain_id_compatible]
+            # print([x.id for x in struct_new], chain.id, [c.id for c in comp_chains_copy])
             #         print([x.id for x in struct_new], chain.id, chain_id_compatible, [x.id for x in comp_chains])
             #         print(comp_chains)
-            self.grow_global_struct(copy.copy(struct_new), copy.copy(comp_chains))
+            self.grow_global_struct(copy.copy(struct_new), copy.copy(comp_chains_copy))
 
 
 def validate_global_struct(global_struct):
