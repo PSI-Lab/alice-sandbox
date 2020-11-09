@@ -144,17 +144,28 @@ move all to a top level util: TODO
 end-to-end pipeline on single seq? on dataset?
 
 
-## Wrapper code
+## End-to-end predictive workflow
 
-Predict bounding boxes:
+Stage 1 - predict bounding boxes:
 
 ```
 from model_utils.utils_model import Predictor
 model = Predictor('v0.1')
-stems, iloops, hloops = model.predict_bb('GUUCUGGUGCUAAGGCUGCGUA', 0.1)
+stems, iloops, hloops = model.predict_bb('GUUCUGGUGCUAAGGCUGCGUA', threshold=0.1)
 ```
 
+Stage 2 - global structure assembly (following above step):
 
+
+```
+from model_utils.util_global_struct import make_bb_df, generate_structs
+df_stem, df_iloop, df_hloop = make_bb_df(stems, iloops, hloops, min_pixel_pred=3, min_prob=0.5)
+df_global_structs = generate_structs(df_stem, df_iloop, df_hloop)
+```
+
+Scoring:
+
+TODO
 
 
 ## TODOs
