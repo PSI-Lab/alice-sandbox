@@ -163,9 +163,36 @@ df_stem, df_iloop, df_hloop = make_bb_df(stems, iloops, hloops, min_pixel_pred=3
 df_global_structs = generate_structs(df_stem, df_iloop, df_hloop)
 ```
 
-Scoring:
+Scoring (following above step):
 
-TODO
+```
+from model_utils.util_global_struct import ad_hoc_score
+scores = [ad_hoc_score(x) for x in df_global_structs]
+```
+
+Result (print df_global_structs and scores):
+
+```
+   bb_x  bb_y  siz_x  siz_y bb_type  n_proposal  prob_median  n_proposal_norm
+0     5    16      3      3    stem           8     0.085167         0.888889
+1     8    18      2      2    stem           4     0.430557         1.000000
+1.0882265336904855
+
+   bb_x  bb_y  siz_x  siz_y bb_type  n_proposal  prob_median  n_proposal_norm
+0     7    14      8      8   hloop          12     0.231506         0.187500
+1     5    16      3      3    stem           8     0.085167         0.888889
+0.22711209328493728
+
+   bb_x  bb_y  siz_x  siz_y bb_type  n_proposal  prob_median  n_proposal_norm
+0     9    14      6      6   hloop          12     0.213121         0.333333
+1     8    15      2      2    stem           3     0.269645         0.750000
+0.40446775327008394
+
+   bb_x  bb_y  siz_x  siz_y bb_type  n_proposal  prob_median  n_proposal_norm
+0     9    17      9      9   hloop          18     0.274618         0.222222
+1     8    18      2      2    stem           4     0.430557         1.000000
+0.8611144404055483
+```
 
 
 ## TODOs
@@ -193,5 +220,6 @@ Greedy approach of assembly? Start with high prob bounding boxes, terminate afte
 
 size > 10
 
+RNA-RNA
 
 

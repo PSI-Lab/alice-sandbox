@@ -527,3 +527,9 @@ def generate_structs(df_stem, df_iloop, df_hloop):
 
     return global_struct_dfs
 
+
+def ad_hoc_score(df_pred):
+    df_stem = df_pred[df_pred['bb_type'] == 'stem']
+    df_stem = dgp.add_column(df_stem, 'score', ['siz_x', 'prob_median', 'n_proposal_norm'],
+                             lambda a, b, c: a*b*c)
+    return df_stem['score'].sum()
