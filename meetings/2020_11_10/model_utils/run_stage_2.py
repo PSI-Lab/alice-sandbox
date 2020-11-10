@@ -1,4 +1,5 @@
 # df with bb proposal -> df with valid global structs
+import argparse
 from util_global_struct import process_bb_old_to_new, add_bb_bottom_left, compatible_counts, LocalStructureBb, OneStepChain, GrowChain, GrowGlobalStruct, FullChain, chain_compatible, validate_global_struct
 import numpy as np
 import copy
@@ -223,61 +224,60 @@ def check_bb_sensitivity(df_target, df_stem, df_iloop, df_hloop):
 #     return global_struct_dfs, gt_found
 
 
-# df = pd.read_pickle('../2020_09_22/data/rand_s1_bb_0p1.pkl.gz')
-df = pd.read_pickle('data/debug.pkl.gz')
-df_out = []
+def main(in_file, out_file, max_len, min_pixel_pred, min_prob):
+    # df = pd.read_pickle('../2020_09_22/data/rand_s1_bb_0p1.pkl.gz')
+    df = pd.read_pickle(in_file)
+    df_out = []
 
-# for debug
-err_idxes = []
+    # for debug
+    err_idxes = []
 
-for idx, row in df.iterrows():
-# for idx, row in [(19301, df.iloc[19301])]:
-    # debug
-    if len(row['seq']) > 60:
-        continue
+    for idx, row in df.iterrows():
+    # for idx, row in [(19301, df.iloc[19301])]:
+    #     # debug
+        if len(row['seq']) > max_len:
+            continue
 
-    print(idx)
-    # try:
-    #     df_target = process_bb_old_to_new(row['bounding_boxes'])
-    #     df_stem, df_iloop, df_hloop = make_bb_df(row['bb_stem'], row['bb_iloop'], row['bb_hloop'])
-    #     n_bb_found = check_bb_sensitivity(df_target, df_stem, df_iloop, df_hloop)
-    #     global_struct_dfs, gt_found = generate_structs(df_stem, df_iloop, df_hloop)
-    #
-    #     row['df_target'] = df_target
-    #     row['n_bb_found'] = n_bb_found
-    #     row['global_struct_dfs'] = global_struct_dfs
-    #     row['gt_found'] = gt_found
-    #     df_out.append(row)
-    # except Exception as e:
-    #     err_idxes.append((idx, str(e)))
+        print(idx, len(row['seq']))
 
-    try:
-        df_target = process_bb_old_to_new(row['bounding_boxes'])
-        df_stem, df_iloop, df_hloop = make_bb_df(row['bb_stem'], row['bb_iloop'], row['bb_hloop'])
-        n_bb_found = check_bb_sensitivity(df_target, df_stem, df_iloop, df_hloop)
-        global_struct_dfs = generate_structs(df_stem, df_iloop, df_hloop)
+        try:
+            df_target = process_bb_old_to_new(row['bounding_boxes'])
+            df_stem, df_iloop, df_hloop = make_bb_df(row['bb_stem'], row['bb_iloop'], row['bb_hloop'],
+                                                     min_pixel_pred, min_prob)
+            n_bb_found = check_bb_sensitivity(df_target, df_stem, df_iloop, df_hloop)
+            global_struct_dfs = generate_structs(df_stem, df_iloop, df_hloop)
 
-        # check whether ground truth is there
-        gt_found = False
-        for df_gs in global_struct_dfs:
-            df_tmp = pd.merge(df_gs[['bb_x', 'bb_y', 'siz_x', 'siz_y', 'bb_type']], df_target, how='inner')
-            if len(df_tmp) == len(df_target):
-                # print("Ground truth!")
-                gt_found = True
+            # check whether ground truth is there
+            gt_found = False
+            for df_gs in global_struct_dfs:
+                df_tmp = pd.merge(df_gs[['bb_x', 'bb_y', 'siz_x', 'siz_y', 'bb_type']], df_target, how='inner')
+                if len(df_tmp) == len(df_target):
+                    # print("Ground truth!")
+                    gt_found = True
 
-        row['df_target'] = df_target
-        row['n_bb_found'] = n_bb_found
-        row['global_struct_dfs'] = global_struct_dfs
-        row['gt_found'] = gt_found
-        df_out.append(row)
-    except Exception as e:
-        err_idxes.append((idx, str(e)))
+            row['df_target'] = df_target
+            row['n_bb_found'] = n_bb_found
+            row['global_struct_dfs'] = global_struct_dfs
+            row['gt_found'] = gt_found
+            df_out.append(row)
+        except Exception as e:
+            err_idxes.append((idx, str(e)))
 
-df_out = pd.DataFrame(df_out)
-# print(df_out)
-df_out.to_pickle('data/debug2.pkl.gz')
+    df_out = pd.DataFrame(df_out)
+    # print(df_out)
+    df_out.to_pickle(out_file)
 
-print(err_idxes)
+    print(err_idxes)
 
 
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--in_file', type=str, help='Path to input file, should be output from stage 1 (run_stage_1.py)')
+    parser.add_argument('--max_len', type=int, help='sequence exceed max len will be skipped (for speed up testing)')
+    parser.add_argument('--min_pixel_pred', type=int, default=3, help='pruning parameter')
+    parser.add_argument('--min_prob', type=float, default=0.5, help='pruning parameter')
+    parser.add_argument('--out_file', type=str, help='Path to output csv pickle')
+    args = parser.parse_args()
+    main(args.in_file, args.out_file, args.max_len, args.min_pixel_pred, args.min_prob)
 

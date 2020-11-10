@@ -169,6 +169,57 @@ class SimpleConvNet(nn.Module):
         return y
 
 
+class SeqPairEncoder(object):
+    DNA_ENCODING = np.asarray([[0, 0, 0, 0],
+                               [1, 0, 0, 0],
+                               [0, 1, 0, 0],
+                               [0, 0, 1, 0],
+                               [0, 0, 0, 1]])
+
+    def __init__(self, x1, x2):
+        # x1 & x2: sequence, for now require to be same length (caller should pad with N if needed)
+        assert len(x2) == len(x2), "For now require two seqs of same length. Please pad with N."
+        x1 = x1.upper().replace('U', 'T')
+        x2 = x2.upper().replace('U', 'T')
+        assert set(x1).issubset(set(list('ACGTN')))
+        assert set(x2).issubset(set(list('ACGTN')))
+        self.x1 = x1
+        self.x2 = x2
+        # encode
+        self.x1_1d = self.encode_seq(self.x1)
+        self.x2_1d = self.encode_seq(self.x2)
+        self.x_2d = self.encode_x(self.x1_1d, self.x2_1d)
+        self.x_torch = self.encode_torch_input(self.x_2d)
+
+    def encode_seq(self, x):
+        seq = x.replace('A', '1').replace('C', '2').replace('G', '3').replace('T', '4').replace('U', '4').replace('N', '0')
+        x = np.asarray([int(x) for x in list(seq)])
+        x = self.DNA_ENCODING[x.astype('int8')]
+        return x
+
+    def encode_x(self, x1, x2):
+        # outer product
+        assert len(x1.shape) == 2
+        assert x1.shape[1] == 4
+        assert len(x2.shape) == 2
+        assert x2.shape[1] == 4
+        l = x1.shape[0]
+        x1 = x1[:, np.newaxis, :]
+        x2 = x2[np.newaxis, :, :]
+        x1 = np.repeat(x1, l, axis=1)
+        x2 = np.repeat(x2, l, axis=0)
+        return np.concatenate([x1, x2], axis=2)
+
+    def encode_torch_input(self, x):
+        # add batch dim
+        assert len(x.shape) == 3
+        x = x[np.newaxis, :, :, :]
+        # convert to torch tensor
+        x = torch.from_numpy(x).float()
+        # reshape: batch x channel x H x W
+        x = x.permute(0, 3, 1, 2)
+        return x
+
 class DataEncoder(object):
     DNA_ENCODING = np.asarray([[0, 0, 0, 0],
                                [1, 0, 0, 0],
@@ -384,8 +435,12 @@ class Predictor(object):
         pred_box = pred_box * m
         return proposed_boxes, pred_box
 
-    def _predict_bb(self, seq, threshold):
-        de = DataEncoder(seq)
+    def _predict_bb(self, seq, threshold, seq2=None):
+        # if seq2 specified, predict bb for RNA-RNA
+        if seq2:
+            de = SeqPairEncoder(seq, seq2)
+        else:
+            de = DataEncoder(seq)
         yp = self.model(torch.tensor(de.x_torch))
         yp = {k: v.detach().cpu().numpy()[0, :, :, :] for k, v in yp.items()}
         # bb
@@ -401,9 +456,9 @@ class Predictor(object):
         pred_bb_hloop = self.cleanup_hloop(pred_bb_hloop, len(seq))
         return yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop, pred_box_stem, pred_box_iloop, pred_box_hloop
 
-    def predict_bb(self, seq, threshold):
+    def predict_bb(self, seq, threshold, seq2=None):
 
-        yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop, pred_box_stem, pred_box_iloop, pred_box_hloop = self._predict_bb(seq, threshold)
+        yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop, pred_box_stem, pred_box_iloop, pred_box_hloop = self._predict_bb(seq, threshold, seq2)
 
         def uniq_boxes(pred_bb):
             # pred_bb: list
@@ -558,6 +613,7 @@ class Evaluator(object):
                 # debug print closest pred bb
                 print("target bb: {}".format(bb1))
                 print("best overlapping bb: {}".format(best_bb_overlap))
+                print("best overlapping area: {}".format(best_area_overlap))
             else:
                 n_target_nohit += 1
 

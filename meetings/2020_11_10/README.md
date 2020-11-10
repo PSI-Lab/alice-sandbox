@@ -133,6 +133,16 @@ model = Predictor('v0.1')
 stems, iloops, hloops = model.predict_bb('GUUCUGGUGCUAAGGCUGCGUA', threshold=0.1)
 ```
 
+Alternatively, stage 1 for RNA-RNA interaction:
+
+```
+from model_utils.utils_model import Predictor
+model = Predictor('v0.1')
+stems, iloops, hloops = model.predict_bb('UUGGGCC', threshold=0.1, seq2='GGCCCAA')
+```
+
+(WIP, do we need to flip the second sequence? above example is fully complementary (5->3 to 3->5) direction?)
+
 Stage 2 - global structure assembly (following above step):
 
 
@@ -265,7 +275,7 @@ best overlapping area: 25
 
 ## Run stage 1 model on dataset
 
-synthetic:
+### synthetic:
 
 (debug)
 
@@ -280,15 +290,28 @@ python model_utils/run_stage_1.py --data "`dcl path xs5Soq`" --num 10 --threshol
 python model_utils/run_stage_1.py --data "`dcl path xs5Soq`" --num -1 --threshold 0.1 --model result/rf_data_all_targets_3/model_ckpt_ep_9.pth --out_file data/rand_s1_bb_0p1.pkl.gz
 ```
 
+### rfam151
+
+```
+python model_utils/run_stage_1.py --data "`dcl path 903rfx`" --num -1 --threshold 0.1 --model result/rf_data_all_targets_3/model_ckpt_ep_9.pth --out_file data/rfam151_s1_bb_0p1.pkl.gz
+```
+
 ## Evaluate stage 2 model on dataset
 
 
-synthetic:
+### synthetic:
 
 (debug)
 
 ```
 python model_utils/run_stage_2.py
+```
+
+
+### rfam151
+
+```
+python model_utils/run_stage_2.py --in_file data/rfam151_s1_bb_0p1.pkl.gz --out_file data/rfam151_s2_3_0p5.pkl.gz --max_len 100 --min_pixel_pred 3 --min_prob 0.5
 ```
 
 
