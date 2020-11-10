@@ -226,48 +226,48 @@ class DataEncoder(object):
         x = x.permute(0, 3, 1, 2)
         return x
 
-    # def encode_y(self, y, l):
-    #     pairs, structure_arr = one_idx2arr(y, l, remove_lower_triangular=True)
-    #     parser = LocalStructureParser(pairs)
-    #     bounding_boxes = parser.parse_bounding_boxes()  # top left corner
-    #     # extra data (needed for plot)
-    #     target_stem_on, target_iloop_on, target_hloop_on, \
-    #     mask_stem_on, mask_iloop_on, mask_hloop_on, \
-    #     target_stem_location_x, target_stem_location_y, target_iloop_location_x, target_iloop_location_y, \
-    #     target_hloop_location_x, target_hloop_location_y, \
-    #     target_stem_size, target_iloop_size_x, target_iloop_size_y, target_hloop_size, \
-    #     mask_stem_location_size, mask_iloop_location_size, \
-    #     mask_hloop_location_size = make_target_pixel_bb(structure_arr, bounding_boxes)
-    #     # only pick the useful ones
-    #     # organize
-    #     y = {
-    #         # stem
-    #         'stem_on': target_stem_on[:, :],
-    #     #     'stem_location_x': torch.from_numpy(target_stem_location_x[:, :, np.newaxis]).float(),
-    #     # # add singleton dimension (these are integer index of softmax index)
-    #     #     'stem_location_y': torch.from_numpy(target_stem_location_y[:, :, np.newaxis]).float(),
-    #     #     'stem_size': torch.from_numpy(target_stem_size[:, :, np.newaxis]).float(),
-    #
-    #         # iloop
-    #         'iloop_on': target_iloop_on,
-    #         # 'iloop_location_x': torch.from_numpy(target_iloop_location_x[:, :, np.newaxis]).float(),
-    #         # 'iloop_location_y': torch.from_numpy(target_hloop_location_y[:, :, np.newaxis]).float(),
-    #         # 'iloop_size_x': torch.from_numpy(target_iloop_size_x[:, :, np.newaxis]).float(),
-    #         # 'iloop_size_y': torch.from_numpy(target_iloop_size_y[:, :, np.newaxis]).float(),
-    #
-    #         # hloop
-    #         'hloop_on': target_hloop_on,
-    #         # 'hloop_location_x': torch.from_numpy(target_hloop_location_x[:, :, np.newaxis]).float(),
-    #         # 'hloop_location_y': torch.from_numpy(target_hloop_location_y[:, :, np.newaxis]).float(),
-    #         # 'hloop_size': torch.from_numpy(target_hloop_size[:, :, np.newaxis]).float(),
-    #     }
-    #     if self.bb_ref == 'top_right':
-    #         bbs = []
-    #         for (x0, y0), (wx, wy), bb_name in bounding_boxes:
-    #             bbs.append(((x0, y0 + wy - 1), (wx, wy), bb_name))
-    #         return bbs, y
-    #     else:
-    #         return bounding_boxes, y
+    def encode_y(self, y, l):
+        pairs, structure_arr = one_idx2arr(y, l, remove_lower_triangular=True)
+        parser = LocalStructureParser(pairs)
+        bounding_boxes = parser.parse_bounding_boxes()  # top left corner
+        # extra data (needed for plot)
+        target_stem_on, target_iloop_on, target_hloop_on, \
+        mask_stem_on, mask_iloop_on, mask_hloop_on, \
+        target_stem_location_x, target_stem_location_y, target_iloop_location_x, target_iloop_location_y, \
+        target_hloop_location_x, target_hloop_location_y, \
+        target_stem_size, target_iloop_size_x, target_iloop_size_y, target_hloop_size, \
+        mask_stem_location_size, mask_iloop_location_size, \
+        mask_hloop_location_size = make_target_pixel_bb(structure_arr, bounding_boxes)
+        # only pick the useful ones
+        # organize
+        y = {
+            # stem
+            'stem_on': target_stem_on[:, :],
+        #     'stem_location_x': torch.from_numpy(target_stem_location_x[:, :, np.newaxis]).float(),
+        # # add singleton dimension (these are integer index of softmax index)
+        #     'stem_location_y': torch.from_numpy(target_stem_location_y[:, :, np.newaxis]).float(),
+        #     'stem_size': torch.from_numpy(target_stem_size[:, :, np.newaxis]).float(),
+
+            # iloop
+            'iloop_on': target_iloop_on,
+            # 'iloop_location_x': torch.from_numpy(target_iloop_location_x[:, :, np.newaxis]).float(),
+            # 'iloop_location_y': torch.from_numpy(target_hloop_location_y[:, :, np.newaxis]).float(),
+            # 'iloop_size_x': torch.from_numpy(target_iloop_size_x[:, :, np.newaxis]).float(),
+            # 'iloop_size_y': torch.from_numpy(target_iloop_size_y[:, :, np.newaxis]).float(),
+
+            # hloop
+            'hloop_on': target_hloop_on,
+            # 'hloop_location_x': torch.from_numpy(target_hloop_location_x[:, :, np.newaxis]).float(),
+            # 'hloop_location_y': torch.from_numpy(target_hloop_location_y[:, :, np.newaxis]).float(),
+            # 'hloop_size': torch.from_numpy(target_hloop_size[:, :, np.newaxis]).float(),
+        }
+        if self.bb_ref == 'top_right':
+            bbs = []
+            for (x0, y0), (wx, wy), bb_name in bounding_boxes:
+                bbs.append(((x0, y0 + wy - 1), (wx, wy), bb_name))
+            return bbs, y
+        else:
+            return bounding_boxes, y
 
 
 class Predictor(object):
@@ -507,7 +507,7 @@ class Evaluator(object):
             # # FIXME debug! any off-by-1 error?
             # return abs(bb1_x-bb2_x)<=1 and abs(bb1_y-bb2_y)<=1 and abs(siz1_x-siz2_x)<=1 and abs(siz1_y-siz2_y)<=1
 
-        def is_overlap(bb1, bb2):
+        def area_overlap(bb1, bb2):
             bb1_x, bb1_y, siz1_x, siz1_y = bb1
             bb2_x, bb2_y, siz2_x, siz2_y = bb2
             # calculate overlap rectangle, check to see if it's empty
@@ -516,9 +516,10 @@ class Evaluator(object):
             y0 = max(bb1_y - siz1_y + 1, bb2_y - siz2_y + 1)  # closed end
             y1 = min(bb1_y, bb2_y)
             if x1 >= x0 and y1 >= y0:
-                return True
+                # return area of overlapping rectangle
+                return (x1 - x0 + 1) * (y1 - y0 + 1)
             else:
-                return False
+                return 0
 
         assert set(df_target.columns) == {'bb_x', 'bb_y', 'siz_x', 'siz_y'}
         assert set(df_pred.columns) == {'bb_x', 'bb_y', 'siz_x', 'siz_y'}
@@ -536,18 +537,27 @@ class Evaluator(object):
             bb1 = (row1['bb_x'], row1['bb_y'], row1['siz_x'], row1['siz_y'])
             found_identical = False
             found_overlapping = False
+            best_area_overlap = 0
+            best_bb_overlap = None
             for _, row2 in df_pred.iterrows():
                 bb2 = (row2['bb_x'], row2['bb_y'], row2['siz_x'], row2['siz_y'])
                 if is_identical(bb1, bb2):
                     found_identical = True
-                elif is_overlap(bb1, bb2):  # note this is overlapping but NOT identical due to "elif"
+                elif area_overlap(bb1, bb2) > 0:  # note this is overlapping but NOT identical due to "elif"
                     found_overlapping = True
+                    this_area = area_overlap(bb1, bb2)
+                    if this_area > best_area_overlap:
+                        best_area_overlap = this_area
+                        best_bb_overlap = bb2
                 else:
                     pass
             if found_identical:
                 n_target_identical += 1
             elif found_overlapping:
                 n_target_overlap += 1
+                # debug print closest pred bb
+                print("target bb: {}".format(bb1))
+                print("best overlapping bb: {}".format(best_bb_overlap))
             else:
                 n_target_nohit += 1
 
@@ -565,7 +575,7 @@ class Evaluator(object):
                 bb2 = (row2['bb_x'], row2['bb_y'], row2['siz_x'], row2['siz_y'])
                 if is_identical(bb1, bb2):
                     found_identical = True
-                elif is_overlap(bb1, bb2):  # note this is overlapping but NOT identical due to "elif"
+                elif area_overlap(bb1, bb2) > 0:  # note this is overlapping but NOT identical due to "elif"
                     found_overlapping = True
                 else:
                     pass
@@ -627,7 +637,7 @@ class Evaluator(object):
 
     @staticmethod
     def sensitivity_specificity(target_on, pred_box, hard_mask):
-        sensitivity = np.sum(pred_box * target_on) / np.sum(target_on)
+        sensitivity = np.sum((pred_box * target_on) * hard_mask) / np.sum(target_on * hard_mask)
         specificity = np.sum((1 - pred_box) * (1 - target_on) * hard_mask) / np.sum((1 - target_on) * hard_mask)
         return sensitivity, specificity
 
@@ -715,7 +725,7 @@ class Evaluator(object):
         assert 0 <= threshold <= 1
         # y: in one_idx format, tuple of two lists of i's and j's
         self.data_encoder = DataEncoder(seq, y, bb_ref='top_right')
-        yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop, pred_box_stem, pred_box_iloop, pred_box_hloop = self.predictor.predict_bb(seq, threshold)
+        yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop, pred_box_stem, pred_box_iloop, pred_box_hloop = self.predictor._predict_bb(seq, threshold)
         self.yp = yp
         self.pred_bb_stem = pred_bb_stem
         self.pred_bb_iloop = pred_bb_iloop
