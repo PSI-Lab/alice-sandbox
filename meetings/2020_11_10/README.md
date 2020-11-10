@@ -111,37 +111,16 @@ Training:
 CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net_pixel_bb_all_targets.py --data ZQi8RT --result result/rf_data_all_targets_3 --num_filters 32 32 64 64 64 128 128 --filter_width 9 9 9 9 9 9 9 --epoch 50 --mask 0.1 --batch_size 40 --max_length 200 --cpu 12
 ```
 
-Model uploaded:
 
-TODO
+plot training progress: (first 10 epoch, since it's still running)
 
+```
+python model_utils/plot_training.py --in_log result/rf_data_all_targets_3/run.log  --out_plot result/rf_data_all_targets_3/training_progress.html
+```
 
+![plot/training_progress.png](plot/training_progress.png)
 
-
-plot: TODO
-
-<!--plot_training.py from https://github.com/PSI-Lab/alice-sandbox/tree/master/meetings/2020_09_15-->
-
-
-
-<!--eval bb pred: TODO-->
-
-<!--eval_model_dataset.py  from https://github.com/PSI-Lab/alice-sandbox/tree/master/meetings/2020_09_22-->
-
-
-<!--run stage 1 model: TODO-->
-
-<!--run_predictor_bb.py from https://github.com/PSI-Lab/alice-sandbox/tree/master/meetings/2020_09_22-->
-
-global assembly util TODO
-https://github.com/PSI-Lab/alice-sandbox/tree/master/meetings/2020_10_13
-
-pipeline global struct: TODO
-
-
-move all to a top level util: TODO
-
-end-to-end pipeline on single seq? on dataset?
+pick best model upload & add to known versions: TODO
 
 
 ## End-to-end predictive workflow
@@ -195,11 +174,146 @@ Result (print df_global_structs and scores):
 ```
 
 
+## Evaluate stage 1 model on dataset
+
+Eval script fix:
+
+    - extend x axis range slightly (otherwise multiple bars will be cut off)
+
+    - apply hard mask when computing pixel
+
+Using model trained on synthetic data, no CV (only affect synthetic dataset)
+
+Using model after ep9 for now (still training).
+
+### On synthetic dataset
+
+```
+python model_utils/eval_model_dataset.py --data "`dcl path xs5Soq`" --num 200 --maxl 200 --model result/rf_data_all_targets_3/model_ckpt_ep_9.pth --out_csv result/rand_model/rand.l200.s200.csv --out_plot result/rand_model/rand.l200.s200.html
+```
+
+![plot/eval_s1_rand.png](plot/eval_s1_rand.png)
+
+
+
+compare with old result (before iloop target bug fix): https://github.com/PSI-Lab/alice-sandbox/tree/f306be2b7412c033c8a810949ef64a50502a29bc/meetings/2020_09_22#rand-as-sanity-check
+It might be subtle to see, but the red bars (for iloop) have shifted towards the right hand side.
+Although this is a small improvement on bounding box prediction,
+this could potentially contribute significantly to stage 2 assembly,
+by providing more accurate "starting point" of compatible bounding boxes.
+
+Limit to examples where max bb size <= 11:
+
+```
+python model_utils/eval_model_dataset.py --data "`dcl path xs5Soq`" --num 200 --maxl 200 --max_bb_size 11 --model result/rf_data_all_targets_3/model_ckpt_ep_9.pth --out_csv result/rand_model/rand.l200.s200.b10.csv --out_plot result/rand_model/rand.l200.s200.b11.html
+```
+
+![plot/eval_s1_rand.s11.png](plot/eval_s1_rand.s11.png)
+
+There is a increase in performance, especially for hloop (which is known to have big loops sometimes)
+
+### On rfam151
+
+```
+python model_utils/eval_model_dataset.py --data "`dcl path 903rfx`" --num 200 --maxl 200 --model result/rf_data_all_targets_3/model_ckpt_ep_9.pth --out_csv result/rand_model/rfam151.l200.s200.csv --out_plot result/rand_model/rfam151.l200.s200.html
+```
+
+![plot/eval_s1_rfam151.png](plot/eval_s1_rfam151.png)
+
+Limit to examples where max bb size <= 11:
+
+```
+python model_utils/eval_model_dataset.py --data "`dcl path 903rfx`" --num 200 --maxl 200  --max_bb_size 11 --model result/rf_data_all_targets_3/model_ckpt_ep_9.pth --out_csv result/rand_model/rfam151.l200.s200.b10.csv --out_plot result/rand_model/rfam151.l200.s200.b11.html
+```
+
+![plot/eval_s1_rfam151.s11.png](plot/eval_s1_rfam151.s11.png)
+
+It's interesting that pixel sensitivity is high but identical bounding box sensitivity is not quite satisfying.
+This is not caused by bounding box that's larger than 11, since distribution looks similar after removing those examples.
+Taking one example from the dataset (index 51) and investigate predicted bounding box that overlaps (but not identical to)
+the target:
+
+```
+target bb: (12, 27, 2, 2)
+best overlapping bb: (12, 27, 6, 6)
+best overlapping area: 4
+
+target bb: (15, 24, 3, 3)
+best overlapping bb: (12, 27, 6, 6)
+best overlapping area: 9
+
+target bb: (85, 105, 6, 6)
+best overlapping bb: (81, 106, 5, 5)
+best overlapping area: 4
+
+target bb: (91, 98, 2, 2)
+best overlapping bb: (88, 99, 4, 4)
+best overlapping area: 2
+
+target bb: (7, 33, 2, 4)
+best overlapping bb: (3, 37, 8, 8)
+best overlapping area: 8
+
+target bb: (8, 30, 5, 4)
+best overlapping bb: (11, 29, 2, 3)
+best overlapping area: 6
+
+target bb: (92, 97, 6, 6)
+best overlapping bb: (91, 96, 6, 6)
+best overlapping area: 25
+```
+
+## Run stage 1 model on dataset
+
+synthetic:
+
+(debug)
+
+```
+python model_utils/run_stage_1.py --data "`dcl path xs5Soq`" --num 10 --threshold 0.1 --model result/rf_data_all_targets_3/model_ckpt_ep_5.pth --out_file data/debug.pkl.gz
+```
+
+
+(set num=-1 to run all)
+
+```
+python model_utils/run_stage_1.py --data "`dcl path xs5Soq`" --num -1 --threshold 0.1 --model result/rf_data_all_targets_3/model_ckpt_ep_9.pth --out_file data/rand_s1_bb_0p1.pkl.gz
+```
+
+## Evaluate stage 2 model on dataset
+
+
+synthetic:
+
+(debug)
+
+```
+python model_utils/run_stage_2.py
+```
+
+
+
+## Dataset cleanup
+
+`6PvUty`: rnastralign?
+
+`903rfx`: rfam151?
+
+`a16nRG`: s_processed?
+
+`xs5Soq`: synthetic?
+
+`ZQi8RT`: synthetic? with prediction?
+
 ## TODOs
 
 move to top level util
 
 end to end pipeline
+
+evaluate on examples w/ <= 10 sized bbs
+
+table documenting all DC IDs (datasets, models, etc.)
 
 
 Heuristics: More structure is better -> if global struct A is subset of B, discard A
