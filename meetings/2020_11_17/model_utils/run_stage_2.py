@@ -235,10 +235,10 @@ def main(in_file, out_file, max_len, min_pixel_pred, min_prob):
     for idx, row in df.iterrows():
     # for idx, row in [(19301, df.iloc[19301])]:
     #     # debug
-        if len(row['seq']) > max_len:
+        if max_len !=0 and len(row['seq']) > max_len:  # default = 0 means no upper limit
             continue
 
-        print(idx, len(row['seq']))
+        print(idx, len(row['seq']), len(row['bounding_boxes']))
 
         try:
             df_target = process_bb_old_to_new(row['bounding_boxes'])
@@ -274,7 +274,7 @@ def main(in_file, out_file, max_len, min_pixel_pred, min_prob):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--in_file', type=str, help='Path to input file, should be output from stage 1 (run_stage_1.py)')
-    parser.add_argument('--max_len', type=int, help='sequence exceed max len will be skipped (for speed up testing)')
+    parser.add_argument('--max_len', type=int, default=0, help='sequence exceed max len will be skipped (for speed up testing)')
     parser.add_argument('--min_pixel_pred', type=int, default=3, help='pruning parameter')
     parser.add_argument('--min_prob', type=float, default=0.5, help='pruning parameter')
     parser.add_argument('--out_file', type=str, help='Path to output csv pickle')
