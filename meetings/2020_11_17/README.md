@@ -9,7 +9,7 @@ Stage 1 model finished training. Full training progress plot:
 ![plot/training_progress.png](plot/training_progress.png)
 
 From the overall loss, we can see that ep9 has the lowest validation loss.
-Uploaded model and updated `utils_model.py`:
+Uploaded model and updated `utils_model.py` (added this model as version `v0.2`):
 
 
     # trained on random sequence, after fixing y_loop target value bug, ep10,
@@ -27,6 +27,42 @@ python model_utils/plot_training.py --in_log result/rf_data_all_targets_3/run.lo
 
 ## Stage 1 model performance
 
+
+### On synthetic dataset
+
+```
+python model_utils/eval_model_dataset.py --data "`dcl path xs5Soq`" --num 200 --maxl 200 --model v0.2 --out_csv result/rand_model/rand.l200.s200.csv --out_plot result/rand_model/rand.l200.s200.html
+```
+
+![plot/rand.l200.s200.png](plot/rand.l200.s200.png)
+
+
+### On rfam151
+
+```
+python model_utils/eval_model_dataset.py --data "`dcl path 903rfx`" --num 200 --maxl 200 --model v0.2 --out_csv result/rand_model/rfam151.l200.s200.csv --out_plot result/rand_model/rfam151.l200.s200.html
+```
+
+![plot/rfam151.l200.s200.png](plot/rfam151.l200.s200.png)
+
+
+## Run stage 1 model on dataset
+
+### rfam151
+
+```
+python model_utils/run_stage_1.py --data "`dcl path 903rfx`" --num -1 --threshold 0.1 --model v0.2 --out_file data/rfam151_s1_bb_0p1.pkl.gz
+```
+
+
+## Run stage 2 model on dataset
+
+
+### rfam151
+
+```
+python model_utils/run_stage_2.py --in_file data/rfam151_s1_bb_0p1.pkl.gz --out_file data/rfam151_s2_3_0p5.pkl.gz --max_len 100 --min_pixel_pred 3 --min_prob 0.5
+```
 
 
 
@@ -49,4 +85,24 @@ python model_utils/plot_training.py --in_log result/rf_data_all_targets_3/run.lo
 - stage 1 model: iloop size = 0 on my side is bulge, make sure we have those cases!
 
 - RNAfold performance on rfam151
+
+
+table documenting all DC IDs (datasets, models, etc.)
+
+
+Heuristics: More structure is better -> if global struct A is subset of B, discard A
+
+Pseudo knot?
+
+RNA-RNA interaction? Run stage 1 model three times, A-A, B-B & A-B, 2nd stage will have different constraints
+
+Long sequence?
+
+Greedy approach of assembly? Start with high prob bounding boxes, terminate after explored say 100 global structures?
+
+size > 10
+
+RNA-RNA
+
+
 
