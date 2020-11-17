@@ -257,7 +257,7 @@ def main(in_file, out_file, max_len, min_pixel_pred, min_prob):
 
             row['df_target'] = df_target
             row['n_bb_found'] = n_bb_found
-            row['global_struct_dfs'] = global_struct_dfs
+            row['global_struct_dfs'] = [x.to_dict() for x in global_struct_dfs]  # convert to dicts for output
             row['gt_found'] = gt_found
             df_out.append(row)
         except Exception as e:
