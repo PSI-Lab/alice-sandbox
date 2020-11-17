@@ -3,6 +3,7 @@ import argparse
 from util_global_struct import process_bb_old_to_new, add_bb_bottom_left, compatible_counts, LocalStructureBb, OneStepChain, GrowChain, GrowGlobalStruct, FullChain, chain_compatible, validate_global_struct
 import numpy as np
 import copy
+from time import time
 import pandas as pd
 import dgutils.pandas as dgp
 from util_global_struct import make_bb_df, generate_structs, filter_non_standard_stem
@@ -52,7 +53,8 @@ def main(in_file, out_file, max_len, discard_ns_stem, min_hloop_size, min_pixel_
         if max_len !=0 and len(row['seq']) > max_len:  # default = 0 means no upper limit
             continue
 
-        print(idx, len(row['seq']), len(row['bounding_boxes']))
+        print(idx, len(row['seq']), len(row['bb_stem']), len(row['bb_iloop']), len(row['bb_hloop']))
+        ctime = time()
 
         try:
             df_target = process_bb_old_to_new(row['bounding_boxes'])
@@ -62,10 +64,14 @@ def main(in_file, out_file, max_len, discard_ns_stem, min_hloop_size, min_pixel_
             # prune bounding boxes
             # stem - non standard base pairing
             if discard_ns_stem:
+                n_before = len(df_stem)
                 df_stem = filter_non_standard_stem(df_stem, row['seq'])
+                print("df_stem base pair pruning, before: {}, after: {}".format(n_before, len(df_stem)))
             # hairpin loop - min size
             if min_hloop_size > 0:
+                n_before = len(df_hloop)
                 df_hloop = df_hloop[df_hloop['siz_x'] >= min_hloop_size]
+                print("df_hloop min size pruning, before: {}, after: {}".format(n_before, len(df_hloop)))
 
             n_bb_found = check_bb_sensitivity(df_target, df_stem, df_iloop, df_hloop)
             global_struct_dfs = generate_structs(df_stem, df_iloop, df_hloop)
@@ -85,6 +91,8 @@ def main(in_file, out_file, max_len, discard_ns_stem, min_hloop_size, min_pixel_
             df_out.append(row)
         except Exception as e:
             err_idxes.append((idx, str(e)))
+
+        print("time: ", time() - ctime)
 
     df_out = pd.DataFrame(df_out)
     # print(df_out)
