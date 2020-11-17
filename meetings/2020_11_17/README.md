@@ -124,13 +124,6 @@ correlation between adhoc score and fe (for those examples < 0), each data point
 To reproduce, see [plot_s2.ipynb](plot_s2.ipynb)
 
 
-## Pseudo knot prediction
-
-
-
-## Stage 1 model performance - allowing bounding box offset
-
-
 
 ## Reading papers
 
