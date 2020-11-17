@@ -64,9 +64,70 @@ python model_utils/run_stage_1.py --data "`dcl path 903rfx`" --num -1 --threshol
 python model_utils/run_stage_2.py --in_file data/rfam151_s1_bb_0p1.pkl.gz --out_file data/rfam151_s2_3_0p5.pkl.gz --max_len 100 --min_pixel_pred 3 --min_prob 0.5
 ```
 
+## rfam151 structure not compatible with RNAfold energy formulation
+
+rfam ID `RF00163_B`, sequence `AUCCAGCUGACGAGUCCCAAAUAGGACGAAAUGCGCAUCCUGGAU`,
+ground truth structure `((((((.......((((......))))...(((()))).))))))`,
+RNAfold cannot compute free energy (returns `99983.7`).
+Potentially due to 'empty' hairpin loop?
+
+![plot/RF00163_B.png](plot/RF00163_B.png)
+
+
+
+## Evaluate stage 2 prediction
+
+### rfam151
+
+We want to check how much the best predicted structure deviates from the ground truth.
+We also keep in mind that model was trained on RNAfold-generated synthetic dataset.
+We use RNAfold free energy formulation to compute energy of the
+ground truth, as well as all predicted global structures.
+As an example:
+
+
+
+
+
+To reproduce, see
+
+
+## Pseudo knot prediction
+
+
+
+## Stage 1 model performance - allowing bounding box offset
+
+
+
+## Reading papers
+
+### sets
+
+
+
+### ﻿Image Captioning: Transforming Objects into Words
+
+
+## Dataset cleanup
+
+`6PvUty`: rnastralign?
+
+`903rfx`: rfam151?
+
+`a16nRG`: s_processed?
+
+`xs5Soq`: synthetic?
+
+`ZQi8RT`: synthetic? with prediction?
+
 
 
 ## TODOs
+
+- evaluate sensitivity if we allow +/-1 shift/expand of each bb
+
+- if above works and we have a NN for stage 2, we can feed in this extended set of bb proposals!
 
 - waiting for stage 1 model to finish training
 
@@ -85,6 +146,17 @@ python model_utils/run_stage_2.py --in_file data/rfam151_s1_bb_0p1.pkl.gz --out_
 - stage 1 model: iloop size = 0 on my side is bulge, make sure we have those cases!
 
 - RNAfold performance on rfam151
+
+- to debug: index 0 with length 117 and n_bbs 21 seems to be stuck during parsing.: python model_utils/run_stage_2.py --in_file data/rfam151_s1_bb_0p1.pkl.gz --out_file data/debug.pkl.gz --min_pixel_pred 3 --min_prob 0.5
+
+- to debug: rfam151, RF00165_A, global structure contain invalid ones (implied iloop and hloop not included):
+```
+   bb_x  bb_y  siz_x  siz_y bb_type  n_proposal  prob_median  n_proposal_norm
+0     1    17      2      2    stem           4     0.137343              1.0
+1     4    45      8      8    stem          64     0.859667              1.0
+2    27    57     10     10    stem         100     0.721043              1.0
+.((.((((((((....)).........((((((((((.))))))))..)))))))))).... 14.362449399658637 100007.1
+```
 
 
 table documenting all DC IDs (datasets, models, etc.)
