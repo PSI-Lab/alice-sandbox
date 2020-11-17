@@ -163,11 +163,13 @@ is combined with spatial-based features.
 
 ## TODOs
 
+- rfam151 (and other dataset): evaluate base pair sensitivity and specificity (allow off by 1?)
+
 - evaluate sensitivity if we allow +/-1 shift/expand of each bb
 
 - if above works and we have a NN for stage 2, we can feed in this extended set of bb proposals!
 
-- waiting for stage 1 model to finish training
+- attention -> output set?
 
 - stage 1 prevent overfitting (note that theoretical upper bound is not 100% due to the way we constructed the predictive problem)
 
@@ -202,22 +204,18 @@ then the next ones are picked by some attention based NN? black list & white lis
 - extra constraints in stages 2? stem box needs to satisfy G-C, A-U, G-U base pairing (discard those that are not),
 min hloop size?
 
-table documenting all DC IDs (datasets, models, etc.)
+- table documenting all DC IDs (datasets, models, etc.)
 
 
-Heuristics: More structure is better -> if global struct A is subset of B, discard A
+- Heuristics: More structure is better -> if global struct A is subset of B, discard A
 
-Pseudo knot?
+- Pseudo knot?
 
-RNA-RNA interaction? Run stage 1 model three times, A-A, B-B & A-B, 2nd stage will have different constraints
+- RNA-RNA interaction? Run stage 1 model three times, A-A, B-B & A-B, 2nd stage will have different constraints
 
-Long sequence?
+- Long sequence?
 
-Greedy approach of assembly? Start with high prob bounding boxes, terminate after explored say 100 global structures?
+- Greedy approach of assembly? Start with high prob bounding boxes, terminate after explored say 100 global structures?
 
-size > 10
-
-RNA-RNA
-
-
+- size > 10
 
