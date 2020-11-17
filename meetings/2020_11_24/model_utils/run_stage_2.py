@@ -53,13 +53,14 @@ def main(in_file, out_file, max_len, discard_ns_stem, min_hloop_size, min_pixel_
         if max_len !=0 and len(row['seq']) > max_len:  # default = 0 means no upper limit
             continue
 
-        print(idx, len(row['seq']), len(row['bb_stem']), len(row['bb_iloop']), len(row['bb_hloop']))
+        print(idx, len(row['seq']))
         ctime = time()
 
         try:
             df_target = process_bb_old_to_new(row['bounding_boxes'])
             df_stem, df_iloop, df_hloop = make_bb_df(row['bb_stem'], row['bb_iloop'], row['bb_hloop'],
                                                      min_pixel_pred, min_prob)
+            print(len(row['bb_stem']), len(row['bb_iloop']), len(row['bb_hloop']))
 
             # prune bounding boxes
             # stem - non standard base pairing
