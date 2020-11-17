@@ -83,13 +83,45 @@ We want to check how much the best predicted structure deviates from the ground 
 We also keep in mind that model was trained on RNAfold-generated synthetic dataset.
 We use RNAfold free energy formulation to compute energy of the
 ground truth, as well as all predicted global structures.
-As an example:
+
+As an example, rfam ID `RF00382_A`, sequence:
+
+```
+AGUCGGGGACGACCACAACAAAAAAGAAUGAGCCGGCGGCGCCAGGAAAAGCGCGGCCGGCAAA
+```
+
+ground truth and free energy (computed by RNAfold):
+
+```
+...............................((((((.(((.(.......)))).))))))... -19.6
+```
+
+best predicted, ad-hoc score, and free energy (computed by RNAfold):
+
+```
+   bb_x  bb_y  siz_x  siz_y bb_type  n_proposal  prob_median  n_proposal_norm
+0     4     9      6      6   hloop          15     0.930053         0.416667
+1     1    12      4      4    stem          16     0.925148         1.000000
+2    41    50     10     10   hloop          45     0.992122         0.450000
+3    38    53      4      4    stem          16     0.994010         1.000000
+4    36    55      3      3   iloop           9     0.995822         1.000000
+5    31    60      6      6    stem          36     0.978096         1.000000
+.((((....))))..................((((((.((((........)))).))))))... 13.545206773839391 -28.3
+```
+
+![plot/RF00382_A.png](plot/RF00382_A.png)
 
 
+correlation between fe, ground truth v.s. best predicted (by fe) (for those examples < 0), each data point is one sequence:
+
+![plot/rfam151_best_fe_corr.png](plot/rfam151_best_fe_corr.png)
+
+correlation between adhoc score and fe (for those examples < 0), each data point is one global structure for a sequence (thus many more data points):
+
+![plot/rfam151_all_score_corr.png](plot/rfam151_all_score_corr.png)
 
 
-
-To reproduce, see
+To reproduce, see [plot_s2.ipynb](plot_s2.ipynb)
 
 
 ## Pseudo knot prediction
@@ -102,12 +134,25 @@ To reproduce, see
 
 ## Reading papers
 
-### sets
+### ﻿ORDER MATTERS: SEQUENCE TO SEQUENCE FOR SETS
+
+- input set can be handled with attention in the encoder
+
+- output order matters in practise if we decompose using chain rule (does not matter in theory)
+
+- equivariance permutation of output hurt training
+
+- find optimal ordering for applying chain rule while training
 
 
 
 ### ﻿Image Captioning: Transforming Objects into Words
 
+- generate image caption from object bounding boxes
+
+- transformer with variable number of bounding boxes as input,
+encoder with modified attention matrix, where content-based hashing
+is combined with spatial-based features.
 
 ## Dataset cleanup
 
@@ -158,6 +203,11 @@ To reproduce, see
 .((.((((((((....)).........((((((((((.))))))))..)))))))))).... 14.362449399658637 100007.1
 ```
 
+- stage 2, pick the first bb by sampling from all bb's (proportional to the 'likelihood' of the bb?),
+then the next ones are picked by some attention based NN? black list & white list?
+
+- extra constraints in stages 2? stem box needs to satisfy G-C, A-U, G-U base pairing (discard those that are not),
+min hloop size?
 
 table documenting all DC IDs (datasets, models, etc.)
 
