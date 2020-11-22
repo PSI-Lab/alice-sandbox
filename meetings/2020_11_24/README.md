@@ -11,11 +11,63 @@ Add as optional parameters.
 
 - discard hairpin loops that have size <= 2
 
+For example, this is valid:
+
+```
+GUCCCCC
+UAGGGGG
+```
+
+while this is invalid:
+
+```
+GUCCAGUC
+GUAGGUCG
+```
+
+
 re-run stage 2 on rfam:
 
 ```
-python model_utils/run_stage_2.py --in_file data/rfam151_s1_bb_0p1.pkl.gz --out_file data/rfam151_s2_3_0p5.pkl.gz --max_len 100 --min_pixel_pred 3 --min_prob 0.5 --min_hloop_size 2 --discard_ns_stem
+python model_utils/run_stage_2.py --in_file data/rfam151_s1_bb_0p1.pkl.gz --out_file data/rfam151_s2_3_0p5.pkl.gz --max_len 100 --min_pixel_pred 3 --min_prob 0.5 --min_hloop_size 2 --discard_ns_stem 2>&1 | tee data/log_rfam151_s2_3_0p5.txt
 ```
+
+
+Use RNAfold to compute FE for all predicted structures:
+
+```
+python compute_s2_fe.py --in_file data/rfam151_s2_3_0p5.pkl.gz --out_file_fe data/rfam151_s2_3_0p5_fe.pkl.gz --out_file_score data/rfam151_s2_3_0p5_all_scores.pkl.gz
+```
+
+Eval FE:
+
+TODO
+
+
+Eval base pair sensitivity & specificity:
+
+TODO
+
+
+## Read paper
+
+### DeepSets
+
+
+### Set Transformer
+
+
+### DeepSetNet: Predicting Sets with Deep Neural Networks
+
+### ﻿Joint Learning of Set Cardinality and State Distribution
+
+### ﻿BRUNO: A Deep Recurrent Model for Exchangeable Data
+
+
+### Deep Set Prediction Networks
+
+
+
 
 ## TODOs
 
