@@ -1,7 +1,6 @@
 import argparse
 from collections import namedtuple
 import pandas as pd
-import plotly.express as px
 import dgutils.pandas as dgp
 import sys
 sys.path.insert(0, '../../rna_ss/')
