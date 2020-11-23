@@ -39,9 +39,14 @@ Use RNAfold to compute FE for all predicted structures:
 python compute_s2_fe.py --in_file data/rfam151_s2_3_0p5.pkl.gz --out_file_fe data/rfam151_s2_3_0p5_fe.pkl.gz --out_file_score data/rfam151_s2_3_0p5_all_scores.pkl.gz
 ```
 
-Eval FE:
+Using RNAfold to compute FE for predicted structure and rfam151 ground truth structure:
 
-TODO
+![plot/rfam151_fe.png](plot/rfam151_fe.png)
+
+
+Compare ad-hoc score with RNAfold FE:
+
+![plot/rfam151_score.png](plot/rfam151_score.png)
 
 
 Eval base pair sensitivity & specificity:
