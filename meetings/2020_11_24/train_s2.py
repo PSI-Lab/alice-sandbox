@@ -191,7 +191,7 @@ def make_dataset(df):
     for _, row in df.iterrows():
         _x = []
         _y = []
-        df_target = row['df_target']
+        df_target = pd.DataFrame(row['df_target'])
         if row['bb_stem'] is not None:
             for x in row['bb_stem']:
                 if find_match_bb(x, df_target, 'stem'):

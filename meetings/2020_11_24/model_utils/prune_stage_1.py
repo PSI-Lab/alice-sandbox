@@ -85,7 +85,11 @@ def main(in_file, out_file, max_len, discard_ns_stem, min_hloop_size, min_pixel_
             #         # print("Ground truth!")
             #         gt_found = True
 
-            row['df_target'] = df_target
+            row['df_target'] = df_target.to_dict('records')
+            row['bb_stem'] = df_stem.to_dict('records')
+            row['bb_iloop'] = df_iloop.to_dict('records')
+            row['bb_hloop'] = df_hloop.to_dict('records')
+
             row['n_bb_found'] = n_bb_found
             # row['global_struct_dfs'] = [x.to_dict() for x in global_struct_dfs]  # convert to dicts for output
             # row['gt_found'] = gt_found
