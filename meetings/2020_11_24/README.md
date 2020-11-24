@@ -53,10 +53,49 @@ Eval base pair sensitivity & specificity:
 
 TODO
 
+## S2 model
+
+Use self attention to address interaction between all bounding boxes.
+As an initial attempt, we formulate s2 as predicting the 1/0 label of each bounding box (proposed by s1)
+independently. 
+
+For each example, input is a L x 9 matrix, where L is the number of bounding boxes (from s1, variable length),
+and 9 is the number of features for each bounding box.
+Features include: 1-hot encoding of bb type (stem , iloop, hloop), x/y location of top right corner,
+x/y size, median probability (predicted by s1 model), number of pixels proposing the box (normalized by max pixels in the bb).
+Output is L x 1 binary matrix indicating whether the bounding box should be included in the final assembly.
+
+To prepare training data for s2, we only use those examples where we can uniquely compute the output label,
+i.e. those where s1 bounding box sensitivity is 100%. Note that this can be changed as long as we can come up with 
+a good assignment for those non-100% cases. For now we focus on easy cases as a proof of concept.
+
+
+Architecture: we use multiple layers of self attention,
+followed by a per-bounding-box fully connected layer and sigmoid output.
+
+
+
+Note the following suboptimality of the above setup:
+
+- 1/0 assignment of one bounding box affect other bounding boxes, due to the fact that there could be many "modes" that's good enough.
+Predicting each one independently from the other is suboptimal.
+
+- Ideally we want to be able to sample bounding box by bounding box, but we don't know the order. Essentially we're trying to predict
+a subset from a set. Any prior work on this? (Pointer net wouldn't work since output needs to have an order w.r.t. input)
+
+- One thing we can try is to predict the assignment of each bounding box based on all other (mask-one-out). At test time,
+we could random initialize the assignment, sample a new one at a time. Does this work? Might not converge at all?
+
+- Or, we can use the independently(-output) trained model, at test time,
+start greedy sampling 1/0 labels (as opposed to apply a fixed 0.5 cutoff), starting with the highest probability one.
+The benefit of doing this is that at each step, we can further apply white & black list.
+
 
 ## Read paper
 
 ### DeepSets
+
+
 
 
 ### Set Transformer
