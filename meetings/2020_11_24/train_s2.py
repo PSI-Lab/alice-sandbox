@@ -1,4 +1,5 @@
 import argparse
+import yaml
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -223,13 +224,29 @@ def make_dataset(df):
     return x_all, y_all   # two lists
     
     
-def main(in_file):
-    model = MyModel(in_size=9, d_model=100, N=5, heads=5, n_hid=20)
+def eval(model, _x, _y):
+    model.eval()
+    total_loss = 0
+    for i, (x, y) in enumerate(zip(_x, _y)):
+        x = torch.from_numpy(x[np.newaxis, :, :]).float()
+        y = torch.from_numpy(y[np.newaxis, :]).float()
+        preds = model(x, mask=None)  # no masking since parsing one example at a time for now
+        loss = F.binary_cross_entropy(preds.squeeze(), y.squeeze())  #FIXME make sure this works for multi-example batch!
+        total_loss += loss.item()
+    return total_loss/len(_x)
+    
+    
+def main(in_file, config):
+    # load config
+    with open(config, 'r') as f:
+        config = yaml.safe_load(f)
+    
+    model = MyModel(in_size=config['in_size'], d_model=config['n_dim'], N=config['n_attn_layer'], heads=config['n_heads'], n_hid=config['n_hid'])
     for p in model.parameters():
         if p.dim() > 1:
             nn.init.xavier_uniform_(p)
    
-    optim = torch.optim.Adam(model.parameters(), lr=0.0001, betas=(0.9, 0.98), eps=1e-9)
+    optim = torch.optim.Adam(model.parameters(), lr=config['lr'], betas=(0.9, 0.98), eps=1e-9)
     
     # dataset
     # hacky - using s2 dataset since this one has the bb sensitivity (s1 datset does not, too lazy to recompute)
@@ -237,21 +254,23 @@ def main(in_file):
     df = pd.read_pickle(in_file)
     print(len(df))
     x_all, y_all = make_dataset(df)
-    
-    # TODO train/validation split
-    
     assert len(x_all) == len(y_all)
     
-#     epochs = 500
-    epochs = 50  # debug
+    # train/validation split
+    n_tr = int(len(x_all) * 0.8)
+    x_tr = x_all[:n_tr]
+    x_va = x_all[n_tr:]
+    y_tr = y_all[:n_tr]
+    y_va = y_all[n_tr:]
+    
 
     # training
     model.train()
     total_loss = 0
 
-    for epoch in range(epochs):
+    for epoch in range(config['epoch']):
         # parse one example at a time for now FIXME
-        for i, (x, y) in enumerate(zip(x_all, y_all)):
+        for i, (x, y) in enumerate(zip(x_tr, y_tr)):
             x = torch.from_numpy(x[np.newaxis, :, :]).float()
             y = torch.from_numpy(y[np.newaxis, :]).float()
 
@@ -270,9 +289,14 @@ def main(in_file):
             optim.step()
             total_loss += loss.item()
 
-        print("End of epoch {}, total loss {}".format(epoch, total_loss))
+        print("End of epoch {}, training: mean loss {}".format(epoch, total_loss/len(x_tr)))
         total_loss = 0
-        
+              
+        # validation
+        loss_va = eval(model, x_va, y_va)
+        print("validation mean loss {}".format(loss_va))
+              
+              
     # FIXME debug
     print(preds.squeeze())
     print(y.squeeze())
@@ -281,8 +305,9 @@ def main(in_file):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--in_file', type=str, help='Path to input file, should be output from stage 1 with pruning (prune_stage_1.py)')
+    parser.add_argument('--config', type=str, help='path to config file')
     args = parser.parse_args()
-    main(args.in_file)
+    main(args.in_file, args.config)
     
 
     
