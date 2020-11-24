@@ -53,6 +53,16 @@ Eval base pair sensitivity & specificity:
 
 TODO
 
+## Generate dataset for S2 training
+
+Synthetic dataset.
+separate code (from run_stage_2.py) that prune bounding boxes, save the number of identified boxes and reformatting for self attn NN training: `model_utils/prune_stage_1.py`
+
+```
+python model_utils/run_stage_1.py --data "`dcl path xs5Soq`" --num -1 --threshold 0.1 --model v0.2 --out_file data/synthetic_s1_bb_0p1.pkl.gz
+python model_utils/prune_stage_1.py --in_file data/synthetic_s1_bb_0p1.pkl.gz --out_file data/synthetic_s1_pruned.pkl.gz --min_pixel_pred 3 --min_prob 0.5 --min_hloop_size 2 --discard_ns_stem 2>&1 | tee data/log_synthetic_s1_pruned.txt
+```
+
 ## S2 model
 
 Use self attention to address interaction between all bounding boxes.
@@ -73,6 +83,20 @@ a good assignment for those non-100% cases. For now we focus on easy cases as a 
 Architecture: we use multiple layers of self attention,
 followed by a per-bounding-box fully connected layer and sigmoid output.
 
+Trainging:
+
+local debug:
+
+```
+python train_s2.py --in_file data/rfam151_s2_3_0p5.pkl.gz --config config.yml 
+```
+
+
+GPU using synthetic dataset:
+
+```
+CUDA_VISIBLE_DEVICES=1 python train_s2.py --in_file data/synthetic_s1_pruned.pkl.gz --config tmp/config_1.yml 2>&1 | tee data/log_synthetic_s2_training.txt 
+```
 
 
 Note the following suboptimality of the above setup:
