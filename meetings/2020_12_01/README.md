@@ -5,6 +5,13 @@ Refer to notes from `2020_11_10` on how to use it as a package.
 
 improve logging + run time profiling
 
+debug
+
+```
+python train_s2.py --in_file data/rfam151_s2_3_0p5.pkl.gz --config config.yml
+```
+
+
 what's the speed bottleneck?
 
 

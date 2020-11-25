@@ -1,5 +1,7 @@
 import argparse
+import logging
 import yaml
+import tqdm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -8,6 +10,11 @@ import pandas as pd
 import dgutils.pandas as dgp
 import numpy as np
 import math
+
+
+logging.basicConfig(level=logging.INFO,
+                   format="%(asctime)-15s %(message)s",
+                   datefmt='%Y-%m-%d %H:%M:%S')
 
 
 class MultiHeadAttention(nn.Module):
@@ -175,9 +182,9 @@ def make_dataset(df):
      # for the sole purpose of training, subset to example where s2 label can be generated EXACTLY
     # i.e. subset to example where s1 bb sensitivity is 100%
     df = dgp.add_column(df, 'n_bb', ['bounding_boxes'], len)
-    print(len(df))
+    n_old = len(df)
     df = df[df['n_bb'] == df['n_bb_found']]
-    print(len(df))
+    logging.info("Subset to examples with 100% S1 bb sensitivity (for now). Before {}, after {}".format(n_old, len(df)))
     
     # putting together the dataset
     # for each row:
@@ -224,10 +231,20 @@ def make_dataset(df):
     return x_all, y_all   # two lists
     
     
-def eval(model, _x, _y):
+def make_single_pred(model, x, y):
+    model.eval()
+    # add batch dim, convert to torch tensor, make pred
+    x = torch.from_numpy(x[np.newaxis, :, :]).float()
+    y = torch.from_numpy(y[np.newaxis, :]).float()
+    preds = model(x, mask=None)  # no masking since parsing one example at a time for now
+    return preds
+    
+    
+def eval_model(model, _x, _y):
     model.eval()
     total_loss = 0
     for i, (x, y) in enumerate(zip(_x, _y)):
+        # add batch dim, convert to torch tensor, make pred
         x = torch.from_numpy(x[np.newaxis, :, :]).float()
         y = torch.from_numpy(y[np.newaxis, :]).float()
         preds = model(x, mask=None)  # no masking since parsing one example at a time for now
@@ -241,6 +258,7 @@ def main(in_file, config):
     with open(config, 'r') as f:
         config = yaml.safe_load(f)
     
+    logging.info("Initializing model")
     model = MyModel(in_size=config['in_size'], d_model=config['n_dim'], N=config['n_attn_layer'], heads=config['n_heads'], n_hid=config['n_hid'])
     for p in model.parameters():
         if p.dim() > 1:
@@ -251,12 +269,14 @@ def main(in_file, config):
     # dataset
     # hacky - using s2 dataset since this one has the bb sensitivity (s1 datset does not, too lazy to recompute)
     # use rfam for debug - will replace wtih bigger dataset (synthetic)
+    logging.info("Loading {}".format(in_file))
     df = pd.read_pickle(in_file)
-    print(len(df))
+    logging.info("Loaded {} examples. Making dataset...".format(len(df)))
     x_all, y_all = make_dataset(df)
     assert len(x_all) == len(y_all)
     
     # train/validation split
+    logging.info("Spliting into training and validation")
     n_tr = int(len(x_all) * 0.8)
     x_tr = x_all[:n_tr]
     x_va = x_all[n_tr:]
@@ -267,10 +287,10 @@ def main(in_file, config):
     # training
     model.train()
     total_loss = 0
-
+    logging.info("Training start")
     for epoch in range(config['epoch']):
         # parse one example at a time for now FIXME
-        for i, (x, y) in enumerate(zip(x_tr, y_tr)):
+        for i, (x, y) in enumerate(tqdm.tqdm(zip(x_tr, y_tr))):
             x = torch.from_numpy(x[np.newaxis, :, :]).float()
             y = torch.from_numpy(y[np.newaxis, :]).float()
 
@@ -289,17 +309,24 @@ def main(in_file, config):
             optim.step()
             total_loss += loss.item()
 
-        print("End of epoch {}, training: mean loss {}".format(epoch, total_loss/len(x_tr)))
+        logging.info("End of epoch {}, training: mean loss {}".format(epoch, total_loss/len(x_tr)))
         total_loss = 0
+        # pick a random training example and print the prediction
+        idx = np.random.randint(0, len(x_tr))
+        pred = make_single_pred(model, x_tr[idx], y_tr[idx])
+        logging.info("Training dataset idx {}\ny: {}\npred: {}".format(idx, y_tr[idx].flatten(), pred.squeeze()))
               
         # validation
-        loss_va = eval(model, x_va, y_va)
-        print("validation mean loss {}".format(loss_va))
+        loss_va = eval_model(model, x_va, y_va)
+        logging.info("validation mean loss {}".format(loss_va))
+        # pick a random validation example and print the prediction
+        idx = np.random.randint(0, len(x_va))
+        pred = make_single_pred(model, x_va[idx], y_va[idx])
+        logging.info("Validation dataset idx {}\ny: {}\npred: {}".format(idx, y_va[idx].flatten(), pred.squeeze()))
               
-              
-    # FIXME debug
-    print(preds.squeeze())
-    print(y.squeeze())
+#     # FIXME debug
+#     logging.info(preds.squeeze())
+#     logging.info(y.squeeze())
     
     
 if __name__ == "__main__":
