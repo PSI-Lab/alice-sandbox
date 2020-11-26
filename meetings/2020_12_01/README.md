@@ -12,7 +12,43 @@ python train_s2.py --in_file data/rfam151_s2_3_0p5.pkl.gz --config config.yml
 ```
 
 
-what's the speed bottleneck?
+1000-example debug:
+
+```
+CUDA_VISIBLE_DEVICES=1 python train_s2.py --in_file data/synthetic_s1_pruned_debug1000.pkl.gz --config tmp/config_1.yml 2>&1 | tee data/log_synthetic_s2_training_debug1000.txt
+```
+
+10000-example debug:
+
+```
+CUDA_VISIBLE_DEVICES=1 python train_s2.py --in_file data/synthetic_s1_pruned_debug10000.pkl.gz --config tmp/config_1.yml 2>&1 | tee data/log_synthetic_s2_training_debug10000.txt
+```
+
+50000-example debug:
+
+```
+CUDA_VISIBLE_DEVICES=1 python train_s2.py --in_file data/synthetic_s1_pruned_debug50000.pkl.gz --config tmp/config_1.yml 2>&1 | tee data/log_synthetic_s2_training_debug50000.txt
+```
+
+GPU:
+
+```
+CUDA_VISIBLE_DEVICES=1 python train_s2.py --in_file data/synthetic_s1_pruned.pkl.gz --config tmp/config_1.yml 2>&1 | tee data/log_synthetic_s2_training.txt
+```
+
+
+what's the speed bottleneck?  - data pre-processing & non-batch
+
+
+### Pre-processing script
+
+prepare x & y for each example and save as df pkl
+
+### Batch mode
+
+debug gradient?
+
+
 
 
 ## Read paper

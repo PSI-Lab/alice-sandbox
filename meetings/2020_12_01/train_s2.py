@@ -195,7 +195,10 @@ def make_dataset(df):
     x_all = []
     y_all = []
 
-    for _, row in df.iterrows():
+    for idx, row in df.iterrows():
+        if idx % 10000 == 0:
+            logging.info("Processed {} examples".format(idx))
+        
         _x = []
         _y = []
         df_target = pd.DataFrame(row['df_target'])
@@ -308,6 +311,9 @@ def main(in_file, config):
             loss.backward()
             optim.step()
             total_loss += loss.item()
+            
+            if i % 1000 == 0:
+                logging.info("Processed {} examples".format(i))
 
         logging.info("End of epoch {}, training: mean loss {}".format(epoch, total_loss/len(x_tr)))
         total_loss = 0
