@@ -37,6 +37,25 @@ CUDA_VISIBLE_DEVICES=1 python train_s2.py --in_file data/synthetic_s1_pruned.pkl
 ```
 
 
+Result
+
+```
+grep  'mean loss' data/log_synthetic_s2_training.txt > data/log_tmp.txt
+```
+
+
+![plot/s2_training.png](plot/s2_training.png)
+
+Visualize a few examples:
+
+![plot/example_pred_distribution.png](plot/example_pred_distribution.png)
+
+
+Produced by [plot_s2_training.ipynb](plot_s2_training.ipynb)
+
+
+
+
 what's the speed bottleneck?  - data pre-processing & non-batch
 
 
