@@ -56,18 +56,6 @@ Produced by [plot_s2_training.ipynb](plot_s2_training.ipynb)
 
 
 
-what's the speed bottleneck?  - data pre-processing & non-batch
-
-
-### Pre-processing script
-
-prepare x & y for each example and save as df pkl
-
-### Batch mode
-
-debug gradient?
-
-
 
 
 ## Read paper
@@ -93,6 +81,10 @@ debug gradient?
 
 
 ## TODOs
+
+- s2 training: add batch mode (debug to make sure it works), save model, set up inference utils so we can run the model
+
+- s2 inference: greedy sampling with hard constraints (white & black list)
 
 - rfam151 (and other dataset): evaluate base pair sensitivity and specificity (allow off by 1?)
 
