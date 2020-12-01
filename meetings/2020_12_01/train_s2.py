@@ -1,5 +1,6 @@
 import argparse
 import logging
+import subprocess
 import yaml
 import tqdm
 import torch
@@ -196,7 +197,7 @@ def make_dataset(df):
     y_all = []
 
     for idx, row in df.iterrows():
-        if idx % 10000 == 0:
+        if idx % 10000 == 0:   # FIXME idx is the original idx (not counter)
             logging.info("Processed {} examples".format(idx))
         
         _x = []
@@ -256,7 +257,7 @@ def eval_model(model, _x, _y):
     return total_loss/len(_x)
     
     
-def main(in_file, config):
+def main(in_file, config, out_dir):
     # load config
     with open(config, 'r') as f:
         config = yaml.safe_load(f)
@@ -315,6 +316,10 @@ def main(in_file, config):
             if i % 1000 == 0:
                 logging.info("Processed {} examples".format(i))
 
+        _model_path = os.path.join(out_dir, 'model_ckpt_ep_{}.pth'.format(epoch))
+        torch.save(model.state_dict(), _model_path)
+        logging.info("Model checkpoint saved at: {}".format(_model_path))
+                
         logging.info("End of epoch {}, training: mean loss {}".format(epoch, total_loss/len(x_tr)))
         total_loss = 0
         # pick a random training example and print the prediction
@@ -339,8 +344,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--in_file', type=str, help='Path to input file, should be output from stage 1 with pruning (prune_stage_1.py)')
     parser.add_argument('--config', type=str, help='path to config file')
+    parser.add_argument('--out_dir', type=str, help='output dir for saving model checkpoint')
+    
     args = parser.parse_args()
-    main(args.in_file, args.config)
+    
+    # some basic logging
+    logging.info("Cmd: {}".format(args))  # cmd args
+    git_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip()
+    cur_dir = os.path.dirname(os.path.realpath(__file__))
+    logging.info("Current dir: {}, git hash: {}".format(cur_dir, git_hash))
+    
+    main(args.in_file, args.config, args.out_dir)
     
 
     

@@ -56,6 +56,13 @@ Produced by [plot_s2_training.ipynb](plot_s2_training.ipynb)
 
 
 
+Added model export after each epoch, lower LR, re-running:
+
+```
+CUDA_VISIBLE_DEVICES=1 python train_s2.py --in_file data/synthetic_s1_pruned.pkl.gz --config tmp/config_2.yml --out_dir result/synthetic_s2_training_2/ 2>&1 | tee data/log_synthetic_s2_training_2.txt
+```
+
+
 
 
 ## Read paper
