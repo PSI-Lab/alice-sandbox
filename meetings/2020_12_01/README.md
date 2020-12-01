@@ -59,7 +59,7 @@ Produced by [plot_s2_training.ipynb](plot_s2_training.ipynb)
 Added model export after each epoch, lower LR, re-running:
 
 ```
-CUDA_VISIBLE_DEVICES=1 python train_s2.py --in_file data/synthetic_s1_pruned.pkl.gz --config tmp/config_2.yml --out_dir result/synthetic_s2_training_2/ 2>&1 | tee data/log_synthetic_s2_training_2.txt
+CUDA_VISIBLE_DEVICES=1 python train_s2.py --in_file data/synthetic_s1_pruned.pkl.gz --config tmp/config_2.yml --out_dir result/synthetic_s2_training_2/ 2>&1 | tee result/synthetic_s2_training_2/log.txt
 ```
 
 
@@ -92,6 +92,8 @@ CUDA_VISIBLE_DEVICES=1 python train_s2.py --in_file data/synthetic_s1_pruned.pkl
 - s2 training: add batch mode (debug to make sure it works), save model, set up inference utils so we can run the model
 
 - s2 inference: greedy sampling with hard constraints (white & black list)
+
+- s2 training dataset, for those example where s1 bb sensitivity < 100%, add in the ground truth bbs for contructing dataset for s2
 
 - rfam151 (and other dataset): evaluate base pair sensitivity and specificity (allow off by 1?)
 
