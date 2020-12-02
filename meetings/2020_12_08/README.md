@@ -48,6 +48,8 @@ CUDA_VISIBLE_DEVICES=1 python train_s2.py --in_file data/synthetic_s1_pruned.pkl
 
 ## TODOs
 
+- debug hloop pred always the same? 0.152829  -> fixed data prep bug
+
 - s2 training: add batch mode (debug to make sure it works), save model, set up inference utils so we can run the model
 
 - s2 inference: greedy sampling with hard constraints (white & black list)

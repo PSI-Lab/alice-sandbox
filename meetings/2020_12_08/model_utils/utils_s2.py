@@ -296,7 +296,7 @@ class Predictor(object):
                 features.append([0, 1, 0, x['bb_x'], x['bb_y'], x['siz_x'], x['siz_y'], x['prob_median'], x['n_proposal_norm']])
         if hloops is not None:
             self._validate_df(hloops)
-            for _, row in hloops.iterrows():
+            for _, x in hloops.iterrows():
                 features.append([0, 0, 1, x['bb_x'], x['bb_y'], x['siz_x'], x['siz_y'], x['prob_median'], x['n_proposal_norm']])
         features = np.asarray(features)
         return features
