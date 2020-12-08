@@ -12,8 +12,9 @@ CUDA_VISIBLE_DEVICES=1 python train_s2.py --in_file data/synthetic_s1_pruned.pkl
 
 ### Inference pipeline
 
+Still WIP
 
-
+See tmp.ipynb and notes in https://docs.google.com/document/d/1e0hXewO-g-4MtqHbd0mOCOMCCr7TgF4c3wT_ST9vFws/edit
 
 
 ### Batch mode
@@ -36,9 +37,9 @@ CUDA_VISIBLE_DEVICES=1 python train_s2.py --in_file data/synthetic_s1_pruned.pkl
 
 ### DeepSetNet: Predicting Sets with Deep Neural Networks
 
-### ﻿Joint Learning of Set Cardinality and State Distribution
+### Joint Learning of Set Cardinality and State Distribution
 
-### ﻿BRUNO: A Deep Recurrent Model for Exchangeable Data
+### BRUNO: A Deep Recurrent Model for Exchangeable Data
 
 
 ### Deep Set Prediction Networks
@@ -48,7 +49,9 @@ CUDA_VISIBLE_DEVICES=1 python train_s2.py --in_file data/synthetic_s1_pruned.pkl
 
 ## TODOs
 
-- debug hloop pred always the same? 0.152829  -> fixed data prep bug
+- inference pipeline debug + improvement: n_proposal_norm > 1, implementation using queue, terminate condition
+
+- s2 training: stems only? how to pass in background info like sequence? memory network? encoding?
 
 - s2 training: add batch mode (debug to make sure it works), save model, set up inference utils so we can run the model
 
