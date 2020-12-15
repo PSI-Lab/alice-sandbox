@@ -3,7 +3,7 @@ import copy
 import numpy as np
 import dgutils.pandas as dgp
 import sys
-sys.path.insert(0, '../../rna_ss/')
+sys.path.insert(0, '../../rna_ss/')  # FIXME very hacky! use abs path
 from local_struct_utils import LocalStructureParser
 
 
