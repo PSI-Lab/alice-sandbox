@@ -486,7 +486,7 @@ class SimpleConvNet(nn.Module):
         # y_stem_siz = self.out_stem_siz(x)
         hid_stem_siz = self.hid_stem_siz(x)
         y_stem_sm_siz = self.out_stem_sm_siz(hid_stem_siz)
-        y_stem_sl_siz = self.out_stem_sl_size(hid_stem_siz)
+        y_stem_sl_siz = self.out_stem_sl_siz(hid_stem_siz)
 
         # iloop
         y_iloop_on = self.out_iloop_on(x)
@@ -526,10 +526,10 @@ class SimpleConvNet(nn.Module):
             'iloop_location_y': y_iloop_loc_y,
             # 'iloop_size_x': y_iloop_siz_x,
             # 'iloop_size_y': y_iloop_siz_y,
-            'iloop_sm_siz_x': y_iloop_sm_siz_x,
-            'iloop_sl_siz_x': y_iloop_sl_siz_x,
-            'iloop_sm_siz_y': y_iloop_sm_siz_y,
-            'iloop_sl_siz_y': y_iloop_sl_siz_y,
+            'iloop_sm_size_x': y_iloop_sm_siz_x,
+            'iloop_sl_size_x': y_iloop_sl_siz_x,
+            'iloop_sm_size_y': y_iloop_sm_siz_y,
+            'iloop_sl_size_y': y_iloop_sl_siz_y,
             
             # hloop
             'hloop_on': y_hloop_on,
@@ -846,7 +846,7 @@ class EvalMetric(object):
 
     def add_val(self, output, metric, val):
         assert output in self.metrics.keys()
-        assert metric in self.metrics[output].keys()
+        assert metric in self.metrics[output].keys(), "output {} metric {}".format(output, metric)
         self.metrics[output][metric].append(val)
 
     def merge(self, m):
@@ -949,10 +949,10 @@ def compute_metrics(x, y, m):
         evalm.add_val(output='iloop_sm_size_y', metric='accuracy',
                       val=_accuracy(key_target='iloop_sm_size_y', key_mask='iloop_location_size'))
         # iloop size x, scalar
-        evalm.add_val(output='iloop_sl_size_x', metric='accuracy',
+        evalm.add_val(output='iloop_sl_size_x', metric='diff',
                       val=_diff(key_target='iloop_sl_size_x', key_mask='iloop_location_size'))
         # iloop size y, scalar
-        evalm.add_val(output='iloop_sl_size_y', metric='accuracy',
+        evalm.add_val(output='iloop_sl_size_y', metric='diff',
                       val=_diff(key_target='iloop_sl_size_y', key_mask='iloop_location_size'))
         
         # hloop
@@ -969,7 +969,7 @@ def compute_metrics(x, y, m):
         evalm.add_val(output='hloop_sm_size', metric='accuracy',
                       val=_accuracy(key_target='hloop_sm_size', key_mask='hloop_location_size'))
         # hloop size, softmax
-        evalm.add_val(output='hloop_sl_size', metric='accuracy',
+        evalm.add_val(output='hloop_sl_size', metric='diff',
                       val=_diff(key_target='hloop_sl_size', key_mask='hloop_location_size'))
 
     return evalm
