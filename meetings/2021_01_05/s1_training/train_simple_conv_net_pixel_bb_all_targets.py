@@ -16,9 +16,9 @@ import datacorral as dc
 # sys.path.insert(0, '../../rna_ss/')
 # from utils import db2pairs
 # from local_struct_utils import one_idx2arr, sort_pairs, LocalStructureParser, make_target_pixel_bb
-# sys.path.insert(0, '../rna_ss_utils/')  # hacky
-from ...rna_ss_utils.utils import db2pairs
-from ...rna_ss_utils.local_struct_utils import one_idx2arr, sort_pairs, LocalStructureParser, make_target_pixel_bb
+sys.path.insert(0, '../rna_ss_utils/')  # FIXME hacky
+from utils import db2pairs
+from local_struct_utils import one_idx2arr, sort_pairs, LocalStructureParser, make_target_pixel_bb
 
 
 def add_column(df, output_col, input_cols, func):
@@ -151,33 +151,10 @@ class MyDataSet(Dataset):
         mask_stem_on, mask_iloop_on, mask_hloop_on, \
         target_stem_location_x, target_stem_location_y, target_iloop_location_x, target_iloop_location_y, \
         target_hloop_location_x, target_hloop_location_y, \
-        target_stem_size, target_iloop_size_x, target_iloop_size_y, target_hloop_size, \
+        target_stem_sm_size, target_iloop_sm_size_x, target_iloop_sm_size_y, target_hloop_sm_size, \
+        target_stem_sl_size, target_iloop_sl_size_x, target_iloop_sl_size_y, target_hloop_sl_size, \
         mask_stem_location_size, mask_iloop_location_size, \
         mask_hloop_location_size = make_target_pixel_bb(structure_arr, bounding_boxes)
-
-        # target_stem_on = row['target_stem_on']
-        # target_iloop_on = row['target_iloop_on']
-        # target_hloop_on = row['target_hloop_on']
-        #
-        # mask_stem_on = row['mask_stem_on']
-        # mask_iloop_on = row['mask_iloop_on']
-        # mask_hloop_on = row['mask_hloop_on']
-        #
-        # target_stem_location_x = row['target_stem_location_x']
-        # target_stem_location_y = row['target_stem_location_y']
-        # target_iloop_location_x = row['target_iloop_location_x']
-        # target_iloop_location_y = row['target_iloop_location_y']
-        # target_hloop_location_x = row['target_hloop_location_x']
-        # target_hloop_location_y = row['target_hloop_location_y']
-        #
-        # target_stem_size = row['target_stem_size']
-        # target_iloop_size_x = row['target_iloop_size_x']
-        # target_iloop_size_y = row['target_iloop_size_y']
-        # target_hloop_size = row['target_hloop_size']
-        #
-        # mask_stem_location_size = row['mask_stem_location_size']
-        # mask_iloop_location_size = row['mask_iloop_location_size']
-        # mask_hloop_location_size = row['mask_hloop_location_size']
 
         # organize
         y = {
@@ -186,20 +163,24 @@ class MyDataSet(Dataset):
             # FIXME these are int, no need to convert to float
             'stem_location_x': torch.from_numpy(target_stem_location_x[:, :, np.newaxis]).float(),   # add singleton dimension (these are integer index of softmax index)
             'stem_location_y': torch.from_numpy(target_stem_location_y[:, :, np.newaxis]).float(),
-            'stem_size': torch.from_numpy(target_stem_size[:, :, np.newaxis]).float(),
+            'stem_sm_size': torch.from_numpy(target_stem_sm_size[:, :, np.newaxis]).float(),
+            'stem_sl_size': torch.from_numpy(target_stem_sl_size[:, :, np.newaxis]).float(),
             
             # iloop
             'iloop_on': torch.from_numpy(target_iloop_on[:, :, np.newaxis]).float(),
             'iloop_location_x': torch.from_numpy(target_iloop_location_x[:, :, np.newaxis]).float(),
             'iloop_location_y': torch.from_numpy(target_iloop_location_y[:, :, np.newaxis]).float(),
-            'iloop_size_x': torch.from_numpy(target_iloop_size_x[:, :, np.newaxis]).float(),
-            'iloop_size_y': torch.from_numpy(target_iloop_size_y[:, :, np.newaxis]).float(),
+            'iloop_sm_size_x': torch.from_numpy(target_iloop_sm_size_x[:, :, np.newaxis]).float(),
+            'iloop_sm_size_y': torch.from_numpy(target_iloop_sm_size_y[:, :, np.newaxis]).float(),
+            'iloop_sl_size_x': torch.from_numpy(target_iloop_sl_size_x[:, :, np.newaxis]).float(),
+            'iloop_sl_size_y': torch.from_numpy(target_iloop_sl_size_y[:, :, np.newaxis]).float(),
             
             # hloop
             'hloop_on': torch.from_numpy(target_hloop_on[:, :, np.newaxis]).float(),
             'hloop_location_x': torch.from_numpy(target_hloop_location_x[:, :, np.newaxis]).float(),
             'hloop_location_y': torch.from_numpy(target_hloop_location_y[:, :, np.newaxis]).float(),
-            'hloop_size': torch.from_numpy(target_hloop_size[:, :, np.newaxis]).float(),
+            'hloop_sm_size': torch.from_numpy(target_hloop_sm_size[:, :, np.newaxis]).float(),
+            'hloop_sl_size': torch.from_numpy(target_hloop_sl_size[:, :, np.newaxis]).float(),
         }
 
         m = {
@@ -355,24 +336,15 @@ class SimpleConvNet(nn.Module):
                 cnn_layers.append(nn.Dropout(dropout))
         self.cnn_layers = nn.Sequential(*cnn_layers)
 
-        # self.cnn_layers = nn.Sequential(
-        #     nn.Conv2d(8, 32, kernel_size=3, stride=1, padding=1),
-        #     nn.BatchNorm2d(32),
-        #     nn.ReLU(inplace=True),
-        #     nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1),
-        #     nn.BatchNorm2d(32),
-        #     nn.ReLU(inplace=True),
-        #     nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1),
-        #     nn.BatchNorm2d(32),
-        #     nn.ReLU(inplace=True),
-        # )
-
         # self.fc = nn.Conv2d(num_filters[-1], 5, kernel_size=1)
-        self.fc = nn.Conv2d(num_filters[-1], 50, kernel_size=1)
-        # FIXME add relu!
+        # self.fc = nn.Conv2d(num_filters[-1], 50, kernel_size=1)
+        self.fc = nn.Sequential(
+            nn.Conv2d(num_filters[-1], 50, kernel_size=1),
+            nn.ReLU(),
+        )
 
         # add output specific hidden layers
-        
+
         # stem
         self.out_stem_on = nn.Sequential(
             nn.Conv2d(50, 20, kernel_size=1),
@@ -392,11 +364,22 @@ class SimpleConvNet(nn.Module):
             nn.Conv2d(20, 12, kernel_size=1),
             nn.LogSoftmax(dim=1),
         )
-        self.out_stem_siz = nn.Sequential(
+        # self.out_stem_siz = nn.Sequential(
+        #     nn.Conv2d(50, 20, kernel_size=1),
+        #     nn.ReLU(),
+        #     nn.Conv2d(20, 11, kernel_size=1),
+        #     nn.LogSoftmax(dim=1),
+        # )
+        self.hid_stem_siz = nn.Sequential(
             nn.Conv2d(50, 20, kernel_size=1),
             nn.ReLU(),
+        )
+        self.out_stem_sm_siz = nn.Sequential(
             nn.Conv2d(20, 11, kernel_size=1),
             nn.LogSoftmax(dim=1),
+        )
+        self.out_stem_sl_siz = nn.Sequential(
+            nn.Conv2d(20, 1, kernel_size=1),
         )
         
         # iloop
@@ -418,17 +401,40 @@ class SimpleConvNet(nn.Module):
             nn.Conv2d(20, 12, kernel_size=1),
             nn.LogSoftmax(dim=1),
         )
-        self.out_iloop_siz_x = nn.Sequential(
+        # self.out_iloop_siz_x = nn.Sequential(
+        #     nn.Conv2d(50, 20, kernel_size=1),
+        #     nn.ReLU(),
+        #     nn.Conv2d(20, 11, kernel_size=1),
+        #     nn.LogSoftmax(dim=1),
+        # )
+        self.hid_iloop_siz_x = nn.Sequential(
             nn.Conv2d(50, 20, kernel_size=1),
             nn.ReLU(),
+        )
+        self.out_iloop_sm_siz_x = nn.Sequential(
             nn.Conv2d(20, 11, kernel_size=1),
             nn.LogSoftmax(dim=1),
         )
-        self.out_iloop_siz_y = nn.Sequential(
+        self.out_iloop_sl_siz_x = nn.Sequential(
+            nn.Conv2d(20, 1, kernel_size=1),
+        )
+
+        # self.out_iloop_siz_y = nn.Sequential(
+        #     nn.Conv2d(50, 20, kernel_size=1),
+        #     nn.ReLU(),
+        #     nn.Conv2d(20, 11, kernel_size=1),
+        #     nn.LogSoftmax(dim=1),
+        # )
+        self.hid_iloop_siz_y = nn.Sequential(
             nn.Conv2d(50, 20, kernel_size=1),
             nn.ReLU(),
+        )
+        self.out_iloop_sm_siz_y = nn.Sequential(
             nn.Conv2d(20, 11, kernel_size=1),
             nn.LogSoftmax(dim=1),
+        )
+        self.out_iloop_sl_siz_y = nn.Sequential(
+            nn.Conv2d(20, 1, kernel_size=1),
         )
         
         # hloop
@@ -450,11 +456,22 @@ class SimpleConvNet(nn.Module):
             nn.Conv2d(20, 12, kernel_size=1),
             nn.LogSoftmax(dim=1),
         )
-        self.out_hloop_siz = nn.Sequential(
+        # self.out_hloop_siz = nn.Sequential(
+        #     nn.Conv2d(50, 20, kernel_size=1),
+        #     nn.ReLU(),
+        #     nn.Conv2d(20, 11, kernel_size=1),
+        #     nn.LogSoftmax(dim=1),
+        # )
+        self.hid_hloop_siz = nn.Sequential(
             nn.Conv2d(50, 20, kernel_size=1),
             nn.ReLU(),
+        )
+        self.out_hloop_sm_siz = nn.Sequential(
             nn.Conv2d(20, 11, kernel_size=1),
             nn.LogSoftmax(dim=1),
+        )
+        self.out_hloop_sl_siz = nn.Sequential(
+            nn.Conv2d(20, 1, kernel_size=1),
         )
 
     # Defining the forward pass
@@ -466,20 +483,32 @@ class SimpleConvNet(nn.Module):
         y_stem_on = self.out_stem_on(x)
         y_stem_loc_x = self.out_stem_loc_x(x)
         y_stem_loc_y = self.out_stem_loc_y(x)
-        y_stem_siz = self.out_stem_siz(x)
+        # y_stem_siz = self.out_stem_siz(x)
+        hid_stem_siz = self.hid_stem_siz(x)
+        y_stem_sm_siz = self.out_stem_sm_siz(hid_stem_siz)
+        y_stem_sl_siz = self.out_stem_sl_size(hid_stem_siz)
 
         # iloop
         y_iloop_on = self.out_iloop_on(x)
         y_iloop_loc_x = self.out_iloop_loc_x(x)
         y_iloop_loc_y = self.out_iloop_loc_y(x)
-        y_iloop_siz_x = self.out_iloop_siz_x(x)
-        y_iloop_siz_y = self.out_iloop_siz_y(x)
+        # y_iloop_siz_x = self.out_iloop_siz_x(x)
+        # y_iloop_siz_y = self.out_iloop_siz_y(x)
+        hid_iloop_siz_x = self.hid_iloop_siz_x(x)
+        y_iloop_sm_siz_x = self.out_iloop_sm_siz_x(hid_iloop_siz_x)
+        y_iloop_sl_siz_x = self.out_iloop_sl_siz_x(hid_iloop_siz_x)
+        hid_iloop_siz_y = self.hid_iloop_siz_y(x)
+        y_iloop_sm_siz_y = self.out_iloop_sm_siz_y(hid_iloop_siz_y)
+        y_iloop_sl_siz_y = self.out_iloop_sl_siz_y(hid_iloop_siz_y)
         
         # hloop
         y_hloop_on = self.out_hloop_on(x)
         y_hloop_loc_x = self.out_hloop_loc_x(x)
         y_hloop_loc_y = self.out_hloop_loc_y(x)
-        y_hloop_siz = self.out_hloop_siz(x)
+        # y_hloop_siz = self.out_hloop_siz(x)
+        hid_hloop_siz = self.hid_hloop_siz(x)
+        y_hloop_sm_siz = self.out_hloop_sm_siz(hid_hloop_siz)
+        y_hloop_sl_siz = self.out_hloop_sl_siz(hid_hloop_siz)
 
         # collect
         y = {
@@ -487,20 +516,28 @@ class SimpleConvNet(nn.Module):
             'stem_on': y_stem_on,
             'stem_location_x': y_stem_loc_x,
             'stem_location_y': y_stem_loc_y,
-            'stem_size': y_stem_siz,
+            # 'stem_size': y_stem_siz,
+            'stem_sm_size': y_stem_sm_siz,
+            'stem_sl_size': y_stem_sl_siz,
             
             # iloop
             'iloop_on': y_iloop_on,
             'iloop_location_x': y_iloop_loc_x,
             'iloop_location_y': y_iloop_loc_y,
-            'iloop_size_x': y_iloop_siz_x,
-            'iloop_size_y': y_iloop_siz_y,
+            # 'iloop_size_x': y_iloop_siz_x,
+            # 'iloop_size_y': y_iloop_siz_y,
+            'iloop_sm_siz_x': y_iloop_sm_siz_x,
+            'iloop_sl_siz_x': y_iloop_sl_siz_x,
+            'iloop_sm_siz_y': y_iloop_sm_siz_y,
+            'iloop_sl_siz_y': y_iloop_sl_siz_y,
             
             # hloop
             'hloop_on': y_hloop_on,
             'hloop_location_x': y_hloop_loc_x,
             'hloop_location_y': y_hloop_loc_y,
-            'hloop_size': y_hloop_siz,
+            # 'hloop_size': y_hloop_siz,
+            'hloop_sm_size': y_hloop_sm_siz,
+            'hloop_sl_size': y_hloop_sl_siz,
         }
 
         return y
@@ -509,6 +546,7 @@ class SimpleConvNet(nn.Module):
 # TODO move to class level
 loss_b = torch.nn.BCELoss(reduction='none')
 loss_m = torch.nn.NLLLoss(reduction='none')
+loss_e = torch.nn.MSELoss(reduction='none')
 
 
 # def _masked_loss(x, y, m, loss_func):
@@ -525,6 +563,17 @@ loss_m = torch.nn.NLLLoss(reduction='none')
 #     loss_spatial_mean = loss_spatial_sum / n_valid_output
 #     loss_batch_mean = torch.mean(loss_spatial_mean, dim=0)
 #     return torch.mean(loss_batch_mean)
+
+
+def masked_loss_e(x, y, m):
+    # batch x channel? x h x w
+    l = loss_e(x, y)
+    n_valid_output = torch.sum(torch.sum(m, dim=3), dim=2)  # vector of length = batch
+    loss_spatial_sum = torch.sum(torch.sum(torch.mul(l, m), dim=3), dim=2)
+    n_valid_output[n_valid_output == 0] = 1
+    loss_spatial_mean = loss_spatial_sum / n_valid_output
+    loss_batch_mean = torch.mean(loss_spatial_mean, dim=0)
+    return torch.mean(loss_batch_mean)
 
 
 def masked_loss_b(x, y, m):
@@ -581,11 +630,17 @@ def masked_loss(x, y, m, maskw):
     loss_stem_loc_y = masked_loss_m(_x, _y, _m2)
     logging.info("loss_stem_loc_y: {}".format(loss_stem_loc_y))
 
-    # stem size
-    _x = x['stem_size']
-    _y = y['stem_size']
-    loss_stem_siz = masked_loss_m(_x, _y, _m2)
-    logging.info("loss_stem_siz: {}".format(loss_stem_siz))
+    # stem size, softmax
+    _x = x['stem_sm_size']
+    _y = y['stem_sm_size']
+    loss_stem_sm_siz = masked_loss_m(_x, _y, _m2)
+    logging.info("loss_stem_sm_siz: {}".format(loss_stem_sm_siz))
+
+    # stem size, scalar
+    _x = x['stem_sl_size']
+    _y = y['stem_sl_size']
+    loss_stem_sl_siz = masked_loss_e(_x, _y, _m2)
+    logging.info("loss_stem_sl_siz: {}".format(loss_stem_sl_siz))
 
     # iloop  
     # iloop on
@@ -608,15 +663,25 @@ def masked_loss(x, y, m, maskw):
     loss_iloop_loc_y = masked_loss_m(_x, _y, _m2)
     logging.info("loss_iloop_loc_y: {}".format(loss_iloop_loc_y))
 
-    # iloop size
-    _x = x['iloop_size_x']
-    _y = y['iloop_size_x']
-    loss_iloop_siz_x = masked_loss_m(_x, _y, _m2)
-    logging.info("loss_iloop_siz_x: {}".format(loss_iloop_siz_x))
-    _x = x['iloop_size_y']
-    _y = y['iloop_size_y']
-    loss_iloop_siz_y = masked_loss_m(_x, _y, _m2)
-    logging.info("loss_iloop_siz_y: {}".format(loss_iloop_siz_y))
+    # iloop size, softmax
+    _x = x['iloop_sm_size_x']
+    _y = y['iloop_sm_size_x']
+    loss_iloop_sm_siz_x = masked_loss_m(_x, _y, _m2)
+    logging.info("loss_iloop_sm_siz_x: {}".format(loss_iloop_sm_siz_x))
+    _x = x['iloop_sm_size_y']
+    _y = y['iloop_sm_size_y']
+    loss_iloop_sm_siz_y = masked_loss_m(_x, _y, _m2)
+    logging.info("loss_iloop_sm_siz_y: {}".format(loss_iloop_sm_siz_y))
+
+    # iloop size, scalar
+    _x = x['iloop_sl_size_x']
+    _y = y['iloop_sl_size_x']
+    loss_iloop_sl_siz_x = masked_loss_e(_x, _y, _m2)
+    logging.info("loss_iloop_sl_siz_x: {}".format(loss_iloop_sl_siz_x))
+    _x = x['iloop_sl_size_y']
+    _y = y['iloop_sl_size_y']
+    loss_iloop_sl_siz_y = masked_loss_e(_x, _y, _m2)
+    logging.info("loss_iloop_sl_siz_y: {}".format(loss_iloop_sl_siz_y))
     
     # hloop
     # hloop on
@@ -639,18 +704,30 @@ def masked_loss(x, y, m, maskw):
     loss_hloop_loc_y = masked_loss_m(_x, _y, _m2)
     logging.info("loss_hloop_loc_y: {}".format(loss_hloop_loc_y))
 
-    # hloop size
-    _x = x['hloop_size']
-    _y = y['hloop_size']
-    loss_hloop_siz = masked_loss_m(_x, _y, _m2)
-    logging.info("loss_hloop_siz: {}".format(loss_hloop_siz))
+    # hloop size, softmax
+    _x = x['hloop_sm_size']
+    _y = y['hloop_sm_size']
+    loss_hloop_sm_siz = masked_loss_m(_x, _y, _m2)
+    logging.info("loss_hloop_sm_siz: {}".format(loss_hloop_sm_siz))
+    
+    # hloop size, scalar
+    _x = x['hloop_sl_size']
+    _y = y['hloop_sl_size']
+    loss_hloop_sl_siz = masked_loss_e(_x, _y, _m2)
+    logging.info("loss_hloop_sl_siz: {}".format(loss_hloop_sl_siz))
 
-    return loss_stem_on + loss_stem_loc_x + loss_stem_loc_y + loss_stem_siz + \
-           loss_iloop_on + loss_iloop_loc_x + loss_iloop_loc_y + loss_iloop_siz_x + loss_iloop_siz_y + \
-           loss_hloop_on + loss_hloop_loc_x + loss_hloop_loc_y + loss_hloop_siz
+    # TODO scale down the MSE portion?
+    return loss_stem_on + loss_stem_loc_x + loss_stem_loc_y + loss_stem_sm_siz + loss_stem_sl_siz + \
+           loss_iloop_on + loss_iloop_loc_x + loss_iloop_loc_y + \
+           loss_iloop_sm_siz_x + loss_iloop_sm_siz_y + loss_iloop_sl_siz_x + loss_iloop_sl_siz_y + \
+           loss_hloop_on + loss_hloop_loc_x + loss_hloop_loc_y + loss_hloop_sm_siz + loss_hloop_sl_siz
+
+    # return loss_stem_on + loss_stem_loc_x + loss_stem_loc_y + loss_stem_siz + \
+    #        loss_iloop_on + loss_iloop_loc_x + loss_iloop_loc_y + loss_iloop_siz_x + loss_iloop_siz_y + \
+    #        loss_hloop_on + loss_hloop_loc_x + loss_hloop_loc_y + loss_hloop_siz
 
 
-def old(x, y, m):
+def old(x, y, m):   # FIXME remove?
     # print(x.shape, y.shape, m.shape)
     l = torch.nn.BCELoss(reduction='none')(x, y)
     # number of valid entries = 1's in the mask
@@ -705,8 +782,14 @@ class EvalMetric(object):
             'stem_location_y': {
                 'accuracy': [],
             },
-            'stem_size': {
+            # 'stem_size': {
+            #     'accuracy': [],
+            # },
+            'stem_sm_size': {
                 'accuracy': [],
+            },
+            'stem_sl_size': {
+                'diff': [],
             },
             
             # iloop
@@ -720,11 +803,23 @@ class EvalMetric(object):
             'iloop_location_y': {
                 'accuracy': [],
             },
-            'iloop_size_x': {
+            # 'iloop_size_x': {
+            #     'accuracy': [],
+            # },
+            # 'iloop_size_y': {
+            #     'accuracy': [],
+            # },
+            'iloop_sm_size_x': {
                 'accuracy': [],
             },
-            'iloop_size_y': {
+            'iloop_sm_size_y': {
                 'accuracy': [],
+            },
+            'iloop_sl_size_x': {
+                'diff': [],
+            },
+            'iloop_sl_size_y': {
+                'diff': [],
             },
             
             # hloop
@@ -738,8 +833,14 @@ class EvalMetric(object):
             'hloop_location_y': {
                 'accuracy': [],
             },
-            'hloop_size': {
+            # 'hloop_size': {
+            #     'accuracy': [],
+            # },
+            'hloop_sm_size': {
                 'accuracy': [],
+            },
+            'hloop_sl_size': {
+                'diff': [],
             },
         }
 
@@ -798,6 +899,15 @@ def compute_metrics(x, y, m):
         _y2 = _y.masked_select(mask_bool).flatten().detach().cpu().numpy()
         return np.sum(_x2 == _y2)/float(len(_x2))
 
+    def _diff(key_target, key_mask):
+        _x = x[key_target][idx_batch, 0, :, :]
+        _y = y[key_target][idx_batch, 0, :, :]
+        _m = m[key_mask][idx_batch, 0, :, :]
+        mask_bool = _m.eq(1)
+        _x2 = _x.masked_select(mask_bool).flatten().detach().cpu().numpy()
+        _y2 = _y.masked_select(mask_bool).flatten().detach().cpu().numpy()
+        return np.abs(_x2 - _y2)/ float(len(_x2))
+
     evalm = EvalMetric()
 
     num_examples = y[list(y.keys())[0]].shape[0]  # wlog, check batch dimension using first output key
@@ -815,9 +925,12 @@ def compute_metrics(x, y, m):
                       val=_accuracy(key_target='stem_location_x', key_mask='stem_location_size'))
         evalm.add_val(output='stem_location_y', metric='accuracy',
                       val=_accuracy(key_target='stem_location_y', key_mask='stem_location_size'))
-        # stem size
-        evalm.add_val(output='stem_size', metric='accuracy',
-                      val=_accuracy(key_target='stem_size', key_mask='stem_location_size'))
+        # stem size, softmax
+        evalm.add_val(output='stem_sm_size', metric='accuracy',
+                      val=_accuracy(key_target='stem_sm_size', key_mask='stem_location_size'))
+        # stem size, scalar
+        evalm.add_val(output='stem_sl_size', metric='diff',
+                      val=_diff(key_target='stem_sl_size', key_mask='stem_location_size'))
         
         # iloop
         # iloop on
@@ -829,12 +942,18 @@ def compute_metrics(x, y, m):
                       val=_accuracy(key_target='iloop_location_x', key_mask='iloop_location_size'))
         evalm.add_val(output='iloop_location_y', metric='accuracy',
                       val=_accuracy(key_target='iloop_location_y', key_mask='iloop_location_size'))
-        # iloop size x
-        evalm.add_val(output='iloop_size_x', metric='accuracy',
-                      val=_accuracy(key_target='iloop_size_x', key_mask='iloop_location_size'))
-        # iloop size y
-        evalm.add_val(output='iloop_size_y', metric='accuracy',
-                      val=_accuracy(key_target='iloop_size_y', key_mask='iloop_location_size'))
+        # iloop size x, softmax
+        evalm.add_val(output='iloop_sm_size_x', metric='accuracy',
+                      val=_accuracy(key_target='iloop_sm_size_x', key_mask='iloop_location_size'))
+        # iloop size y, softmax
+        evalm.add_val(output='iloop_sm_size_y', metric='accuracy',
+                      val=_accuracy(key_target='iloop_sm_size_y', key_mask='iloop_location_size'))
+        # iloop size x, scalar
+        evalm.add_val(output='iloop_sl_size_x', metric='accuracy',
+                      val=_diff(key_target='iloop_sl_size_x', key_mask='iloop_location_size'))
+        # iloop size y, scalar
+        evalm.add_val(output='iloop_sl_size_y', metric='accuracy',
+                      val=_diff(key_target='iloop_sl_size_y', key_mask='iloop_location_size'))
         
         # hloop
         # stem on
@@ -846,9 +965,12 @@ def compute_metrics(x, y, m):
                       val=_accuracy(key_target='hloop_location_x', key_mask='hloop_location_size'))
         evalm.add_val(output='hloop_location_y', metric='accuracy',
                       val=_accuracy(key_target='hloop_location_y', key_mask='hloop_location_size'))
-        # hloop size
-        evalm.add_val(output='hloop_size', metric='accuracy',
-                      val=_accuracy(key_target='hloop_size', key_mask='hloop_location_size'))
+        # hloop size, softmax
+        evalm.add_val(output='hloop_sm_size', metric='accuracy',
+                      val=_accuracy(key_target='hloop_sm_size', key_mask='hloop_location_size'))
+        # hloop size, softmax
+        evalm.add_val(output='hloop_sl_size', metric='accuracy',
+                      val=_diff(key_target='hloop_sl_size', key_mask='hloop_location_size'))
 
     return evalm
 
