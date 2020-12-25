@@ -362,42 +362,42 @@ def make_target(structure_arr, local_structure_bounding_boxes, local_unmask_offs
 
 
 def make_target_pixel_bb(structure_arr, local_structure_bounding_boxes, local_unmask_offset=10):
-    # Most of the time, each pixel can be uniquely assigned to one bounding box.
-    # In the case of closing pair of a loop, it's assigned to both the stem and the loop.
-    # In the rare case where the stem is of length 1, and the stem has 2 loops, one on each side,
-    # the pixel is assigned to 2 loops.
-    # Thus, it can be observed that each pixel can be assigned to:
-    #     - 0 or 1 stem box
-    #     - 0, 1 or 2 internal loop box (we'll ignore the case of 2 internal loop for now since it's rare FIXME)
-    #     - 0 or 1 hairpin loop
-    # From the above, we conclude that for each pixel we need at most 4 bounding boxes with unique types
-    # (of course each box can be turned on/off independently, like in CV):
-    #     - stem box
-    #     - internal loop box 1
-    #     - internal loop box 2 (rarely used, ignored for now)
-    #     - hairpin loop box
-    # Using the above formulation, we only need to predict the on/off of each box (sigmoid),
-    # without the need to predict its type (also avoid problem of multiple box permutation).
-    #
-    # To encode the location, we use the top right corner as the reference point,
-    # and calculate the distance of the current pixel to the reference,
-    # both horizontally and vertically.
-    # The idea is to predict it using a softmax over finite classes,
-    # Horizontal distance (y/columns) <= 0, e.g. 0, -1, ..., -9, -10, -10_beyond.
-    # Vertical distance (x/rows) >= 0, e.g. 0, 1, ..., 9, 10, 10_beyond.
-    # Basically we assign one class for each integer distance until some distance away (10in the above example).
-    # Alternatively we can use one sigmoid unit to encode the direction, and 12-softmax for the magnitude
-    # (although in the case of 0, direction needs to be masked).
-    #
-    # To encode the size, we use different number of softmax, depending on the box type:
-    #     - stem: one softmax over 1, ..., 9, 10, 10_beyond, since it's square shaped
-    #     - internal loop: two softmax over 1, ..., 9, 10, 10_beyond, one for height one for width
-    #     - hairpin loop: one softmax over 1, ..., 9, 10, 10_beyond, since it's triangle/square shaped
-    #     (caveat: some hairpin loops are very long)
-    # Alternative: encode distance to lower left corner (hairpin is tricky since it's a triangle).
-    # Also: we should still be able to 'decode' boxes > 10 in size, although with reduced accuracy?
+    """
+    Most of the time, each pixel can be uniquely assigned to one bounding box.
+    In the case of closing pair of a loop, it's assigned to both the stem and the loop.
+    In the rare case where the stem is of length 1, and the stem has 2 loops, one on each side,
+    the pixel is assigned to 2 loops.
+    Thus, it can be observed that each pixel can be assigned to:
+        - 0 or 1 stem box
+        - 0, 1 or 2 internal loop box (we'll ignore the case of 2 internal loop for now since it's rare FIXME)
+        - 0 or 1 hairpin loop
+    From the above, we conclude that for each pixel we need at most 4 bounding boxes with unique types
+    (of course each box can be turned on/off independently, like in CV):
+        - stem box
+        - internal loop box 1
+        - internal loop box 2 (rarely used, ignored for now)
+        - hairpin loop box
+    Using the above formulation, we only need to predict the on/off of each box (sigmoid),
+    without the need to predict its type (also avoid problem of multiple box permutation).
 
-    # multiple target & multiple masks
+    To encode the location, we use the top right corner as the reference point,
+    and calculate the distance of the current pixel to the reference,
+    both horizontally and vertically.
+    The idea is to predict it using a softmax over finite classes,
+    Horizontal distance (y/columns) <= 0, e.g. 0, -1, ..., -9, -10, -10_beyond.
+    Vertical distance (x/rows) >= 0, e.g. 0, 1, ..., 9, 10, 10_beyond.
+    Basically we assign one class for each integer distance until some distance away (10in the above example).
+    Alternatively we can use one sigmoid unit to encode the direction, and 12-softmax for the magnitude
+    (although in the case of 0, direction needs to be masked).
+
+    To encode the size, we use different number of softmax, depending on the box type:
+        - stem: one softmax over 1, ..., 9, 10, 10_beyond, since it's square shaped
+        - internal loop: two softmax over 1, ..., 9, 10, 10_beyond, one for height one for width
+        - hairpin loop: one softmax over 1, ..., 9, 10, 10_beyond, since it's triangle/square shaped
+    To account for large sized bb's, also use the scalar valued size directly.
+
+    multiple target & multiple masks
+    """
 
     # TODO to save memory, consider using dtypes e.g. np.uint8
 
@@ -421,13 +421,18 @@ def make_target_pixel_bb(structure_arr, local_structure_bounding_boxes, local_un
     target_hloop_location_y = np.zeros_like(structure_arr)
     # size softmax & mask
     # size softmax order: 1, 2, ..., 10, 10_beyond
-    target_stem_size = np.zeros_like(structure_arr)
-    target_iloop_size_x = np.zeros_like(structure_arr)
-    target_iloop_size_y = np.zeros_like(structure_arr)
-    target_hloop_size = np.zeros_like(structure_arr)
+    target_stem_sm_size = np.zeros_like(structure_arr)
+    target_iloop_sm_size_x = np.zeros_like(structure_arr)
+    target_iloop_sm_size_y = np.zeros_like(structure_arr)
+    target_hloop_sm_size = np.zeros_like(structure_arr)
+    # scalar valued size
+    target_stem_sl_size = np.zeros_like(structure_arr)
+    target_iloop_sl_size_x = np.zeros_like(structure_arr)
+    target_iloop_sl_size_y = np.zeros_like(structure_arr)
+    target_hloop_sl_size = np.zeros_like(structure_arr)
     # mask can be used for both location and size (which are either both set or not set)
     mask_stem_location_size = np.zeros_like(structure_arr)
-    mask_iloop_location_size = np.zeros_like(structure_arr)
+    # mask_iloop_location_size = np.zeros_like(structure_arr)
     mask_iloop_location_size = np.zeros_like(structure_arr)
     mask_hloop_location_size = np.zeros_like(structure_arr)
 
@@ -507,7 +512,8 @@ def make_target_pixel_bb(structure_arr, local_structure_bounding_boxes, local_un
             # size
             assert wx == wy
             idx_size = get_size_index(wx)
-            target_stem_size[x0:x0 + wx, y0:y0 + wy] = idx_size
+            target_stem_sm_size[x0:x0 + wx, y0:y0 + wy] = idx_size
+            target_stem_sl_size[x0:x0 + wx, y0:y0 + wy] = wx
             # location
             target_stem_location_x, target_stem_location_y = set_location(x0, y0, wx, wy, target_stem_location_x,
                                                                           target_stem_location_y)
@@ -524,19 +530,25 @@ def make_target_pixel_bb(structure_arr, local_structure_bounding_boxes, local_un
             keep_old_val = False
             if target_iloop_on[x0+wx-1, y0] == 1:
                 keep_old_val = True
-                size_x_old = target_iloop_size_x[x0+wx-1, y0]
-                size_y_old = target_iloop_size_y[x0+wx-1, y0]
+                sm_size_x_old = target_iloop_sm_size_x[x0+wx-1, y0]
+                sm_size_y_old = target_iloop_sm_size_y[x0+wx-1, y0]
+                sl_size_x_old = target_iloop_sl_size_x[x0 + wx - 1, y0]
+                sl_size_y_old = target_iloop_sl_size_y[x0 + wx - 1, y0]
                 location_x_old = target_iloop_location_x[x0+wx-1, y0]
                 location_y_old = target_iloop_location_y[x0+wx-1, y0]
             # iloop_on = 1, for all pixels within this box
             # set loop 2
             target_iloop_on[x0:x0 + wx, y0:y0 + wy] = 1
             # size
-            target_iloop_size_x[x0:x0 + wx, y0:y0 + wy] = get_size_index(wx)
-            target_iloop_size_y[x0:x0 + wx, y0:y0 + wy] = get_size_index(wy)
+            target_iloop_sm_size_x[x0:x0 + wx, y0:y0 + wy] = get_size_index(wx)
+            target_iloop_sm_size_y[x0:x0 + wx, y0:y0 + wy] = get_size_index(wy)
+            target_iloop_sl_size_x[x0:x0 + wx, y0:y0 + wy] = wx
+            target_iloop_sl_size_y[x0:x0 + wx, y0:y0 + wy] = wy
             if keep_old_val:
-                target_iloop_size_x[x0+wx-1, y0] = size_x_old
-                target_iloop_size_y[x0+wx-1, y0] = size_y_old
+                target_iloop_sm_size_x[x0+wx-1, y0] = sm_size_x_old
+                target_iloop_sm_size_y[x0+wx-1, y0] = sm_size_y_old
+                target_iloop_sl_size_x[x0 + wx - 1, y0] = sl_size_x_old
+                target_iloop_sl_size_y[x0 + wx - 1, y0] = sl_size_y_old
             # location
             target_iloop_location_x, target_iloop_location_y = set_location(x0, y0, wx, wy,
                                                                               target_iloop_location_x,
@@ -556,7 +568,8 @@ def make_target_pixel_bb(structure_arr, local_structure_bounding_boxes, local_un
             target_hloop_on[x0:x0 + wx, y0:y0 + wy] = 1
             # size
             assert wx == wy
-            target_hloop_size[x0:x0 + wx, y0:y0 + wy] = get_size_index(wx)
+            target_hloop_sm_size[x0:x0 + wx, y0:y0 + wy] = get_size_index(wx)
+            target_hloop_sl_size[x0:x0 + wx, y0:y0 + wy] = wx
             # location
             target_hloop_location_x, target_hloop_location_y = set_location(x0, y0, wx, wy,
                                                                             target_hloop_location_x,
@@ -575,5 +588,6 @@ def make_target_pixel_bb(structure_arr, local_structure_bounding_boxes, local_un
            mask_stem_on, mask_iloop_on, mask_hloop_on, \
            target_stem_location_x, target_stem_location_y, target_iloop_location_x, target_iloop_location_y, \
            target_hloop_location_x, target_hloop_location_y, \
-           target_stem_size, target_iloop_size_x, target_iloop_size_y, target_hloop_size, \
+           target_stem_sm_size, target_iloop_sm_size_x, target_iloop_sm_size_y, target_hloop_sm_size, \
+           target_stem_sl_size, target_iloop_sl_size_x, target_iloop_sl_size_y, target_hloop_sl_size, \
            mask_stem_location_size, mask_iloop_location_size, mask_hloop_location_size
