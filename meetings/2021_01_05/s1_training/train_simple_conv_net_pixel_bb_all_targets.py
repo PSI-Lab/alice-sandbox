@@ -906,7 +906,7 @@ def compute_metrics(x, y, m):
         mask_bool = _m.eq(1)
         _x2 = _x.masked_select(mask_bool).flatten().detach().cpu().numpy()
         _y2 = _y.masked_select(mask_bool).flatten().detach().cpu().numpy()
-        return np.abs(_x2 - _y2)/ float(len(_x2))
+        return np.sum(np.abs(_x2 - _y2))/ float(len(_x2))
 
     evalm = EvalMetric()
 
