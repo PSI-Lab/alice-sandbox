@@ -61,15 +61,15 @@ def main(in_log, out_plot):
                     # 'iloop_size_y_accuracy': metrics['iloop_size_y']['accuracy'],
                     'iloop_sm_size_x_accuracy': metrics['iloop_sm_size_x']['accuracy'],
                     'iloop_sm_size_y_accuracy': metrics['iloop_sm_size_y']['accuracy'],
-                    'iloop_sl_size_x_accuracy': metrics['iloop_sl_size_x']['diff'],
-                    'iloop_sl_size_y_accuracy': metrics['iloop_sl_size_y']['diff'],
+                    'iloop_sl_size_x_diff': metrics['iloop_sl_size_x']['diff'],
+                    'iloop_sl_size_y_diff': metrics['iloop_sl_size_y']['diff'],
 
                     'hloop_on_auroc': metrics['hloop_on']['auroc'],
                     'hloop_loc_x_accuracy': metrics['hloop_location_x']['accuracy'],
                     'hloop_loc_y_accuracy': metrics['hloop_location_y']['accuracy'],
                     # 'hloop_size_accuracy': metrics['hloop_size']['accuracy'],
                     'hloop_sm_size_accuracy': metrics['hloop_sm_size']['accuracy'],
-                    'hloop_sl_size_accuracy': metrics['hloop_sl_size']['diff'],
+                    'hloop_sl_size_diff': metrics['hloop_sl_size']['diff'],
                 })
 
             # keep track of last line so we know epoch & train/valid
