@@ -95,7 +95,7 @@ def main(in_log, out_plot):
 
     # stem metrics
     for i, name in enumerate(['stem_on_auroc', 'stem_loc_x_accuracy', 'stem_loc_y_accuracy',
-                              'stem_sm_size_accuracy', 'stem_sl_size_accuracy']):
+                              'stem_sm_size_accuracy', 'stem_sl_size_diff']):
         tmp_fig = px.line(df_metric, x='epoch', y=name, color='train_valid')
         tmp_fig.update_layout(showlegend=False)
         for d in tmp_fig.data:
@@ -103,8 +103,8 @@ def main(in_log, out_plot):
 
     # iloop metrics
     for i, name in enumerate(['iloop_on_auroc', 'iloop_loc_x_accuracy', 'iloop_loc_y_accuracy',
-                              'iloop_sm_size_x_accuracy', 'iloop_sl_size_x_accuracy',
-                              'iloop_sm_size_y_accuracy', 'iloop_sl_size_y_accuracy']):
+                              'iloop_sm_size_x_accuracy', 'iloop_sl_size_x_diff',
+                              'iloop_sm_size_y_accuracy', 'iloop_sl_size_y_diff']):
         tmp_fig = px.line(df_metric, x='epoch', y=name, color='train_valid')
         tmp_fig.update_layout(showlegend=False)
         for d in tmp_fig.data:
@@ -112,7 +112,7 @@ def main(in_log, out_plot):
 
     # hloop metrics
     for i, name in enumerate(['hloop_on_auroc', 'hloop_loc_x_accuracy', 'hloop_loc_y_accuracy',
-                              'hloop_sm_size_accuracy', 'hloop_sl_size_accuracy']):
+                              'hloop_sm_size_accuracy', 'hloop_sl_size_diff']):
         tmp_fig = px.line(df_metric, x='epoch', y=name, color='train_valid')
         tmp_fig.update_layout(showlegend=False)
         for d in tmp_fig.data:
