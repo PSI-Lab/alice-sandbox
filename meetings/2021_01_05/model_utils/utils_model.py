@@ -449,8 +449,72 @@ class Predictor(object):
                 bbs_new.append(bb)
         return bbs_new
 
+    # @staticmethod
+    # def predict_bounidng_box(pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y, thres=0.5):
+    #
+    #     def _make_mask(l):
+    #         m = np.ones((l, l))
+    #         m[np.tril_indices(l)] = 0
+    #         return m
+    #
+    #     # remove singleton dimensions
+    #     pred_on = np.squeeze(pred_on)
+    #     pred_loc_x = np.squeeze(pred_loc_x)
+    #     pred_loc_y = np.squeeze(pred_loc_y)
+    #     pred_siz_x = np.squeeze(pred_siz_x)
+    #     if pred_siz_y is None:
+    #         pred_siz_y = np.copy(pred_siz_x)
+    #     # TODO assert on input shape
+    #
+    #     # hard-mask
+    #     m = _make_mask(pred_on.shape[1])
+    #     # apply mask (for pred, only apply to pred_on since our processing starts from that array)
+    #     pred_on = pred_on * m
+    #     # binary array with all 0's, we'll set the predicted bounding box region to 1
+    #     # this will be used to calculate 'sensitivity'
+    #     pred_box = np.zeros_like(pred_on)
+    #     # also save box locations and probabilities
+    #     proposed_boxes = []
+    #
+    #     for i, j in np.transpose(np.where(pred_on > thres)):
+    #         loc_x = np.argmax(pred_loc_x[:, i, j])
+    #         loc_y = np.argmax(pred_loc_y[:, i, j])
+    #         siz_x = np.argmax(pred_siz_x[:, i, j]) + 1  # size starts at 1 for index=0
+    #         siz_y = np.argmax(pred_siz_y[:, i, j]) + 1
+    #         # compute joint probability of taking the max value
+    #         prob = pred_on[i, j] * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y] * \
+    #                softmax(pred_siz_x[:, i, j])[siz_x - 1] * softmax(pred_siz_y[:, i, j])[
+    #                    siz_y - 1]  # FIXME multiplying twice for case where y is set to x
+    #         # top right corner
+    #         bb_x = i - loc_x
+    #         bb_y = j + loc_y
+    #         # save box
+    #         proposed_boxes.append({
+    #             'bb_x': bb_x,
+    #             'bb_y': bb_y,
+    #             'siz_x': siz_x,
+    #             'siz_y': siz_y,
+    #             'prob': prob,  # TODO shall we store 4 probabilities separately?
+    #         })
+    #         # set value in pred box, be careful with out of bound index
+    #         x0 = bb_x
+    #         y0 = bb_y - siz_y + 1  # 0-based
+    #         wx = siz_x
+    #         wy = siz_y
+    #         ix0 = max(0, x0)
+    #         iy0 = max(0, y0)
+    #         ix1 = min(x0 + wx, pred_box.shape[0])
+    #         iy1 = min(y0 + wy, pred_box.shape[1])
+    #         pred_box[ix0:ix1, iy0:iy1] = 1
+    #
+    #     # apply hard-mask to pred box
+    #     pred_box = pred_box * m
+    #     return proposed_boxes, pred_box
+
     @staticmethod
-    def predict_bounidng_box(pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y, thres=0.5):
+    def predict_bounidng_box(pred_on, pred_loc_x, pred_loc_y,
+                             pred_sm_siz_x, pred_sm_siz_y,
+                             pred_sl_siz_x, pred_sl_siz_y, thres=0.5):
 
         def _make_mask(l):
             m = np.ones((l, l))
@@ -461,9 +525,12 @@ class Predictor(object):
         pred_on = np.squeeze(pred_on)
         pred_loc_x = np.squeeze(pred_loc_x)
         pred_loc_y = np.squeeze(pred_loc_y)
-        pred_siz_x = np.squeeze(pred_siz_x)
-        if pred_siz_y is None:
-            pred_siz_y = np.copy(pred_siz_x)
+        pred_sm_siz_x = np.squeeze(pred_sm_siz_x)
+        if pred_sm_siz_y is None:
+            pred_sm_siz_y = np.copy(pred_sm_siz_x)
+        pred_sl_siz_x = np.squeeze(pred_sl_siz_x)
+        if pred_sl_siz_y is None:
+            pred_sl_siz_y = np.copy(pred_sl_siz_x)
         # TODO assert on input shape
 
         # hard-mask
@@ -476,36 +543,63 @@ class Predictor(object):
         # also save box locations and probabilities
         proposed_boxes = []
 
-        for i, j in np.transpose(np.where(pred_on > thres)):
+        for i, j in np.transpose(np.where(pred_on > thres)):  # TODO vectorize
             loc_x = np.argmax(pred_loc_x[:, i, j])
             loc_y = np.argmax(pred_loc_y[:, i, j])
-            siz_x = np.argmax(pred_siz_x[:, i, j]) + 1  # size starts at 1 for index=0
-            siz_y = np.argmax(pred_siz_y[:, i, j]) + 1
-            # compute joint probability of taking the max value
-            prob = pred_on[i, j] * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y] * \
-                   softmax(pred_siz_x[:, i, j])[siz_x - 1] * softmax(pred_siz_y[:, i, j])[
-                       siz_y - 1]  # FIXME multiplying twice for case where y is set to x
+            # softmax size
+            sm_siz_x = np.argmax(pred_sm_siz_x[:, i, j]) + 1  # size starts at 1 for index=0
+            sm_siz_y = np.argmax(pred_sm_siz_y[:, i, j]) + 1
+            # scalar size, round to int
+            sl_siz_x = int(np.round(pred_sl_siz_x[i, j]))
+            sl_siz_y = int(np.round(pred_sl_siz_y[i, j]))
+            # prob of on/off & location
+            prob_1 = pred_on[i, j] * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y]
+            # softmax: compute joint probability of taking the max value
+            prob_sm = prob_1 *  softmax(pred_sm_siz_x[:, i, j])[sm_siz_x - 1] * softmax(pred_sm_siz_y[:, i, j])[
+                       sm_siz_y - 1]  # FIXME multiplying twice for case where y is set to x
+            # scalar size: local Gaussain
+            prob_sl = prob_1 * 1   # FIXME using 1 for now, what's the best way to estimate prob?
             # top right corner
             bb_x = i - loc_x
             bb_y = j + loc_y
-            # save box
+            # save sm box # TODO if sm and sl predict same size, shall we add onto the probability?
             proposed_boxes.append({
                 'bb_x': bb_x,
                 'bb_y': bb_y,
-                'siz_x': siz_x,
-                'siz_y': siz_y,
-                'prob': prob,  # TODO shall we store 4 probabilities separately?
+                'siz_x': sm_siz_x,
+                'siz_y': sm_siz_y,
+                'prob': prob_sm,  # TODO shall we store 4 probabilities separately?
             })
             # set value in pred box, be careful with out of bound index
             x0 = bb_x
-            y0 = bb_y - siz_y + 1  # 0-based
-            wx = siz_x
-            wy = siz_y
+            y0 = bb_y - sm_siz_y + 1  # 0-based
+            wx = sm_siz_x
+            wy = sm_siz_y
             ix0 = max(0, x0)
             iy0 = max(0, y0)
             ix1 = min(x0 + wx, pred_box.shape[0])
             iy1 = min(y0 + wy, pred_box.shape[1])
             pred_box[ix0:ix1, iy0:iy1] = 1
+
+            # if sl predicted size is different, save another box
+            if sl_siz_x != sm_siz_x or sl_siz_y != sm_siz_y:
+                proposed_boxes.append({
+                    'bb_x': bb_x,
+                    'bb_y': bb_y,
+                    'siz_x': sl_siz_x,
+                    'siz_y': sl_siz_y,
+                    'prob': prob_sl,  # TODO pending
+                })
+                # set value in pred box, be careful with out of bound index
+                x0 = bb_x
+                y0 = bb_y - sl_siz_y + 1  # 0-based
+                wx = sl_siz_x
+                wy = sl_siz_y
+                ix0 = max(0, x0)
+                iy0 = max(0, y0)
+                ix1 = min(x0 + wx, pred_box.shape[0])
+                iy1 = min(y0 + wy, pred_box.shape[1])
+                pred_box[ix0:ix1, iy0:iy1] = 1
 
         # apply hard-mask to pred box
         pred_box = pred_box * m
@@ -521,14 +615,23 @@ class Predictor(object):
         yp = {k: v.detach().cpu().numpy()[0, :, :, :] for k, v in yp.items()}
         # bb
         pred_bb_stem, pred_box_stem = self.predict_bounidng_box(pred_on=yp['stem_on'], pred_loc_x=yp['stem_location_x'],
-                                               pred_loc_y=yp['stem_location_y'], pred_siz_x=yp['stem_size'],
-                                               pred_siz_y=None, thres=threshold)
-        pred_bb_iloop, pred_box_iloop = self.predict_bounidng_box(pred_on=yp['iloop_on'], pred_loc_x=yp['iloop_location_x'],
-                                                pred_loc_y=yp['iloop_location_y'], pred_siz_x=yp['iloop_size_x'],
-                                                pred_siz_y=yp['iloop_size_y'], thres=threshold)
-        pred_bb_hloop, pred_box_hloop = self.predict_bounidng_box(pred_on=yp['hloop_on'], pred_loc_x=yp['hloop_location_x'],
-                                                pred_loc_y=yp['hloop_location_y'], pred_siz_x=yp['hloop_size'],
-                                                pred_siz_y=None, thres=threshold)
+                                                                pred_loc_y=yp['stem_location_y'],
+                                                                pred_sm_siz_x=yp['stem_sm_size'], pred_sm_siz_y=None, 
+                                                                pred_sl_siz_x=yp['stem_sl_size'], pred_sl_siz_y=None, 
+                                                                thres=threshold)
+        pred_bb_iloop, pred_box_iloop = self.predict_bounidng_box(pred_on=yp['iloop_on'],
+                                                                  pred_loc_x=yp['iloop_location_x'],
+                                                                  pred_loc_y=yp['iloop_location_y'],
+                                                                  pred_sm_siz_x=yp['iloop_sm_size_x'], pred_sm_siz_y=yp['iloop_sm_size_y'],
+                                                                  pred_sl_siz_x=yp['iloop_sl_size_x'],
+                                                                  pred_sl_siz_y=yp['iloop_sl_size_y'],
+                                                                  thres=threshold)
+        pred_bb_hloop, pred_box_hloop = self.predict_bounidng_box(pred_on=yp['hloop_on'],
+                                                                  pred_loc_x=yp['hloop_location_x'],
+                                                                  pred_loc_y=yp['hloop_location_y'],
+                                                                  pred_sm_siz_x=yp['hloop_sm_size'], pred_sm_siz_y=None,
+                                                                  pred_sl_siz_x=yp['hloop_sl_size'], pred_sl_siz_y=None,
+                                                                  thres=threshold)
         pred_bb_hloop = self.cleanup_hloop(pred_bb_hloop, len(seq))
         return yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop, pred_box_stem, pred_box_iloop, pred_box_hloop
 
