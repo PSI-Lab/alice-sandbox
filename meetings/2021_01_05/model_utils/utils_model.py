@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from scipy.special import softmax
+from scipy.stats import norm
 import torch
 import torch.nn as nn
 import os
@@ -563,7 +564,8 @@ class Predictor(object):
             prob_sm = prob_1 *  softmax(pred_sm_siz_x[:, i, j])[sm_siz_x - 1] * softmax(pred_sm_siz_y[:, i, j])[
                        sm_siz_y - 1]  # FIXME multiplying twice for case where y is set to x
             # scalar size: local Gaussain
-            prob_sl = prob_1 * 1   # FIXME using 1 for now, what's the best way to estimate prob?
+            prob_sl = prob_1 * norm.pdf(sl_siz_x - pred_sl_siz_x[i, j]) * norm.pdf(sl_siz_y - pred_sl_siz_y[
+                i, j]) / norm.pdf(0) ** 2  # TODO using likelihood ratio between (x-x0) and x0 for now, better way to model the prob?
             # top right corner
             bb_x = i - loc_x
             bb_y = j + loc_y
