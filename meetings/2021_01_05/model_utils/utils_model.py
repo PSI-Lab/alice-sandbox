@@ -552,6 +552,11 @@ class Predictor(object):
             # scalar size, round to int
             sl_siz_x = int(np.round(pred_sl_siz_x[i, j]))
             sl_siz_y = int(np.round(pred_sl_siz_y[i, j]))
+            # avoid setting size 0 or negative # TODO adding logging warning
+            if sl_siz_x < 1:
+                sl_siz_x = 1
+            if sl_siz_y < 1:
+                sl_siz_y = 1
             # prob of on/off & location
             prob_1 = pred_on[i, j] * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y]
             # softmax: compute joint probability of taking the max value
