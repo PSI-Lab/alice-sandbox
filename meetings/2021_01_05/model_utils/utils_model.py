@@ -23,7 +23,7 @@ class SimpleConvNet(nn.Module):
         cnn_layers = []
         for i, (nf, fw) in enumerate(zip(num_filters[1:], filter_width[1:])):
             assert fw % 2 == 1  # odd
-            cnn_layers.append(nn.Conv2d(num_filters[i], nf, kernel_size=fw, stride=1, padding=fw//2))
+            cnn_layers.append(nn.Conv2d(num_filters[i], nf, kernel_size=fw, stride=1, padding=fw // 2))
             cnn_layers.append(nn.BatchNorm2d(nf))
             cnn_layers.append(nn.ReLU(inplace=True))
             if dropout > 0:
@@ -31,8 +31,11 @@ class SimpleConvNet(nn.Module):
         self.cnn_layers = nn.Sequential(*cnn_layers)
 
         # self.fc = nn.Conv2d(num_filters[-1], 5, kernel_size=1)
-        self.fc = nn.Conv2d(num_filters[-1], 50, kernel_size=1)
-        # FIXME add relu!
+        # self.fc = nn.Conv2d(num_filters[-1], 50, kernel_size=1)
+        self.fc = nn.Sequential(
+            nn.Conv2d(num_filters[-1], 50, kernel_size=1),
+            nn.ReLU(),
+        )
 
         # add output specific hidden layers
 
@@ -55,11 +58,22 @@ class SimpleConvNet(nn.Module):
             nn.Conv2d(20, 12, kernel_size=1),
             nn.LogSoftmax(dim=1),
         )
-        self.out_stem_siz = nn.Sequential(
+        # self.out_stem_siz = nn.Sequential(
+        #     nn.Conv2d(50, 20, kernel_size=1),
+        #     nn.ReLU(),
+        #     nn.Conv2d(20, 11, kernel_size=1),
+        #     nn.LogSoftmax(dim=1),
+        # )
+        self.hid_stem_siz = nn.Sequential(
             nn.Conv2d(50, 20, kernel_size=1),
             nn.ReLU(),
+        )
+        self.out_stem_sm_siz = nn.Sequential(
             nn.Conv2d(20, 11, kernel_size=1),
             nn.LogSoftmax(dim=1),
+        )
+        self.out_stem_sl_siz = nn.Sequential(
+            nn.Conv2d(20, 1, kernel_size=1),
         )
 
         # iloop
@@ -81,17 +95,40 @@ class SimpleConvNet(nn.Module):
             nn.Conv2d(20, 12, kernel_size=1),
             nn.LogSoftmax(dim=1),
         )
-        self.out_iloop_siz_x = nn.Sequential(
+        # self.out_iloop_siz_x = nn.Sequential(
+        #     nn.Conv2d(50, 20, kernel_size=1),
+        #     nn.ReLU(),
+        #     nn.Conv2d(20, 11, kernel_size=1),
+        #     nn.LogSoftmax(dim=1),
+        # )
+        self.hid_iloop_siz_x = nn.Sequential(
             nn.Conv2d(50, 20, kernel_size=1),
             nn.ReLU(),
+        )
+        self.out_iloop_sm_siz_x = nn.Sequential(
             nn.Conv2d(20, 11, kernel_size=1),
             nn.LogSoftmax(dim=1),
         )
-        self.out_iloop_siz_y = nn.Sequential(
+        self.out_iloop_sl_siz_x = nn.Sequential(
+            nn.Conv2d(20, 1, kernel_size=1),
+        )
+
+        # self.out_iloop_siz_y = nn.Sequential(
+        #     nn.Conv2d(50, 20, kernel_size=1),
+        #     nn.ReLU(),
+        #     nn.Conv2d(20, 11, kernel_size=1),
+        #     nn.LogSoftmax(dim=1),
+        # )
+        self.hid_iloop_siz_y = nn.Sequential(
             nn.Conv2d(50, 20, kernel_size=1),
             nn.ReLU(),
+        )
+        self.out_iloop_sm_siz_y = nn.Sequential(
             nn.Conv2d(20, 11, kernel_size=1),
             nn.LogSoftmax(dim=1),
+        )
+        self.out_iloop_sl_siz_y = nn.Sequential(
+            nn.Conv2d(20, 1, kernel_size=1),
         )
 
         # hloop
@@ -113,11 +150,22 @@ class SimpleConvNet(nn.Module):
             nn.Conv2d(20, 12, kernel_size=1),
             nn.LogSoftmax(dim=1),
         )
-        self.out_hloop_siz = nn.Sequential(
+        # self.out_hloop_siz = nn.Sequential(
+        #     nn.Conv2d(50, 20, kernel_size=1),
+        #     nn.ReLU(),
+        #     nn.Conv2d(20, 11, kernel_size=1),
+        #     nn.LogSoftmax(dim=1),
+        # )
+        self.hid_hloop_siz = nn.Sequential(
             nn.Conv2d(50, 20, kernel_size=1),
             nn.ReLU(),
+        )
+        self.out_hloop_sm_siz = nn.Sequential(
             nn.Conv2d(20, 11, kernel_size=1),
             nn.LogSoftmax(dim=1),
+        )
+        self.out_hloop_sl_siz = nn.Sequential(
+            nn.Conv2d(20, 1, kernel_size=1),
         )
 
     # Defining the forward pass
@@ -129,20 +177,32 @@ class SimpleConvNet(nn.Module):
         y_stem_on = self.out_stem_on(x)
         y_stem_loc_x = self.out_stem_loc_x(x)
         y_stem_loc_y = self.out_stem_loc_y(x)
-        y_stem_siz = self.out_stem_siz(x)
+        # y_stem_siz = self.out_stem_siz(x)
+        hid_stem_siz = self.hid_stem_siz(x)
+        y_stem_sm_siz = self.out_stem_sm_siz(hid_stem_siz)
+        y_stem_sl_siz = self.out_stem_sl_siz(hid_stem_siz)
 
         # iloop
         y_iloop_on = self.out_iloop_on(x)
         y_iloop_loc_x = self.out_iloop_loc_x(x)
         y_iloop_loc_y = self.out_iloop_loc_y(x)
-        y_iloop_siz_x = self.out_iloop_siz_x(x)
-        y_iloop_siz_y = self.out_iloop_siz_y(x)
+        # y_iloop_siz_x = self.out_iloop_siz_x(x)
+        # y_iloop_siz_y = self.out_iloop_siz_y(x)
+        hid_iloop_siz_x = self.hid_iloop_siz_x(x)
+        y_iloop_sm_siz_x = self.out_iloop_sm_siz_x(hid_iloop_siz_x)
+        y_iloop_sl_siz_x = self.out_iloop_sl_siz_x(hid_iloop_siz_x)
+        hid_iloop_siz_y = self.hid_iloop_siz_y(x)
+        y_iloop_sm_siz_y = self.out_iloop_sm_siz_y(hid_iloop_siz_y)
+        y_iloop_sl_siz_y = self.out_iloop_sl_siz_y(hid_iloop_siz_y)
 
         # hloop
         y_hloop_on = self.out_hloop_on(x)
         y_hloop_loc_x = self.out_hloop_loc_x(x)
         y_hloop_loc_y = self.out_hloop_loc_y(x)
-        y_hloop_siz = self.out_hloop_siz(x)
+        # y_hloop_siz = self.out_hloop_siz(x)
+        hid_hloop_siz = self.hid_hloop_siz(x)
+        y_hloop_sm_siz = self.out_hloop_sm_siz(hid_hloop_siz)
+        y_hloop_sl_siz = self.out_hloop_sl_siz(hid_hloop_siz)
 
         # collect
         y = {
@@ -150,20 +210,28 @@ class SimpleConvNet(nn.Module):
             'stem_on': y_stem_on,
             'stem_location_x': y_stem_loc_x,
             'stem_location_y': y_stem_loc_y,
-            'stem_size': y_stem_siz,
+            # 'stem_size': y_stem_siz,
+            'stem_sm_size': y_stem_sm_siz,
+            'stem_sl_size': y_stem_sl_siz,
 
             # iloop
             'iloop_on': y_iloop_on,
             'iloop_location_x': y_iloop_loc_x,
             'iloop_location_y': y_iloop_loc_y,
-            'iloop_size_x': y_iloop_siz_x,
-            'iloop_size_y': y_iloop_siz_y,
+            # 'iloop_size_x': y_iloop_siz_x,
+            # 'iloop_size_y': y_iloop_siz_y,
+            'iloop_sm_size_x': y_iloop_sm_siz_x,
+            'iloop_sl_size_x': y_iloop_sl_siz_x,
+            'iloop_sm_size_y': y_iloop_sm_siz_y,
+            'iloop_sl_size_y': y_iloop_sl_siz_y,
 
             # hloop
             'hloop_on': y_hloop_on,
             'hloop_location_x': y_hloop_loc_x,
             'hloop_location_y': y_hloop_loc_y,
-            'hloop_size': y_hloop_siz,
+            # 'hloop_size': y_hloop_siz,
+            'hloop_sm_size': y_hloop_sm_siz,
+            'hloop_sl_size': y_hloop_sl_siz,
         }
 
         return y
@@ -323,11 +391,15 @@ class DataEncoder(object):
 
 class Predictor(object):
     model_versions = {
+        # FIXME old model won't be compatible (missing real valued target), remove these 2
         # trained on random sequence, ep6
         'v0.1': 'UGGg0e',
         # trained on random sequence, after fixing y_loop target value bug, ep10,
         # produced by: https://github.com/PSI-Lab/alice-sandbox/tree/35b592ffe99d31325ff23a14269cd59fec9d4b53/meetings/2020_11_10#debug-stage-1-training
         'v0.2': 'ZnUH0A',
+        # train on random sequence, after adding in scalar target for bb size, ep?
+        # produced by: https://github.com/PSI-Lab/alice-sandbox/tree/f8df78da280b2a3ba16960a6226afaef2facd734/meetings/2021_01_05#s1-training
+        # TODO DC ID
     }
 
     def __init__(self, model_ckpt, num_filters=None, filter_width=None, dropout=None):
