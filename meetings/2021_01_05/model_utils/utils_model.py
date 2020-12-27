@@ -529,9 +529,13 @@ class Predictor(object):
         pred_sm_siz_x = np.squeeze(pred_sm_siz_x)
         if pred_sm_siz_y is None:
             pred_sm_siz_y = np.copy(pred_sm_siz_x)
+        else:
+            pred_sm_siz_y = np.squeeze(pred_sm_siz_y)
         pred_sl_siz_x = np.squeeze(pred_sl_siz_x)
         if pred_sl_siz_y is None:
             pred_sl_siz_y = np.copy(pred_sl_siz_x)
+        else:
+            pred_sl_siz_y = np.squeeze(pred_sl_siz_y)
         # TODO assert on input shape
 
         # hard-mask
