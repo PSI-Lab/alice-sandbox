@@ -392,15 +392,16 @@ class DataEncoder(object):
 
 class Predictor(object):
     model_versions = {
-        # FIXME old model won't be compatible (missing real valued target), remove these 2
-        # trained on random sequence, ep6
-        'v0.1': 'UGGg0e',
-        # trained on random sequence, after fixing y_loop target value bug, ep10,
-        # produced by: https://github.com/PSI-Lab/alice-sandbox/tree/35b592ffe99d31325ff23a14269cd59fec9d4b53/meetings/2020_11_10#debug-stage-1-training
-        'v0.2': 'ZnUH0A',
-        # train on random sequence, after adding in scalar target for bb size, ep?
+        # # deprecated ones #
+        # # trained on random sequence, ep6
+        # 'v0.1': 'UGGg0e',
+        # # trained on random sequence, after fixing y_loop target value bug, ep10,
+        # # produced by: https://github.com/PSI-Lab/alice-sandbox/tree/35b592ffe99d31325ff23a14269cd59fec9d4b53/meetings/2020_11_10#debug-stage-1-training
+        # 'v0.2': 'ZnUH0A',
+
+        # train on random sequence, after adding in scalar target for bb size, ep 11
         # produced by: https://github.com/PSI-Lab/alice-sandbox/tree/f8df78da280b2a3ba16960a6226afaef2facd734/meetings/2021_01_05#s1-training
-        # TODO DC ID
+        'v1.0': 'KOE6Jb',
     }
 
     def __init__(self, model_ckpt, num_filters=None, filter_width=None, dropout=None):
@@ -449,68 +450,6 @@ class Predictor(object):
             if bb_x == y0 and bb_y == x1:
                 bbs_new.append(bb)
         return bbs_new
-
-    # @staticmethod
-    # def predict_bounidng_box(pred_on, pred_loc_x, pred_loc_y, pred_siz_x, pred_siz_y, thres=0.5):
-    #
-    #     def _make_mask(l):
-    #         m = np.ones((l, l))
-    #         m[np.tril_indices(l)] = 0
-    #         return m
-    #
-    #     # remove singleton dimensions
-    #     pred_on = np.squeeze(pred_on)
-    #     pred_loc_x = np.squeeze(pred_loc_x)
-    #     pred_loc_y = np.squeeze(pred_loc_y)
-    #     pred_siz_x = np.squeeze(pred_siz_x)
-    #     if pred_siz_y is None:
-    #         pred_siz_y = np.copy(pred_siz_x)
-    #     # TODO assert on input shape
-    #
-    #     # hard-mask
-    #     m = _make_mask(pred_on.shape[1])
-    #     # apply mask (for pred, only apply to pred_on since our processing starts from that array)
-    #     pred_on = pred_on * m
-    #     # binary array with all 0's, we'll set the predicted bounding box region to 1
-    #     # this will be used to calculate 'sensitivity'
-    #     pred_box = np.zeros_like(pred_on)
-    #     # also save box locations and probabilities
-    #     proposed_boxes = []
-    #
-    #     for i, j in np.transpose(np.where(pred_on > thres)):
-    #         loc_x = np.argmax(pred_loc_x[:, i, j])
-    #         loc_y = np.argmax(pred_loc_y[:, i, j])
-    #         siz_x = np.argmax(pred_siz_x[:, i, j]) + 1  # size starts at 1 for index=0
-    #         siz_y = np.argmax(pred_siz_y[:, i, j]) + 1
-    #         # compute joint probability of taking the max value
-    #         prob = pred_on[i, j] * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y] * \
-    #                softmax(pred_siz_x[:, i, j])[siz_x - 1] * softmax(pred_siz_y[:, i, j])[
-    #                    siz_y - 1]  # FIXME multiplying twice for case where y is set to x
-    #         # top right corner
-    #         bb_x = i - loc_x
-    #         bb_y = j + loc_y
-    #         # save box
-    #         proposed_boxes.append({
-    #             'bb_x': bb_x,
-    #             'bb_y': bb_y,
-    #             'siz_x': siz_x,
-    #             'siz_y': siz_y,
-    #             'prob': prob,  # TODO shall we store 4 probabilities separately?
-    #         })
-    #         # set value in pred box, be careful with out of bound index
-    #         x0 = bb_x
-    #         y0 = bb_y - siz_y + 1  # 0-based
-    #         wx = siz_x
-    #         wy = siz_y
-    #         ix0 = max(0, x0)
-    #         iy0 = max(0, y0)
-    #         ix1 = min(x0 + wx, pred_box.shape[0])
-    #         iy1 = min(y0 + wy, pred_box.shape[1])
-    #         pred_box[ix0:ix1, iy0:iy1] = 1
-    #
-    #     # apply hard-mask to pred box
-    #     pred_box = pred_box * m
-    #     return proposed_boxes, pred_box
 
     @staticmethod
     def predict_bounidng_box(pred_on, pred_loc_x, pred_loc_y,
