@@ -592,25 +592,25 @@ class Predictor(object):
             iy1 = min(y0 + wy, pred_box.shape[1])
             pred_box[ix0:ix1, iy0:iy1] = 1
 
-            # if sl predicted size is different, save another box
-            if sl_siz_x != sm_siz_x or sl_siz_y != sm_siz_y:
-                proposed_boxes.append({
-                    'bb_x': bb_x,
-                    'bb_y': bb_y,
-                    'siz_x': sl_siz_x,
-                    'siz_y': sl_siz_y,
-                    'prob': prob_sl,  # TODO pending
-                })
-                # set value in pred box, be careful with out of bound index
-                x0 = bb_x
-                y0 = bb_y - sl_siz_y + 1  # 0-based
-                wx = sl_siz_x
-                wy = sl_siz_y
-                ix0 = max(0, x0)
-                iy0 = max(0, y0)
-                ix1 = min(x0 + wx, pred_box.shape[0])
-                iy1 = min(y0 + wy, pred_box.shape[1])
-                pred_box[ix0:ix1, iy0:iy1] = 1
+            # save sl box (it's ok if sl box is identical with sm box, since probabilities will be aggregated in the end)
+            # if sl_siz_x != sm_siz_x or sl_siz_y != sm_siz_y:
+            proposed_boxes.append({
+                'bb_x': bb_x,
+                'bb_y': bb_y,
+                'siz_x': sl_siz_x,
+                'siz_y': sl_siz_y,
+                'prob': prob_sl,  # TODO pending
+            })
+            # set value in pred box, be careful with out of bound index
+            x0 = bb_x
+            y0 = bb_y - sl_siz_y + 1  # 0-based
+            wx = sl_siz_x
+            wy = sl_siz_y
+            ix0 = max(0, x0)
+            iy0 = max(0, y0)
+            ix1 = min(x0 + wx, pred_box.shape[0])
+            iy1 = min(y0 + wy, pred_box.shape[1])
+            pred_box[ix0:ix1, iy0:iy1] = 1
 
         # apply hard-mask to pred box
         pred_box = pred_box * m
