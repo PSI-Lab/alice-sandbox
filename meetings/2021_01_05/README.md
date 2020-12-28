@@ -1,6 +1,18 @@
 
 ## Datasets
 
+`6PvUty`: rnastralign?
+
+`903rfx`: rfam151?
+
+`a16nRG`: s_processed?
+
+`xs5Soq`: synthetic?
+
+`ZQi8RT`: synthetic? with prediction?
+
+
+
 Sources:
 
 - S1 training data, synthetic sequences: `ZQi8RT`
@@ -27,25 +39,19 @@ Copied from `../../rna_ss/` as [rna_ss_utils/](rna_ss_utils/).
 
 - Added real valued bb size output, to enable predicting bb with size > 10. Code update: data processing `make_target_pixel_bb`,
 training `s1_training/train_simple_conv_net_pixel_bb_all_targets.py`.
-and inference `todo`.
 
 - Added missing Relu for 1st layer FC.
 
 
 - No scaling down on MSE loss (to match dynamic range) since it's quite straight forward for the optimizer (from empirical observation).
 
-- Update plot training progress code:
+- Update plot training progress code: `model_utils/plot_training.py`, to include metric on scalar valued target.
+
 
 See [s1_training/](s1_training/).
 
 
 Run inside [s1_training/](s1_training/):
-
-debug:
-
-```
-python train_simple_conv_net_pixel_bb_all_targets.py --data ZQi8RT --result result/debug --num_filters 16 16 --filter_width 9 9 --epoch 2 --mask 0.1 --batch_size 10 --max_length 40 --cpu 1
-```
 
 
 Training (todo update output dir, hyperparam?):
@@ -63,15 +69,75 @@ python model_utils/plot_training.py --in_log s1_training/result/with_scalar_size
 
 TODO upload trained model.
 
-upstream:
+```
+# train on random sequence, after adding in scalar target for bb size, ep 11
+# produced by: https://github.com/PSI-Lab/alice-sandbox/tree/f8df78da280b2a3ba16960a6226afaef2facd734/meetings/2021_01_05#s1-training
+'v1.0': 'KOE6Jb',
+```
 
-downstream:
+
+### S1 inference
+
+- update model def `SimpleConvNet` to match training code
+
+- Update inference code to use scalar valued bb size prediction, in addition to softmax.
+
+- How to get joint prob (needed for S2) of bb? set to 1 (might bias S2)? use local Gaussian approximation since we need to round (how to set the std?)?
+For now, we assume the predictive distribution is Gaussian with mean y0 and std 1, the predicted size is y (y0 rounded to int),
+and we use the ratio: `pdf(y)/pdf(y0)`, which in the standardized form of Gaussian(0, 1): `norm.pdf(y-y0)/norm.pdf(0)`
+
+
+- scalar output: avoid setting size 0 or negative, set those to 1: `x[x < 1] = 1`
+
+- Added new version of trained S1 model `'v1.0': 'KOE6Jb'`
+
+- Run inference pipeline to produce dataset for S2 training:
+
+Synthetic:
+
+debug:
+
+```
+python model_utils/run_stage_1.py --data "`dcl path ZQi8RT`" --num 10 --threshold 0.1 --model v1.0 --out_file tmp/s1_pred.pkl.gz
+```
+
+```
+xxx
+```
+
+
+- Add some doc
+
+
+- run on multiple datasets: synthetic, rfam, etc.
+
+
+- interface for predicting RNA-RNA interaction w/ different lengths
+
+### S1 evaluation
+
+bounding box metric
+
+pixel metric
+
+focus on sensitivity
+
+any improvement after adding in scalar output?
 
 ### S2 training
+
+update: n_proposed_normalized: denominator * 2 since each pixel can predict the same bb twice now (softmax and scalar size)
 
 Copied from TODO
 
 TODO run S1 model
+
+encoding: shall we distinguish bb predict by softmax or scalar? no?
+
+synthetic: add in missing bb
+
+training on rfam? add in missing bb?
+
 
 TODO re-train using more bb's from S1
 

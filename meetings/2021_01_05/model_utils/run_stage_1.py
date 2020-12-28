@@ -3,11 +3,11 @@ Predict all unique bounding boxes at a given threshold.
 Store bounding box location and probabiliti(es).
 """
 import argparse
-import torch
+# import torch
 from time import time
 from utils_model import Predictor, Evaluator
-import datacorral as dc
-import dgutils.pandas as dgp
+# import datacorral as dc
+# import dgutils.pandas as dgp
 import pandas as pd
 
 
