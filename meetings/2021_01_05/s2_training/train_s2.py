@@ -211,7 +211,7 @@ def make_dataset(df):
                 else:
                     label = 0
                 # 100 for stem
-                _x.append([1, 0, 0, x['bb_x'], x['bb_y'], x['siz_x'], x['siz_y'], np.median(x['prob']), len(x['prob'])/(x['siz_x']*x['siz_y'])])
+                _x.append([1, 0, 0, x['bb_x'], x['bb_y'], x['siz_x'], x['siz_y'], np.median(x['prob']), len(x['prob'])/(2*x['siz_x']*x['siz_y'])])
                 _y.append(label)
         if row['bb_iloop'] is not None:
             for x in row['bb_iloop']:
@@ -220,7 +220,7 @@ def make_dataset(df):
                 else:
                     label = 0
                 # 010 for iloop
-                _x.append([0, 1, 0, x['bb_x'], x['bb_y'], x['siz_x'], x['siz_y'], np.median(x['prob']), len(x['prob'])/(x['siz_x']*x['siz_y'])])
+                _x.append([0, 1, 0, x['bb_x'], x['bb_y'], x['siz_x'], x['siz_y'], np.median(x['prob']), len(x['prob'])/(2*x['siz_x']*x['siz_y'])])
                 _y.append(label)
         if row['bb_hloop'] is not None:
             for x in row['bb_hloop']:
@@ -229,7 +229,7 @@ def make_dataset(df):
                 else:
                     label = 0
                 # 001 for hloop, also multiple normalized n_proposal by 2 to make upper limit 1
-                _x.append([0, 0, 1, x['bb_x'], x['bb_y'], x['siz_x'], x['siz_y'], np.median(x['prob']), 2*len(x['prob'])/(x['siz_x']*x['siz_y'])])
+                _x.append([0, 0, 1, x['bb_x'], x['bb_y'], x['siz_x'], x['siz_y'], np.median(x['prob']), len(x['prob'])/(x['siz_x']*x['siz_y'])])
                 _y.append(label)
         x_all.append(np.array(_x))
         y_all.append(np.array(_y))
