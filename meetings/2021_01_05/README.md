@@ -11,7 +11,7 @@
 
 `ZQi8RT`: synthetic? with prediction?
 
-
+bpRNA?
 
 Sources:
 
@@ -47,6 +47,7 @@ training `s1_training/train_simple_conv_net_pixel_bb_all_targets.py`.
 
 - Update plot training progress code: `model_utils/plot_training.py`, to include metric on scalar valued target.
 
+- TODO check in training env.yml
 
 See [s1_training/](s1_training/).
 
@@ -76,6 +77,7 @@ TODO upload trained model.
 ```
 
 
+
 ### S1 inference
 
 - update model def `SimpleConvNet` to match training code
@@ -95,15 +97,33 @@ and we use the ratio: `pdf(y)/pdf(y0)`, which in the standardized form of Gaussi
 
 Synthetic:
 
-debug:
-
 ```
-python model_utils/run_stage_1.py --data "`dcl path ZQi8RT`" --num 10 --threshold 0.1 --model v1.0 --out_file tmp/s1_pred.pkl.gz
+python model_utils/run_stage_1.py --data "`dcl path ZQi8RT`" --num 0 --threshold 0.1 --model v1.0 --out_file data/synthetic_s1_pred.pkl.gz
 ```
 
+
+sample 50000 for debug training:
+
 ```
-xxx
+python model_utils/run_stage_1.py --data "`dcl path ZQi8RT`" --num 50000 --threshold 0.1 --model v1.0 --out_file data/synthetic_s1_pred_50000.pkl.gz
 ```
+
+rnastralign (TODO debug pandas df load):
+
+```
+python model_utils/run_stage_1.py --data "`dcl path 6PvUty`" --num 0 --threshold 0.1 --model v1.0 --out_file data/rnastralign_s1_pred.pkl.gz
+```
+
+
+
+
+Rfam (TODO debug pandas df load):
+
+
+```
+python model_utils/run_stage_1.py --data "`dcl path 903rfx`" --num 0 --threshold 0.1 --model v1.0 --out_file data/rfam_s1_pred.pkl.gz
+```
+
 
 
 - Add some doc
@@ -116,6 +136,15 @@ xxx
 
 ### S1 evaluation
 
+
+on synthetic dataset:
+
+
+```
+python model_utils/eval_model_dataset.py --data "`dcl path xs5Soq`" --num 200 --maxl 200 --model v1.0 --out_csv result/synthetic_s1_debug.csv --out_plot result/synthetic_s1_debug.html
+```
+
+
 bounding box metric
 
 pixel metric
@@ -124,7 +153,32 @@ focus on sensitivity
 
 any improvement after adding in scalar output?
 
+
 ### S2 training
+
+#### Prune S1 predicted bounding boxes for S2 training
+
+synthetic:
+
+```
+python model_utils/prune_stage_1.py --in_file data/synthetic_s1_pred.pkl.gz --out_file data/synthetic_s1_pruned.pkl.gz --min_pixel_pred 3 --min_prob 0.5 --min_hloop_size 2 --discard_ns_stem 2>&1 | tee data/log_synthetic_s1_pruned.txt
+```
+
+debug
+
+```
+python model_utils/prune_stage_1.py --in_file data/synthetic_s1_pred_50000.pkl.gz --out_file data/synthetic_s1_50000_pruned.pkl.gz --min_pixel_pred 3 --min_prob 0.5 --min_hloop_size 2 --discard_ns_stem 2>&1 | tee data/log_synthetic_s1_50000_pruned.txt
+```
+
+
+#### Feature generation + training
+
+In [s2_training/](s2_training/):
+
+```
+python train_s2.py --in_file data/synthetic_s1_50000_pruned.pkl.gz --config config.yml --out_dir result/debug/
+```
+
 
 update: n_proposed_normalized: denominator * 2 since each pixel can predict the same bb twice now (softmax and scalar size)
 
