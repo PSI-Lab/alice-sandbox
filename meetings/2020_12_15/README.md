@@ -12,9 +12,29 @@ CUDA_VISIBLE_DEVICES=1 python train_s2.py --in_file data/synthetic_s1_pruned.pkl
 
 ### Inference pipeline
 
-Still WIP
+Updated implementation with recursion
 
-See tmp.ipynb and notes in https://docs.google.com/document/d/1e0hXewO-g-4MtqHbd0mOCOMCCr7TgF4c3wT_ST9vFws/edit
+See tmp.ipynb and notes in https://docs.google.com/document/d/1w-n4R-LDwTXkSku_lOuPedNQerMMrKz0PsZfrVufGSw/edit
+
+
+TODO add into model_utils/
+
+TODO pred threshold cutoff? (termination condition)
+
+### Pre-processing improvement
+
+- prune out of bound bb
+
+
+### Test on synthetic dataset
+
+Copy over dataset (after S1 prediction):
+
+```
+scp alice@alice-new.dg:/home/alice/work/psi-lab-sandbox/meetings/2020_11_24/data/synthetic_s1_pruned.pkl.gz data/.
+```
+
+
 
 
 ### Batch mode
@@ -48,6 +68,10 @@ See tmp.ipynb and notes in https://docs.google.com/document/d/1e0hXewO-g-4MtqHbd
 
 
 ## TODOs
+
+- dataset: '../2020_11_24/data/rfam151_s1_pruned.pkl.gz'  'data/synthetic_s1_pruned.pkl.gz'
+
+- inference pipeline: deal with cases where some types of bb are empty
 
 - inference pipeline debug + improvement: n_proposal_norm > 1, implementation using queue, terminate condition
 
