@@ -4,6 +4,7 @@ import logging
 import subprocess
 import yaml
 import tqdm
+import random
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -179,6 +180,25 @@ def find_match_bb(bb, df_target, bb_type):
     else:
         return False
 
+
+def bb_augmentation_shift(x, offset):
+    # transform bb features to mimic the effect of shifting all bounding boxes by the same (small) offset
+    # we make sure that the resulting new features do not contain negative indices
+    # input encoding is as in 'make_dataset': bb_type, x, y, wx, wy, median_prob, n_proposal_normalized
+
+    # first check that offset won't result in negative location, if so, cap it
+    assert len(x.shape) == 2
+    assert x.shape[1] == 7
+    loc_min = min(np.min(x[:, 1]), np.min(x[:, 2]))
+    if offset < 0 and loc_min < np.abs(offset):
+        offset = - loc_min
+    
+    # apply offset
+    x[:, 1] += offset
+    x[:, 2] += offset
+    
+    return x
+
     
 def make_dataset(df):
      # for the sole purpose of training, subset to example where s2 label can be generated EXACTLY
@@ -296,8 +316,16 @@ def main(in_file, config, out_dir):
     for epoch in range(config['epoch']):
         # parse one example at a time for now FIXME
         for i, (x, y) in enumerate(tqdm.tqdm(zip(x_tr, y_tr))):
-            x = torch.from_numpy(x[np.newaxis, :, :]).float()
-            y = torch.from_numpy(y[np.newaxis, :]).float()
+            x_np = x[np.newaxis, :, :]
+            y_np = y[np.newaxis, :]
+
+            # data augmentation
+            if config['bb_augmentation_shift']:
+                x_np = bb_augmentation_shift(x_np, random.choice[config['bb_shift']])
+
+            # convert to torch tensor
+            x = torch.from_numpy(x_np).float()
+            y = torch.from_numpy(y_np).float()
 
             preds = model(x, mask=None)  # no masking since parsing one example at a time for now
 

@@ -5,3 +5,18 @@ n_heads: 5
 n_hid: 20
 lr: 0.0001
 epoch: 50
+
+
+# data_augmentation
+bb_augmentation_shift: True
+bb_shift:  # global shift for all bounding boxes, both directions. e.g. bb_x=3, bb_y=5 -> bb_x=4, bb_y=6
+  - -3
+  - -2
+  - -1
+  - 0
+  - 1
+  - 2
+  - 3
+
+
+
