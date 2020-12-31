@@ -188,7 +188,7 @@ def bb_augmentation_shift(x, offset):
 
     # first check that offset won't result in negative location, if so, cap it
     assert len(x.shape) == 2
-    assert x.shape[1] == 7
+    assert x.shape[1] == 9
     loc_min = min(np.min(x[:, 1]), np.min(x[:, 2]))
     if offset < 0 and loc_min < np.abs(offset):
         offset = - loc_min
