@@ -291,14 +291,17 @@ def main(in_file, config, out_dir):
    
     optim = torch.optim.Adam(model.parameters(), lr=config['lr'], betas=(0.9, 0.98), eps=1e-9)
     
-    # dataset
-    # hacky - using s2 dataset since this one has the bb sensitivity (s1 datset does not, too lazy to recompute)
-    # use rfam for debug - will replace wtih bigger dataset (synthetic)
-    logging.info("Loading {}".format(in_file))
-    df = pd.read_pickle(in_file)
-    logging.info("Loaded {} examples. Making dataset...".format(len(df)))
-    x_all, y_all = make_dataset(df)
-    assert len(x_all) == len(y_all)
+    # # dataset
+    # # hacky - using s2 dataset since this one has the bb sensitivity (s1 datset does not, too lazy to recompute)
+    # # use rfam for debug - will replace wtih bigger dataset (synthetic)
+    # logging.info("Loading {}".format(in_file))
+    # df = pd.read_pickle(in_file)
+    # logging.info("Loaded {} examples. Making dataset...".format(len(df)))
+    # x_all, y_all = make_dataset(df)
+    # assert len(x_all) == len(y_all)
+    dataset = np.load(in_file)
+    x_all = dataset['x']
+    y_all = dataset['y']
     
     # train/validation split
     logging.info("Spliting into training and validation")
@@ -316,12 +319,13 @@ def main(in_file, config, out_dir):
     for epoch in range(config['epoch']):
         # parse one example at a time for now FIXME
         for i, (x, y) in enumerate(tqdm.tqdm(zip(x_tr, y_tr))):
-            x_np = x[np.newaxis, :, :]
-            y_np = y[np.newaxis, :]
 
             # data augmentation
             if config['bb_augmentation_shift']:
-                x_np = bb_augmentation_shift(x_np, random.choice(config['bb_shift']))
+                x_np = bb_augmentation_shift(x, random.choice(config['bb_shift']))[np.newaxis, :, :]
+            else:
+                x_np = x[np.newaxis, :, :]
+            y_np = y[np.newaxis, :]
 
             # convert to torch tensor
             x = torch.from_numpy(x_np).float()
@@ -371,7 +375,7 @@ def main(in_file, config, out_dir):
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--in_file', type=str, help='Path to input file, should be output from stage 1 with pruning (prune_stage_1.py)')
+    parser.add_argument('--in_file', type=str, help='Path to input .npz file, should be output from stage 1 with pruning (prune_stage_1.py) then processed by make_dataset.py')
     parser.add_argument('--config', type=str, help='path to config file')
     parser.add_argument('--out_dir', type=str, help='output dir for saving model checkpoint')
     

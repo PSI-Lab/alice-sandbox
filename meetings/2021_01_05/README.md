@@ -188,31 +188,41 @@ synthetic:
 In [s2_training/](s2_training/):
 
 ```
-python make_dataset.py --in_file ../data/synthetic_s1_pruned.pkl.gz  --out_file ../data/synthetic_s2_features.pkl.gz
+python make_dataset.py --in_file ../data/synthetic_s1_pruned.pkl.gz  --out_file ../data/synthetic_s2_features.npz
 ```
 
 ####  training
 
 In [s2_training/](s2_training/):
 
+
+<!--```-->
+<!--CUDA_VISIBLE_DEVICES=0 python train_s2.py --in_file ../data/synthetic_s1_pruned.pkl.gz --config config.yml --out_dir result/synthetic/ 2>&1 | tee result/synthetic/log.txt-->
+
+<!--```-->
+
+<!--debug-->
+
+
+<!--```-->
+<!--CUDA_VISIBLE_DEVICES=0 python train_s2.py --in_file ../data/synthetic_s1_50000_pruned.pkl.gz --config config.yml --out_dir result/debug/ 2>&1 | tee result/debug/log.txt-->
+<!--```-->
+
+
 synthetic:
 
 ```
-CUDA_VISIBLE_DEVICES=0 python train_s2.py --in_file ../data/synthetic_s1_pruned.pkl.gz --config config.yml --out_dir result/synthetic/ 2>&1 | tee result/synthetic/log.txt
+CUDA_VISIBLE_DEVICES=0 python train_s2.py --in_file ../data/synthetic_s2_features.npz --config config.yml --out_dir result/synthetic/ 2>&1 | tee result/synthetic/log.txt
 
-```
-
-debug
-
-
-```
-CUDA_VISIBLE_DEVICES=0 python train_s2.py --in_file ../data/synthetic_s1_50000_pruned.pkl.gz --config config.yml --out_dir result/debug/ 2>&1 | tee result/debug/log.txt
 ```
 
 
 update: n_proposed_normalized: denominator * 2 since each pixel can predict the same bb twice now (softmax and scalar size)
 
 Copied from TODO
+
+TODO re-run S1 model s.t. each pixel predict multiple bbs,
+instead of taking argmax of all softmax, sample a few and take the highest k joint probability
 
 TODO run S1 model
 
