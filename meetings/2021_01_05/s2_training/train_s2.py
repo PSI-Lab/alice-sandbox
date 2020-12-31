@@ -299,7 +299,7 @@ def main(in_file, config, out_dir):
     # logging.info("Loaded {} examples. Making dataset...".format(len(df)))
     # x_all, y_all = make_dataset(df)
     # assert len(x_all) == len(y_all)
-    dataset = np.load(in_file)
+    dataset = np.load(in_file, allow_pickle=True)
     x_all = dataset['x']
     y_all = dataset['y']
     
