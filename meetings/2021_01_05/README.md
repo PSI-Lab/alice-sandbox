@@ -61,6 +61,7 @@ Training (todo update output dir, hyperparam?):
 CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net_pixel_bb_all_targets.py --data ZQi8RT --result result/with_scalar_size --num_filters 32 32 64 64 64 128 128 --filter_width 9 9 9 9 9 9 9 --epoch 50 --mask 0.1 --batch_size 40 --max_length 200 --cpu 12
 ```
 
+(observed slight overfitting, killed at ep 35)
 
 plot training progress:
 
@@ -108,7 +109,7 @@ sample 50000 for debug training:
 python model_utils/run_stage_1.py --data "`dcl path ZQi8RT`" --num 50000 --threshold 0.1 --model v1.0 --out_file data/synthetic_s1_pred_50000.pkl.gz
 ```
 
-rnastralign (TODO debug pandas df load):
+rnastralign (TODO):
 
 ```
 python model_utils/run_stage_1.py --data "`dcl path 6PvUty`" --num 0 --threshold 0.1 --model v1.0 --out_file data/rnastralign_s1_pred.pkl.gz
@@ -117,7 +118,7 @@ python model_utils/run_stage_1.py --data "`dcl path 6PvUty`" --num 0 --threshold
 
 
 
-Rfam (TODO debug pandas df load):
+Rfam (TODO long se OOO on Linux? need more efficient inference pipeline):
 
 
 ```
@@ -126,7 +127,14 @@ python model_utils/run_stage_1.py --data "`dcl path 903rfx`" --num 0 --threshold
 
 
 
-- Add some doc
+#### Using the model
+
+
+```
+from model_utils.utils_model import Predictor
+predictor = Predictor('v1.0')
+predictor.predict_bb('ACGTGTACGATGCAG', 0.1)
+```
 
 
 - run on multiple datasets: synthetic, rfam, etc.
@@ -147,6 +155,8 @@ python model_utils/eval_model_dataset.py --data "`dcl path xs5Soq`" --num 200 --
 
 bounding box metric
 
+non-100% bb sensitivity: how about shift/expand bb?
+
 pixel metric
 
 focus on sensitivity
@@ -158,10 +168,10 @@ any improvement after adding in scalar output?
 
 #### Prune S1 predicted bounding boxes for S2 training
 
-synthetic:
+synthetic with relaxed thresholds:
 
 ```
-python model_utils/prune_stage_1.py --in_file data/synthetic_s1_pred.pkl.gz --out_file data/synthetic_s1_pruned.pkl.gz --min_pixel_pred 3 --min_prob 0.5 --min_hloop_size 2 --discard_ns_stem 2>&1 | tee data/log_synthetic_s1_pruned.txt
+python model_utils/prune_stage_1.py --in_file data/synthetic_s1_pred.pkl.gz --out_file data/synthetic_s1_pruned.pkl.gz --min_pixel_pred 1 --min_prob 0.1 --min_hloop_size 2 --discard_ns_stem 2>&1 | tee data/log_synthetic_s1_pruned.txt
 ```
 
 debug
@@ -170,13 +180,33 @@ debug
 python model_utils/prune_stage_1.py --in_file data/synthetic_s1_pred_50000.pkl.gz --out_file data/synthetic_s1_50000_pruned.pkl.gz --min_pixel_pred 3 --min_prob 0.5 --min_hloop_size 2 --discard_ns_stem 2>&1 | tee data/log_synthetic_s1_50000_pruned.txt
 ```
 
+#### Feature generation
 
-#### Feature generation + training
+
+synthetic:
 
 In [s2_training/](s2_training/):
 
 ```
-python train_s2.py --in_file data/synthetic_s1_50000_pruned.pkl.gz --config config.yml --out_dir result/debug/
+python make_dataset.py --in_file ../data/synthetic_s1_pruned.pkl.gz  --out_file ../data/synthetic_s2_features.pkl.gz
+```
+
+####  training
+
+In [s2_training/](s2_training/):
+
+synthetic:
+
+```
+CUDA_VISIBLE_DEVICES=0 python train_s2.py --in_file ../data/synthetic_s1_pruned.pkl.gz --config config.yml --out_dir result/synthetic/ 2>&1 | tee result/synthetic/log.txt
+
+```
+
+debug
+
+
+```
+CUDA_VISIBLE_DEVICES=0 python train_s2.py --in_file ../data/synthetic_s1_50000_pruned.pkl.gz --config config.yml --out_dir result/debug/ 2>&1 | tee result/debug/log.txt
 ```
 
 
@@ -185,6 +215,9 @@ update: n_proposed_normalized: denominator * 2 since each pixel can predict the 
 Copied from TODO
 
 TODO run S1 model
+
+TODO data augmentation: add bb location shift (should be invariant to small global shift)
+also, what about large shift? 'empty space'?
 
 encoding: shall we distinguish bb predict by softmax or scalar? no?
 
@@ -240,6 +273,8 @@ TODO bb cutoff?
 
 
 ## TODOs
+
+- S1 inference pipeline for super long sequences: break into chunks and stitch
 
 - dataset: '../2020_11_24/data/rfam151_s1_pruned.pkl.gz'  'data/synthetic_s1_pruned.pkl.gz'
 
