@@ -321,7 +321,7 @@ def main(in_file, config, out_dir):
 
             # data augmentation
             if config['bb_augmentation_shift']:
-                x_np = bb_augmentation_shift(x_np, random.choice[config['bb_shift']])
+                x_np = bb_augmentation_shift(x_np, random.choice(config['bb_shift']))
 
             # convert to torch tensor
             x = torch.from_numpy(x_np).float()
