@@ -318,7 +318,7 @@ def main(in_file, config, out_dir):
     logging.info("Training start")
     for epoch in range(config['epoch']):
         # parse one example at a time for now FIXME
-        for i, (x, y) in enumerate(tqdm.tqdm(zip(x_tr, y_tr))):
+        for i, (x, y) in enumerate(zip(x_tr, y_tr)):
 
             # data augmentation
             if config['bb_augmentation_shift']:
