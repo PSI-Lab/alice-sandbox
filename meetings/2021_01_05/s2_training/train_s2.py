@@ -170,15 +170,6 @@ class MyModel(nn.Module):
             x = x.masked_fill(mask == 0, -1e9)
         
         return self.act2(x)
-    
-    
-# def find_match_bb(bb, df_target, bb_type):
-#     hit = df_target[(df_target['bb_type'] == bb_type) & (df_target['bb_x'] == bb['bb_x']) & (df_target['bb_y'] == bb['bb_y']) & (df_target['siz_x'] == bb['siz_x']) & (df_target['siz_y'] == bb['siz_y'])]
-#     if len(hit) > 0:
-#         assert len(hit) == 1
-#         return True
-#     else:
-#         return False
 
 
 def bb_augmentation_shift(x, offset):
@@ -200,62 +191,6 @@ def bb_augmentation_shift(x, offset):
     return x
 
     
-# def make_dataset(df):
-#      # for the sole purpose of training, subset to example where s2 label can be generated EXACTLY
-#     # i.e. subset to example where s1 bb sensitivity is 100%
-#     df = dgp.add_column(df, 'n_bb', ['bounding_boxes'], len)
-#     n_old = len(df)
-#     df = df[df['n_bb'] == df['n_bb_found']]
-#     logging.info("Subset to examples with 100% S1 bb sensitivity (for now). Before {}, after {}".format(n_old, len(df)))
-#
-#     # putting together the dataset
-#     # for each row:
-#     # encode input: a list of:
-#     # bb_type, x, y, wx, wy, median_prob, n_proposal_normalized  (TODO add both corners?)
-#     # encode output: binary label for each input 'position'
-#
-#     x_all = []
-#     y_all = []
-#
-#     for idx, row in df.iterrows():
-#         if idx % 10000 == 0:   # FIXME idx is the original idx (not counter)
-#             logging.info("Processed {} examples".format(idx))
-#
-#         _x = []
-#         _y = []
-#         df_target = pd.DataFrame(row['df_target'])
-#         if row['bb_stem'] is not None:
-#             for x in row['bb_stem']:
-#                 if find_match_bb(x, df_target, 'stem'):
-#                     label = 1
-#                 else:
-#                     label = 0
-#                 # 100 for stem
-#                 _x.append([1, 0, 0, x['bb_x'], x['bb_y'], x['siz_x'], x['siz_y'], np.median(x['prob']), len(x['prob'])/(2*x['siz_x']*x['siz_y'])])
-#                 _y.append(label)
-#         if row['bb_iloop'] is not None:
-#             for x in row['bb_iloop']:
-#                 if find_match_bb(x, df_target, 'iloop'):
-#                     label = 1
-#                 else:
-#                     label = 0
-#                 # 010 for iloop
-#                 _x.append([0, 1, 0, x['bb_x'], x['bb_y'], x['siz_x'], x['siz_y'], np.median(x['prob']), len(x['prob'])/(2*x['siz_x']*x['siz_y'])])
-#                 _y.append(label)
-#         if row['bb_hloop'] is not None:
-#             for x in row['bb_hloop']:
-#                 if find_match_bb(x, df_target, 'hloop'):
-#                     label = 1
-#                 else:
-#                     label = 0
-#                 # 001 for hloop, also multiple normalized n_proposal by 2 to make upper limit 1
-#                 _x.append([0, 0, 1, x['bb_x'], x['bb_y'], x['siz_x'], x['siz_y'], np.median(x['prob']), len(x['prob'])/(x['siz_x']*x['siz_y'])])
-#                 _y.append(label)
-#         x_all.append(np.array(_x))
-#         y_all.append(np.array(_y))
-#     return x_all, y_all   # two lists
-    
-    
 def make_single_pred(model, x, y):
     model.eval()
     # add batch dim, convert to torch tensor, make pred
@@ -268,7 +203,7 @@ def make_single_pred(model, x, y):
 def eval_model(model, _x, _y):
     model.eval()
     total_loss = 0
-    for i, (x, y) in enumerate(zip(_x, _y)):
+    for i, (x, y) in enumerate(zip(_x, _y)):  #TODO batch mode
         # add batch dim, convert to torch tensor, make pred
         x = torch.from_numpy(x[np.newaxis, :, :]).float()
         y = torch.from_numpy(y[np.newaxis, :]).float()
