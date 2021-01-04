@@ -492,6 +492,48 @@ class Predictor(object):
             pred_box[ix0:ix1, iy0:iy1] = 1
             return proposed_boxes, pred_box
 
+        def sm_top_one(pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j):
+            loc_x = np.argmax(pred_loc_x[:, i, j])
+            loc_y = np.argmax(pred_loc_y[:, i, j])
+            # softmax size
+            sm_siz_x = np.argmax(pred_sm_siz_x[:, i, j]) + 1  # size starts at 1 for index=0
+            sm_siz_y = np.argmax(pred_sm_siz_y[:, i, j]) + 1
+            # prob of on/off & location
+            prob_1 = pred_on[i, j] * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y]
+            # softmax: compute joint probability of taking the max value
+            prob_sm = prob_1 *  softmax(pred_sm_siz_x[:, i, j])[sm_siz_x - 1] * softmax(pred_sm_siz_y[:, i, j])[
+                       sm_siz_y - 1]  # FIXME multiplying twice for case where y is set to x
+            bb_x = i - loc_x
+            bb_y = j + loc_y
+            return bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm
+
+        def sm_top_k(pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j, k):
+            raise NotImplementedError
+
+        def sl_top_one(pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j):
+            loc_x = np.argmax(pred_loc_x[:, i, j])
+            loc_y = np.argmax(pred_loc_y[:, i, j])
+            # scalar size, round to int
+            sl_siz_x = int(np.round(pred_sl_siz_x[i, j]))
+            sl_siz_y = int(np.round(pred_sl_siz_y[i, j]))
+            # avoid setting size 0 or negative # TODO adding logging warning
+            if sl_siz_x < 1:
+                sl_siz_x = 1
+            if sl_siz_y < 1:
+                sl_siz_y = 1
+            # prob of on/off & location
+            prob_1 = pred_on[i, j] * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y]
+            # scalar size: local Gaussain
+            prob_sl = prob_1 * norm.pdf(sl_siz_x - pred_sl_siz_x[i, j]) * norm.pdf(sl_siz_y - pred_sl_siz_y[
+                i, j]) / norm.pdf(0) ** 2  # TODO using likelihood ratio between (x-x0) and x0 for now, better way to model the prob?
+            # top right corner
+            bb_x = i - loc_x
+            bb_y = j + loc_y
+            return bb_x, bb_y, sl_siz_x, sl_siz_y, prob_sl
+
+        def sl_top_k(pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j, k):
+            raise NotImplementedError
+
         # remove singleton dimensions
         pred_on = np.squeeze(pred_on)
         pred_loc_x = np.squeeze(pred_loc_x)
@@ -519,31 +561,32 @@ class Predictor(object):
         proposed_boxes = []
 
         for i, j in np.transpose(np.where(pred_on > thres)):  # TODO vectorize
-            loc_x = np.argmax(pred_loc_x[:, i, j])
-            loc_y = np.argmax(pred_loc_y[:, i, j])
-            # softmax size
-            sm_siz_x = np.argmax(pred_sm_siz_x[:, i, j]) + 1  # size starts at 1 for index=0
-            sm_siz_y = np.argmax(pred_sm_siz_y[:, i, j]) + 1
-            # scalar size, round to int
-            sl_siz_x = int(np.round(pred_sl_siz_x[i, j]))
-            sl_siz_y = int(np.round(pred_sl_siz_y[i, j]))
-            # avoid setting size 0 or negative # TODO adding logging warning
-            if sl_siz_x < 1:
-                sl_siz_x = 1
-            if sl_siz_y < 1:
-                sl_siz_y = 1
-            # prob of on/off & location
-            prob_1 = pred_on[i, j] * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y]
-            # softmax: compute joint probability of taking the max value
-            prob_sm = prob_1 *  softmax(pred_sm_siz_x[:, i, j])[sm_siz_x - 1] * softmax(pred_sm_siz_y[:, i, j])[
-                       sm_siz_y - 1]  # FIXME multiplying twice for case where y is set to x
-            # scalar size: local Gaussain
-            prob_sl = prob_1 * norm.pdf(sl_siz_x - pred_sl_siz_x[i, j]) * norm.pdf(sl_siz_y - pred_sl_siz_y[
-                i, j]) / norm.pdf(0) ** 2  # TODO using likelihood ratio between (x-x0) and x0 for now, better way to model the prob?
-            # top right corner
-            bb_x = i - loc_x
-            bb_y = j + loc_y
-            # save sm box # TODO if sm and sl predict same size, shall we add onto the probability?
+            # loc_x = np.argmax(pred_loc_x[:, i, j])
+            # loc_y = np.argmax(pred_loc_y[:, i, j])
+            # # softmax size
+            # sm_siz_x = np.argmax(pred_sm_siz_x[:, i, j]) + 1  # size starts at 1 for index=0
+            # sm_siz_y = np.argmax(pred_sm_siz_y[:, i, j]) + 1
+            # # scalar size, round to int
+            # sl_siz_x = int(np.round(pred_sl_siz_x[i, j]))
+            # sl_siz_y = int(np.round(pred_sl_siz_y[i, j]))
+            # # avoid setting size 0 or negative # TODO adding logging warning
+            # if sl_siz_x < 1:
+            #     sl_siz_x = 1
+            # if sl_siz_y < 1:
+            #     sl_siz_y = 1
+            # # prob of on/off & location
+            # prob_1 = pred_on[i, j] * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y]
+            # # softmax: compute joint probability of taking the max value
+            # prob_sm = prob_1 *  softmax(pred_sm_siz_x[:, i, j])[sm_siz_x - 1] * softmax(pred_sm_siz_y[:, i, j])[
+            #            sm_siz_y - 1]  # FIXME multiplying twice for case where y is set to x
+            # # scalar size: local Gaussain
+            # prob_sl = prob_1 * norm.pdf(sl_siz_x - pred_sl_siz_x[i, j]) * norm.pdf(sl_siz_y - pred_sl_siz_y[
+            #     i, j]) / norm.pdf(0) ** 2  # TODO using likelihood ratio between (x-x0) and x0 for now, better way to model the prob?
+            # # top right corner
+            # bb_x = i - loc_x
+            # bb_y = j + loc_y
+            # # save sm box # TODO if sm and sl predict same size, shall we add onto the probability?
+            bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm = sm_top_one(pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j)
             proposed_boxes, pred_box = _update(bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm, proposed_boxes, pred_box)
             # proposed_boxes.append({
             #     'bb_x': bb_x,
@@ -565,6 +608,7 @@ class Predictor(object):
 
             # save sl box (it's ok if sl box is identical with sm box, since probabilities will be aggregated in the end)
             # if sl_siz_x != sm_siz_x or sl_siz_y != sm_siz_y:
+            bb_x, bb_y, sl_siz_x, sl_siz_y, prob_sl = sl_top_one(pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j)
             proposed_boxes, pred_box = _update(bb_x, bb_y, sl_siz_x, sl_siz_y, prob_sl, proposed_boxes, pred_box)
             # proposed_boxes.append({
             #     'bb_x': bb_x,
