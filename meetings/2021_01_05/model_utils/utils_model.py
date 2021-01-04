@@ -454,12 +454,43 @@ class Predictor(object):
     @staticmethod
     def predict_bounidng_box(pred_on, pred_loc_x, pred_loc_y,
                              pred_sm_siz_x, pred_sm_siz_y,
+                             pred_sl_siz_x, pred_sl_siz_y, thres=0.5, topk=1):
+        if topk == 1:
+            return Predictor.predict_bounidng_box_top_one(pred_on, pred_loc_x, pred_loc_y,
+                                                          pred_sm_siz_x, pred_sm_siz_y,
+                                                          pred_sl_siz_x, pred_sl_siz_y, thres)
+        else:
+            raise NotImplementedError
+
+    @staticmethod
+    def predict_bounidng_box_top_one(pred_on, pred_loc_x, pred_loc_y,
+                             pred_sm_siz_x, pred_sm_siz_y,
                              pred_sl_siz_x, pred_sl_siz_y, thres=0.5):
 
         def _make_mask(l):
             m = np.ones((l, l))
             m[np.tril_indices(l)] = 0
             return m
+
+        def _update(bb_x, bb_y, siz_x, siz_y, prob, proposed_boxes, pred_box):
+            proposed_boxes.append({
+                'bb_x': bb_x,
+                'bb_y': bb_y,
+                'siz_x': siz_x,
+                'siz_y': siz_y,
+                'prob': prob,
+            })
+            # set value in pred box, be careful with out of bound index
+            x0 = bb_x
+            y0 = bb_y - siz_y + 1  # 0-based
+            wx = siz_x
+            wy = siz_y
+            ix0 = max(0, x0)
+            iy0 = max(0, y0)
+            ix1 = min(x0 + wx, pred_box.shape[0])
+            iy1 = min(y0 + wy, pred_box.shape[1])
+            pred_box[ix0:ix1, iy0:iy1] = 1
+            return proposed_boxes, pred_box
 
         # remove singleton dimensions
         pred_on = np.squeeze(pred_on)
@@ -513,49 +544,51 @@ class Predictor(object):
             bb_x = i - loc_x
             bb_y = j + loc_y
             # save sm box # TODO if sm and sl predict same size, shall we add onto the probability?
-            proposed_boxes.append({
-                'bb_x': bb_x,
-                'bb_y': bb_y,
-                'siz_x': sm_siz_x,
-                'siz_y': sm_siz_y,
-                'prob': prob_sm,  # TODO shall we store 4 probabilities separately?
-            })
-            # set value in pred box, be careful with out of bound index
-            x0 = bb_x
-            y0 = bb_y - sm_siz_y + 1  # 0-based
-            wx = sm_siz_x
-            wy = sm_siz_y
-            ix0 = max(0, x0)
-            iy0 = max(0, y0)
-            ix1 = min(x0 + wx, pred_box.shape[0])
-            iy1 = min(y0 + wy, pred_box.shape[1])
-            pred_box[ix0:ix1, iy0:iy1] = 1
+            proposed_boxes, pred_box = _update(bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm, proposed_boxes, pred_box)
+            # proposed_boxes.append({
+            #     'bb_x': bb_x,
+            #     'bb_y': bb_y,
+            #     'siz_x': sm_siz_x,
+            #     'siz_y': sm_siz_y,
+            #     'prob': prob_sm,  # TODO shall we store 4 probabilities separately?
+            # })
+            # # set value in pred box, be careful with out of bound index
+            # x0 = bb_x
+            # y0 = bb_y - sm_siz_y + 1  # 0-based
+            # wx = sm_siz_x
+            # wy = sm_siz_y
+            # ix0 = max(0, x0)
+            # iy0 = max(0, y0)
+            # ix1 = min(x0 + wx, pred_box.shape[0])
+            # iy1 = min(y0 + wy, pred_box.shape[1])
+            # pred_box[ix0:ix1, iy0:iy1] = 1
 
             # save sl box (it's ok if sl box is identical with sm box, since probabilities will be aggregated in the end)
             # if sl_siz_x != sm_siz_x or sl_siz_y != sm_siz_y:
-            proposed_boxes.append({
-                'bb_x': bb_x,
-                'bb_y': bb_y,
-                'siz_x': sl_siz_x,
-                'siz_y': sl_siz_y,
-                'prob': prob_sl,  # TODO pending
-            })
-            # set value in pred box, be careful with out of bound index
-            x0 = bb_x
-            y0 = bb_y - sl_siz_y + 1  # 0-based
-            wx = sl_siz_x
-            wy = sl_siz_y
-            ix0 = max(0, x0)
-            iy0 = max(0, y0)
-            ix1 = min(x0 + wx, pred_box.shape[0])
-            iy1 = min(y0 + wy, pred_box.shape[1])
-            pred_box[ix0:ix1, iy0:iy1] = 1
+            proposed_boxes, pred_box = _update(bb_x, bb_y, sl_siz_x, sl_siz_y, prob_sl, proposed_boxes, pred_box)
+            # proposed_boxes.append({
+            #     'bb_x': bb_x,
+            #     'bb_y': bb_y,
+            #     'siz_x': sl_siz_x,
+            #     'siz_y': sl_siz_y,
+            #     'prob': prob_sl,  # TODO pending
+            # })
+            # # set value in pred box, be careful with out of bound index
+            # x0 = bb_x
+            # y0 = bb_y - sl_siz_y + 1  # 0-based
+            # wx = sl_siz_x
+            # wy = sl_siz_y
+            # ix0 = max(0, x0)
+            # iy0 = max(0, y0)
+            # ix1 = min(x0 + wx, pred_box.shape[0])
+            # iy1 = min(y0 + wy, pred_box.shape[1])
+            # pred_box[ix0:ix1, iy0:iy1] = 1
 
         # apply hard-mask to pred box
         pred_box = pred_box * m
         return proposed_boxes, pred_box
 
-    def _predict_bb(self, seq, threshold, seq2=None):
+    def _predict_bb(self, seq, threshold, topk=1, seq2=None):
         # if seq2 specified, predict bb for RNA-RNA
         if seq2:
             de = SeqPairEncoder(seq, seq2)
@@ -568,26 +601,26 @@ class Predictor(object):
                                                                 pred_loc_y=yp['stem_location_y'],
                                                                 pred_sm_siz_x=yp['stem_sm_size'], pred_sm_siz_y=None, 
                                                                 pred_sl_siz_x=yp['stem_sl_size'], pred_sl_siz_y=None, 
-                                                                thres=threshold)
+                                                                thres=threshold, topk=topk)
         pred_bb_iloop, pred_box_iloop = self.predict_bounidng_box(pred_on=yp['iloop_on'],
                                                                   pred_loc_x=yp['iloop_location_x'],
                                                                   pred_loc_y=yp['iloop_location_y'],
                                                                   pred_sm_siz_x=yp['iloop_sm_size_x'], pred_sm_siz_y=yp['iloop_sm_size_y'],
                                                                   pred_sl_siz_x=yp['iloop_sl_size_x'],
                                                                   pred_sl_siz_y=yp['iloop_sl_size_y'],
-                                                                  thres=threshold)
+                                                                  thres=threshold, topk=topk)
         pred_bb_hloop, pred_box_hloop = self.predict_bounidng_box(pred_on=yp['hloop_on'],
                                                                   pred_loc_x=yp['hloop_location_x'],
                                                                   pred_loc_y=yp['hloop_location_y'],
                                                                   pred_sm_siz_x=yp['hloop_sm_size'], pred_sm_siz_y=None,
                                                                   pred_sl_siz_x=yp['hloop_sl_size'], pred_sl_siz_y=None,
-                                                                  thres=threshold)
+                                                                  thres=threshold, topk=topk)
         pred_bb_hloop = self.cleanup_hloop(pred_bb_hloop, len(seq))
         return yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop, pred_box_stem, pred_box_iloop, pred_box_hloop
 
-    def predict_bb(self, seq, threshold, seq2=None):
+    def predict_bb(self, seq, threshold, topk=1, seq2=None):
 
-        yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop, pred_box_stem, pred_box_iloop, pred_box_hloop = self._predict_bb(seq, threshold, seq2)
+        yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop, pred_box_stem, pred_box_iloop, pred_box_hloop = self._predict_bb(seq, threshold, topk=topk, seq2=seq2)
 
         def uniq_boxes(pred_bb):
             # pred_bb: list
