@@ -521,14 +521,15 @@ class Predictor(object):
             idx_linear = np.argsort(joint_prob_all, axis=None)[::-1]
             # take top k
             idx_linear = idx_linear[:k]
+            assert len(idx_linear)
             result = []
             arr_shape = joint_prob_all.shape
             for i in idx_linear:
                 idx = np.unravel_index(i, arr_shape)  # this idx is 4-D
-                bb_x = i - loc_x[idx[0]]
-                bb_y = j + loc_y[idx[1]]
-                sm_siz_x = siz_x[idx[2]] + 1
-                sm_siz_y = siz_y[idx[3]] + 1
+                bb_x = i - idx[0]
+                bb_y = j + idx[1]
+                sm_siz_x = idx[2] + 1
+                sm_siz_y = idx[3] + 1
                 prob_sm = joint_prob_all[idx]
                 result.append((bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm))
             return result
@@ -570,12 +571,13 @@ class Predictor(object):
             idx_linear = np.argsort(joint_prob_all, axis=None)[::-1]
             # take top k
             idx_linear = idx_linear[:k]
+            assert len(idx_linear)
             result = []
             arr_shape = joint_prob_all.shape
             for i in idx_linear:
                 idx = np.unravel_index(i, arr_shape)  # this idx is 2-D
-                bb_x = i - loc_x[idx[0]]
-                bb_y = j + loc_y[idx[1]]
+                bb_x = i - idx[0]
+                bb_y = j + idx[1]
                 prob_sl = joint_prob_all[idx]
                 result.append((bb_x, bb_y, sl_siz_x, sl_siz_y, prob_sl))
             return result
