@@ -18,7 +18,7 @@ import pandas as pd
 #     return data
 
 
-def main(data_path, num_datapoints, threshold, model_path, out_file):
+def main(data_path, num_datapoints, threshold, topk, model_path, out_file):
     df_data = pd.read_pickle(data_path, compression='gzip')
     # # drop those > max_len
     # df_data = dgp.add_column(df_data, 'tmp', ['seq'], len)
@@ -49,21 +49,8 @@ def main(data_path, num_datapoints, threshold, model_path, out_file):
             assert len(row['one_idx'][1]) == 0
             continue
 
-        # yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop, pred_box_stem, pred_box_iloop, pred_box_hloop = predictor.predict_bb(seq, threshold)
-        #
-        # new_row = row.copy()
-        # if len(pred_bb_stem) > 0:
-        #     uniq_stem = uniq_boxes(pred_bb_stem)
-        #     new_row['bb_stem'] = uniq_stem
-        # if len(pred_bb_iloop) > 0:
-        #     uniq_iloop = uniq_boxes(pred_bb_iloop)
-        #     new_row['bb_iloop'] = uniq_iloop
-        # if len(pred_bb_hloop) > 0:
-        #     uniq_hloop = uniq_boxes(pred_bb_hloop)
-        #     new_row['bb_hloop'] = uniq_hloop
-
         new_row = row.copy()
-        uniq_stem, uniq_iloop, uniq_hloop = predictor.predict_bb(seq, threshold)
+        uniq_stem, uniq_iloop, uniq_hloop = predictor.predict_bb(seq, threshold, topk)
         new_row['bb_stem'] = uniq_stem
         new_row['bb_iloop'] = uniq_iloop
         new_row['bb_hloop'] = uniq_hloop
@@ -82,9 +69,10 @@ if __name__ == "__main__":
     parser.add_argument('--data', type=str, help='Path to dataset')
     parser.add_argument('--num', type=int, help='Number of data points to sample. Set to 0 to use all.')  # for debug use
     parser.add_argument('--threshold', type=float, help='threshold')
+    parser.add_argument('--topk', type=int, default=1, help='number of predictions per pixel (only for pixels where prob_on > threshold, k per softmax and scalar)')
     parser.add_argument('--model', type=str, help='Path to pytorch model params')
     parser.add_argument('--out_file', type=str, help='Path to output csv pickle')
     args = parser.parse_args()
     assert  0 < args.threshold < 1
-    main(args.data, args.num, args.threshold, args.model, args.out_file)
+    main(args.data, args.num, args.threshold, args.topk, args.model, args.out_file)
 
