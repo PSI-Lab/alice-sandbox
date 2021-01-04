@@ -492,14 +492,14 @@ class Predictor(object):
             pred_box[ix0:ix1, iy0:iy1] = 1
             return proposed_boxes, pred_box
 
-        def sm_top_one(pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j):
+        def sm_top_one(p_on, pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j):
             loc_x = np.argmax(pred_loc_x[:, i, j])
             loc_y = np.argmax(pred_loc_y[:, i, j])
             # softmax size
             sm_siz_x = np.argmax(pred_sm_siz_x[:, i, j]) + 1  # size starts at 1 for index=0
             sm_siz_y = np.argmax(pred_sm_siz_y[:, i, j]) + 1
             # prob of on/off & location
-            prob_1 = pred_on[i, j] * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y]
+            prob_1 = p_on * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y]
             # softmax: compute joint probability of taking the max value
             prob_sm = prob_1 *  softmax(pred_sm_siz_x[:, i, j])[sm_siz_x - 1] * softmax(pred_sm_siz_y[:, i, j])[
                        sm_siz_y - 1]  # FIXME multiplying twice for case where y is set to x
@@ -509,23 +509,30 @@ class Predictor(object):
             result = [(bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm)]
             return result
 
-        def sm_top_k(pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j, k):
+        def sm_top_k(p_on, pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j, k):
             assert k >= 2
             # outer product between 4 arrays: loc_x, loc_y, siz_x, siz_y
-            loc_x = pred_loc_x[:, i, j]
-            loc_y = pred_loc_y[:, i, j]
-            siz_x = pred_sm_siz_x[:, i, j]
-            siz_y = pred_sm_siz_y[:, i, j]
-            joint_prob_all = pred_on[i, j] * softmax(loc_x[:, np.newaxis, np.newaxis, np.newaxis]) * softmax(loc_y[np.newaxis, :, np.newaxis, np.newaxis]) * softmax(siz_x[np.newaxis, np.newaxis, : np.newaxis]) * softmax(siz_y[np.newaxis, np.newaxis, np.newaxis, :])
+            loc_x = softmax(pred_loc_x[:, i, j])
+            loc_y = softmax(pred_loc_y[:, i, j])
+            siz_x = softmax(pred_sm_siz_x[:, i, j])
+            siz_y = softmax(pred_sm_siz_y[:, i, j])
+            joint_prob_all = p_on * loc_x[:, np.newaxis, np.newaxis, np.newaxis] * loc_y[np.newaxis, :, np.newaxis, np.newaxis] * siz_x[np.newaxis, np.newaxis, :, np.newaxis] * siz_y[np.newaxis, np.newaxis, np.newaxis, :]
             # sort along all axis (reverse idx so result is descending)
             idx_linear = np.argsort(joint_prob_all, axis=None)[::-1]
             # take top k
             idx_linear = idx_linear[:k]
             assert len(idx_linear)
             result = []
+            # checks
             arr_shape = joint_prob_all.shape
-            for i in idx_linear:
-                idx = np.unravel_index(i, arr_shape)  # this idx is 4-D
+            top_idx = np.unravel_index(idx_linear[0], arr_shape)
+            assert top_idx[0] == np.argmax(loc_x)
+            assert top_idx[1] == np.argmax(loc_y)
+            assert top_idx[2] == np.argmax(siz_x)
+            assert top_idx[3] == np.argmax(siz_y)
+            for _i in idx_linear:  # avoid clash with i
+                idx = np.unravel_index(_i, arr_shape)  # this idx is 4-D
+                # print(i, j, idx)
                 bb_x = i - idx[0]
                 bb_y = j + idx[1]
                 sm_siz_x = idx[2] + 1
@@ -534,7 +541,7 @@ class Predictor(object):
                 result.append((bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm))
             return result
 
-        def sl_top_one(pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j):
+        def sl_top_one(p_on, pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j):
             loc_x = np.argmax(pred_loc_x[:, i, j])
             loc_y = np.argmax(pred_loc_y[:, i, j])
             # scalar size, round to int
@@ -546,7 +553,7 @@ class Predictor(object):
             if sl_siz_y < 1:
                 sl_siz_y = 1
             # prob of on/off & location
-            prob_1 = pred_on[i, j] * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y]
+            prob_1 = p_on * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y]
             # scalar size: local Gaussain
             prob_sl = prob_1 * norm.pdf(sl_siz_x - pred_sl_siz_x[i, j]) * norm.pdf(sl_siz_y - pred_sl_siz_y[
                 i, j]) / norm.pdf(0) ** 2  # TODO using likelihood ratio between (x-x0) and x0 for now, better way to model the prob?
@@ -557,15 +564,20 @@ class Predictor(object):
             result = [(bb_x, bb_y, sl_siz_x, sl_siz_y, prob_sl)]
             return result
 
-        def sl_top_k(pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j, k):
+        def sl_top_k(p_on, pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j, k):
             assert k >= 2
             # outer product between 2 arrays: loc_x, loc_y
-            loc_x = pred_loc_x[:, i, j]
-            loc_y = pred_loc_y[:, i, j]
+            loc_x = softmax(pred_loc_x[:, i, j])
+            loc_y = softmax(pred_loc_y[:, i, j])
             # scalar size, round to int
             sl_siz_x = int(np.round(pred_sl_siz_x[i, j]))
             sl_siz_y = int(np.round(pred_sl_siz_y[i, j]))
-            joint_prob_all = pred_on[i, j] * softmax(loc_x[:, np.newaxis]) * softmax(loc_y[np.newaxis, :]) * norm.pdf(sl_siz_x - pred_sl_siz_x[i, j]) * norm.pdf(sl_siz_y - pred_sl_siz_y[
+            # avoid setting size 0 or negative # TODO adding logging warning
+            if sl_siz_x < 1:
+                sl_siz_x = 1
+            if sl_siz_y < 1:
+                sl_siz_y = 1
+            joint_prob_all = p_on * loc_x[:, np.newaxis] * loc_y[np.newaxis, :] * norm.pdf(sl_siz_x - pred_sl_siz_x[i, j]) * norm.pdf(sl_siz_y - pred_sl_siz_y[
                 i, j]) / norm.pdf(0) ** 2
             # sort along all axis (reverse idx so result is descending)
             idx_linear = np.argsort(joint_prob_all, axis=None)[::-1]
@@ -574,8 +586,8 @@ class Predictor(object):
             assert len(idx_linear)
             result = []
             arr_shape = joint_prob_all.shape
-            for i in idx_linear:
-                idx = np.unravel_index(i, arr_shape)  # this idx is 2-D
+            for _i in idx_linear:  # avoid clash with i
+                idx = np.unravel_index(_i, arr_shape)  # this idx is 2-D
                 bb_x = i - idx[0]
                 bb_y = j + idx[1]
                 prob_sl = joint_prob_all[idx]
@@ -599,7 +611,8 @@ class Predictor(object):
         # TODO assert on input shape
 
         # hard-mask
-        m = _make_mask(pred_on.shape[1])
+        seq_len = pred_on.shape[1]
+        m = _make_mask(seq_len)
         # apply mask (for pred, only apply to pred_on since our processing starts from that array)
         pred_on = pred_on * m
         # binary array with all 0's, we'll set the predicted bounding box region to 1
@@ -611,18 +624,28 @@ class Predictor(object):
         for i, j in np.transpose(np.where(pred_on > thres)):  # TODO vectorize
             # # save sm box # TODO some computation is duplicated in sm/sl
             if topk == 1:
-                result = sm_top_one(pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j)
+                result = sm_top_one(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j)
             else:
-                result = sm_top_k(pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j, topk)
+                result = sm_top_k(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j, topk)
             for bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm in result:
+                # assert 0 <= bb_x <= seq_len
+                # assert 0 <= bb_y <= seq_len
+                # ignore out of bound bbs # TODO print warning?
+                if not (0 <= bb_x <= seq_len and 0 <= bb_y <= seq_len):
+                    continue
                 proposed_boxes, pred_box = _update(bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm, proposed_boxes, pred_box)
 
             # save sl box (it's ok if sl box is identical with sm box, since probabilities will be aggregated in the end)
             if topk == 1:
-                result = sl_top_one(pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j)
+                result = sl_top_one(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j)
             else:
-                result = sl_top_k(pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j, topk)
+                result = sl_top_k(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j, topk)
             for bb_x, bb_y, sl_siz_x, sl_siz_y, prob_sl in result:
+                # assert 0 <= bb_x <= seq_len
+                # assert 0 <= bb_y <= seq_len
+                # ignore out of bound bbs # TODO print warning?
+                if not (0 <= bb_x <= seq_len and 0 <= bb_y <= seq_len):
+                    continue
                 proposed_boxes, pred_box = _update(bb_x, bb_y, sl_siz_x, sl_siz_y, prob_sl, proposed_boxes, pred_box)
 
         # apply hard-mask to pred box
