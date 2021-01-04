@@ -451,21 +451,21 @@ class Predictor(object):
                 bbs_new.append(bb)
         return bbs_new
 
+    # @staticmethod
+    # def predict_bounidng_box(pred_on, pred_loc_x, pred_loc_y,
+    #                          pred_sm_siz_x, pred_sm_siz_y,
+    #                          pred_sl_siz_x, pred_sl_siz_y, thres=0.5, topk=1):
+    #     if topk == 1:
+    #         return Predictor.predict_bounidng_box_top_one(pred_on, pred_loc_x, pred_loc_y,
+    #                                                       pred_sm_siz_x, pred_sm_siz_y,
+    #                                                       pred_sl_siz_x, pred_sl_siz_y, thres)
+    #     else:
+    #         raise NotImplementedError
+
     @staticmethod
     def predict_bounidng_box(pred_on, pred_loc_x, pred_loc_y,
                              pred_sm_siz_x, pred_sm_siz_y,
                              pred_sl_siz_x, pred_sl_siz_y, thres=0.5, topk=1):
-        if topk == 1:
-            return Predictor.predict_bounidng_box_top_one(pred_on, pred_loc_x, pred_loc_y,
-                                                          pred_sm_siz_x, pred_sm_siz_y,
-                                                          pred_sl_siz_x, pred_sl_siz_y, thres)
-        else:
-            raise NotImplementedError
-
-    @staticmethod
-    def predict_bounidng_box_top_one(pred_on, pred_loc_x, pred_loc_y,
-                             pred_sm_siz_x, pred_sm_siz_y,
-                             pred_sl_siz_x, pred_sl_siz_y, thres=0.5):
 
         def _make_mask(l):
             m = np.ones((l, l))
@@ -516,7 +516,7 @@ class Predictor(object):
             loc_y = pred_loc_y[:, i, j]
             siz_x = pred_sm_siz_x[:, i, j]
             siz_y = pred_sm_siz_y[:, i, j]
-            joint_prob_all = loc_x[:, np.newaxis, np.newaxis, np.newaxis] * loc_y[np.newaxis, :, np.newaxis, np.newaxis] * siz_x[np.newaxis, np.newaxis, : np.newaxis] * siz_y[np.newaxis, np.newaxis, np.newaxis, :]
+            joint_prob_all = pred_on[i, j] * softmax(loc_x[:, np.newaxis, np.newaxis, np.newaxis]) * softmax(loc_y[np.newaxis, :, np.newaxis, np.newaxis]) * softmax(siz_x[np.newaxis, np.newaxis, : np.newaxis]) * softmax(siz_y[np.newaxis, np.newaxis, np.newaxis, :])
             # sort along all axis (reverse idx so result is descending)
             idx_linear = np.argsort(joint_prob_all, axis=None)[::-1]
             # take top k
@@ -557,7 +557,28 @@ class Predictor(object):
             return result
 
         def sl_top_k(pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j, k):
-            raise NotImplementedError
+            assert k >= 2
+            # outer product between 2 arrays: loc_x, loc_y
+            loc_x = pred_loc_x[:, i, j]
+            loc_y = pred_loc_y[:, i, j]
+            # scalar size, round to int
+            sl_siz_x = int(np.round(pred_sl_siz_x[i, j]))
+            sl_siz_y = int(np.round(pred_sl_siz_y[i, j]))
+            joint_prob_all = pred_on[i, j] * softmax(loc_x[:, np.newaxis]) * softmax(loc_y[np.newaxis, :]) * norm.pdf(sl_siz_x - pred_sl_siz_x[i, j]) * norm.pdf(sl_siz_y - pred_sl_siz_y[
+                i, j]) / norm.pdf(0) ** 2
+            # sort along all axis (reverse idx so result is descending)
+            idx_linear = np.argsort(joint_prob_all, axis=None)[::-1]
+            # take top k
+            idx_linear = idx_linear[:k]
+            result = []
+            arr_shape = joint_prob_all.shape
+            for i in idx_linear:
+                idx = np.unravel_index(i, arr_shape)  # this idx is 2-D
+                bb_x = i - loc_x[idx[0]]
+                bb_y = j + loc_y[idx[1]]
+                prob_sl = joint_prob_all[idx]
+                result.append((bb_x, bb_y, sl_siz_x, sl_siz_y, prob_sl))
+            return result
 
         # remove singleton dimensions
         pred_on = np.squeeze(pred_on)
@@ -587,12 +608,18 @@ class Predictor(object):
 
         for i, j in np.transpose(np.where(pred_on > thres)):  # TODO vectorize
             # # save sm box # TODO some computation is duplicated in sm/sl
-            result = sm_top_one(pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j)
+            if topk == 1:
+                result = sm_top_one(pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j)
+            else:
+                result = sm_top_k(pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j, topk)
             for bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm in result:
                 proposed_boxes, pred_box = _update(bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm, proposed_boxes, pred_box)
 
             # save sl box (it's ok if sl box is identical with sm box, since probabilities will be aggregated in the end)
-            result = sl_top_one(pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j)
+            if topk == 1:
+                result = sl_top_one(pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j)
+            else:
+                result = sl_top_k(pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j, topk)
             for bb_x, bb_y, sl_siz_x, sl_siz_y, prob_sl in result:
                 proposed_boxes, pred_box = _update(bb_x, bb_y, sl_siz_x, sl_siz_y, prob_sl, proposed_boxes, pred_box)
 
