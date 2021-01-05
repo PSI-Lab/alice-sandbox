@@ -69,7 +69,9 @@ plot training progress:
 python model_utils/plot_training.py --in_log s1_training/result/with_scalar_size/run.log  --out_plot s1_training/result/with_scalar_size/training_progress.html
 ```
 
-TODO upload trained model.
+![plot/s1_training_progress.png](plot/s1_training_progress.png)
+
+upload trained model:
 
 ```
 # train on random sequence, after adding in scalar target for bb size, ep 11
@@ -168,6 +170,13 @@ predictor.predict_bb('ACGTGTACGATGCAG', 0.1)
 
 ### S1 evaluation
 
+Added sensitivity on local shift bounding box.
+For this case, two bounding boxes are considered a 'hit' if
+the max abs diff between their parameters <= 1:
+
+```
+max_diff = max(abs(bb1_x - bb2_x), abs(bb1_y - bb2_y), abs(siz1_x - siz2_x), abs(siz1_y - siz2_y))
+```
 
 on synthetic dataset:
 
@@ -176,15 +185,16 @@ on synthetic dataset:
 python model_utils/eval_model_dataset.py --data "`dcl path xs5Soq`" --num 200 --maxl 200 --model v1.0 --out_csv result/synthetic_s1_debug.csv --out_plot result/synthetic_s1_debug.html
 ```
 
+![plot/s1_metric.png](plot/s1_metric.png)
 
-bounding box metric
+As shown above, identical bb sensitivity is almost the same as
+local shift bb sensitivity, which means that
+for most bb where we missed in prediction,
+they can't be simply recovered by a simple local shift/expand.
 
-non-100% bb sensitivity: how about shift/expand bb?
-how about using not just argmax of softmax?
+Would they be recovered if using top k or top percent inference (instead of argmax)?
+TODO
 
-pixel metric
-
-focus on sensitivity
 
 any improvement after adding in scalar output?
 
@@ -334,6 +344,10 @@ TODO bb cutoff?
 
 
 ## TODOs
+
+- s1 inference: running on longer sequence, can create a wrapper of the existing interface:
+seq -> short seq pairs -> dfs -> translate -> stitch -> prediction. Be careful with boundary effect.
+bb across boundary > include all.
 
 - s2 idea: stacked 2D map: seq + binary, one for each local structure (predicted by s1). self attn across 2d maps?
 
