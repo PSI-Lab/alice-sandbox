@@ -855,6 +855,17 @@ class Evaluator(object):
             # # FIXME debug! any off-by-1 error?
             # return abs(bb1_x-bb2_x)<=1 and abs(bb1_y-bb2_y)<=1 and abs(siz1_x-siz2_x)<=1 and abs(siz1_y-siz2_y)<=1
 
+        def is_local_shift(bb1, bb2):
+            """check if bb1 and bb2 are local shift/expand version of each other
+            max diff <= 1, include case where bb1 == bb2"""
+            bb1_x, bb1_y, siz1_x, siz1_y = bb1
+            bb2_x, bb2_y, siz2_x, siz2_y = bb2
+            max_diff = max(abs(bb1_x - bb2_x), abs(bb1_y - bb2_y), abs(siz1_x - siz2_x), abs(siz1_y - siz2_y))
+            if max_diff <= 1:
+                return True
+            else:
+                return False
+
         def area_overlap(bb1, bb2):
             bb1_x, bb1_y, siz1_x, siz1_y = bb1
             bb2_x, bb2_y, siz2_x, siz2_y = bb2
@@ -878,12 +889,14 @@ class Evaluator(object):
 
         # w.r.t. target
         n_target_total = len(df_target)
+        n_target_local = 0
         n_target_identical = 0
         n_target_overlap = 0
         n_target_nohit = 0
         for _, row1 in df_target.iterrows():
             bb1 = (row1['bb_x'], row1['bb_y'], row1['siz_x'], row1['siz_y'])
             found_identical = False
+            found_local_shift = False
             found_overlapping = False
             best_area_overlap = 0
             best_bb_overlap = None
@@ -891,7 +904,9 @@ class Evaluator(object):
                 bb2 = (row2['bb_x'], row2['bb_y'], row2['siz_x'], row2['siz_y'])
                 if is_identical(bb1, bb2):
                     found_identical = True
-                elif area_overlap(bb1, bb2) > 0:  # note this is overlapping but NOT identical due to "elif"
+                elif is_local_shift(bb1, bb2): # note this is overlapping but NOT local shift due to "elif"
+                    found_local_shift = True
+                elif area_overlap(bb1, bb2) > 0:  # note this is overlapping but NOT identical or local shift due to "elif"
                     found_overlapping = True
                     this_area = area_overlap(bb1, bb2)
                     if this_area > best_area_overlap:
@@ -901,6 +916,8 @@ class Evaluator(object):
                     pass
             if found_identical:
                 n_target_identical += 1
+            elif found_local_shift:
+                n_target_local += 1
             elif found_overlapping:
                 n_target_overlap += 1
                 # debug print closest pred bb
@@ -913,33 +930,41 @@ class Evaluator(object):
         # FIXME there is some wasted comparison here (can be combined with last step)
         # w.r.t. pred
         n_pred_total = len(df_pred)
+        n_pred_local = 0
         n_pred_identical = 0
         n_pred_overlap = 0
         n_pred_nohit = 0
         for _, row1 in df_pred.iterrows():
             bb1 = (row1['bb_x'], row1['bb_y'], row1['siz_x'], row1['siz_y'])
             found_identical = False
+            found_local_shift = False
             found_overlapping = False
             for _, row2 in df_target.iterrows():
                 bb2 = (row2['bb_x'], row2['bb_y'], row2['siz_x'], row2['siz_y'])
                 if is_identical(bb1, bb2):
                     found_identical = True
-                elif area_overlap(bb1, bb2) > 0:  # note this is overlapping but NOT identical due to "elif"
+                elif is_local_shift(bb1, bb2): # note this is overlapping but NOT local shift due to "elif"
+                    found_local_shift = True
+                elif area_overlap(bb1, bb2) > 0:  # note this is overlapping but NOT identical or local shift due to "elif"
                     found_overlapping = True
                 else:
                     pass
             if found_identical:
                 n_pred_identical += 1
+            elif found_local_shift:
+                n_pred_local += 1
             elif found_overlapping:
                 n_pred_overlap += 1
             else:
                 n_pred_nohit += 1
         result = {
             'n_target_total': n_target_total,
+            'n_target_local': n_target_local,
             'n_target_identical': n_target_identical,
             'n_target_overlap': n_target_overlap,
             'n_target_nohit': n_target_nohit,
             'n_pred_total': n_pred_total,
+            'n_pred_local': n_pred_local,
             'n_pred_identical': n_pred_identical,
             'n_pred_overlap': n_pred_overlap,
             'n_pred_nohit': n_pred_nohit,
@@ -950,10 +975,12 @@ class Evaluator(object):
         if (df_target is None or len(df_target) == 0) and (df_pred is None or len(df_pred) == 0):
             return {
                 'n_target_total': 0,
+                'n_target_local': 0,
                 'n_target_identical': 0,
                 'n_target_overlap': 0,
                 'n_target_nohit': 0,
                 'n_pred_total': 0,
+                'n_pred_local': 0,
                 'n_pred_identical': 0,
                 'n_pred_overlap': 0,
                 'n_pred_nohit': 0,
@@ -962,10 +989,12 @@ class Evaluator(object):
         elif df_target is None or len(df_target) == 0:
             return {
                 'n_target_total': 0,
+                'n_target_local': 0,
                 'n_target_identical': 0,
                 'n_target_overlap': 0,
                 'n_target_nohit': 0,
                 'n_pred_total': len(df_pred),
+                'n_pred_local': 0,
                 'n_pred_identical': 0,
                 'n_pred_overlap': 0,
                 'n_pred_nohit': 0,
@@ -973,10 +1002,12 @@ class Evaluator(object):
         elif df_pred is None or len(df_pred) == 0:
             return {
                 'n_target_total': len(df_target),
+                'n_target_local': 0,
                 'n_target_identical': 0,
                 'n_target_overlap': 0,
                 'n_target_nohit': 0,
                 'n_pred_total': 0,
+                'n_pred_local': 0,
                 'n_pred_identical': 0,
                 'n_pred_overlap': 0,
                 'n_pred_nohit': 0,
@@ -1034,18 +1065,22 @@ class Evaluator(object):
         m_hloop.update({'struct_type': 'hloop', 'pixel_sensitivity': se_hloop, 'pixel_specificity': sp_hloop})
         df_result = pd.DataFrame([m_stem, m_iloop, m_hloop])
         df_result['bb_sensitivity_identical'] = df_result['n_target_identical'] / df_result['n_target_total']
-        df_result['bb_sensitivity_overlap'] = (df_result['n_target_identical'] + df_result['n_target_overlap']) / \
-                                              df_result[
-                                                  'n_target_total']
+        df_result['bb_sensitivity_local_shift'] = (df_result['n_target_identical'] + df_result['n_target_local']) / \
+                                              df_result['n_target_total']
+        df_result['bb_sensitivity_overlap'] = (df_result['n_target_identical'] + df_result['n_target_local'] + df_result['n_target_overlap']) / \
+                                              df_result['n_target_total']
         # also extract the sensitivities
         assert len(df_result) == 3
         metrics = {
             # bb sensitivity
             'bb_stem_identical': df_result[df_result['struct_type'] == 'stem'].iloc[0]['bb_sensitivity_identical'],
+            'bb_stem_local_shift': df_result[df_result['struct_type'] == 'stem'].iloc[0]['bb_sensitivity_local_shift'],
             'bb_stem_overlap': df_result[df_result['struct_type'] == 'stem'].iloc[0]['bb_sensitivity_overlap'],
             'bb_iloop_identical': df_result[df_result['struct_type'] == 'iloop'].iloc[0]['bb_sensitivity_identical'],
+            'bb_iloop_local_shift': df_result[df_result['struct_type'] == 'iloop'].iloc[0]['bb_sensitivity_local_shift'],
             'bb_iloop_overlap': df_result[df_result['struct_type'] == 'iloop'].iloc[0]['bb_sensitivity_overlap'],
             'bb_hloop_identical': df_result[df_result['struct_type'] == 'hloop'].iloc[0]['bb_sensitivity_identical'],
+            'bb_hloop_local_shift': df_result[df_result['struct_type'] == 'hloop'].iloc[0]['bb_sensitivity_local_shift'],
             'bb_hloop_overlap': df_result[df_result['struct_type'] == 'hloop'].iloc[0]['bb_sensitivity_overlap'],
             # pixel
             'px_stem_sensitivity': df_result[df_result['struct_type'] == 'stem'].iloc[0]['pixel_sensitivity'],

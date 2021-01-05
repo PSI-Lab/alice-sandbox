@@ -83,14 +83,16 @@ def main(data_path, num_datapoints, max_len, max_bb_size, model_path, out_csv, o
             df_result.append({
                 'struct_type': struct_type,
                 'bb_sensitivity_identical': m['bb_{}_identical'.format(struct_type)],
+                'bb_sensitivity_local_shift': m['bb_{}_local_shift'.format(struct_type)],
                 'bb_sensitivity_overlap': m['bb_{}_overlap'.format(struct_type)],
                 'sensitivity': m['px_{}_sensitivity'.format(struct_type)],
                 'specificity': m['px_{}_specificity'.format(struct_type)],
             })
     df_result = pd.DataFrame(df_result)
 
-    fig = make_subplots(rows=4, cols=1, vertical_spacing=0.1,
+    fig = make_subplots(rows=5, cols=1, vertical_spacing=0.1,
                         subplot_titles=['Sensitivity (identical bounding box)',
+                                        'Sensitivity (local shift bounding box)',
                                         'Sensitivity (overlapping bounding box)',
                                         'Sensitivity (pixel) training',
                                         'Specificity (pixel) training'])
@@ -102,7 +104,7 @@ def main(data_path, num_datapoints, max_len, max_bb_size, model_path, out_csv, o
 
     for bb_type in ['stem', 'iloop', 'hloop']:
         for i, col_name in enumerate(
-                ['bb_sensitivity_identical', 'bb_sensitivity_overlap', 'sensitivity', 'specificity']):
+                ['bb_sensitivity_identical', 'bb_sensitivity_local_shift', 'bb_sensitivity_overlap', 'sensitivity', 'specificity']):
             df_plot = df_result[df_result['struct_type'] == bb_type][[col_name]]
             fig.append_trace(go.Histogram(x=df_plot[col_name], showlegend=True if i == 0 else False,
                                           name=bb_type, nbinsx=20, marker_color=bb2color[bb_type],
