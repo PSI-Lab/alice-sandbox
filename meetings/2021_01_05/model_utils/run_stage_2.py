@@ -56,7 +56,7 @@ def main(in_file, out_file, max_len, discard_ns_stem, min_hloop_size, min_pixel_
         print(idx, len(row['seq']))
         ctime = time()
 
-        try:
+        try:  # TODO after these code gets moved to utils_s2.py replace it
             df_target = process_bb_old_to_new(row['bounding_boxes'])
             df_stem, df_iloop, df_hloop = make_bb_df(row['bb_stem'], row['bb_iloop'], row['bb_hloop'],
                                                      min_pixel_pred, min_prob)

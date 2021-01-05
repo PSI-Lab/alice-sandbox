@@ -14,7 +14,6 @@ import numpy as np
 import math
 
 
-
 class MultiHeadAttention(nn.Module):
     def __init__(self, heads, d_model, dropout = 0.1):
         super().__init__()
@@ -246,8 +245,27 @@ class MyModel(nn.Module):
 #     return preds
 
 
+# def preprocess_s1_bb(df_stem, df_iloop, df_hloop, min_pixel_pred, min_prob):
+#     """
+#     Pre-process bounding boxes predicted by s1 model
+#     """
+#     df_stem, df_iloop, df_hloop = make_bb_df(df_stem, df_iloop, df_hloop,
+#                                              min_pixel_pred, min_prob)
+#     # prune bounding boxes
+#     # stem - non standard base pairing
+#     if discard_ns_stem:
+#         n_before = len(df_stem)
+#         df_stem = filter_non_standard_stem(df_stem, row['seq'])
+#         print("df_stem base pair pruning, before: {}, after: {}".format(n_before, len(df_stem)))
+#     # hairpin loop - min size
+#     if min_hloop_size > 0:
+#         n_before = len(df_hloop)
+#         df_hloop = df_hloop[df_hloop['siz_x'] >= min_hloop_size]
+#         print("df_hloop min size pruning, before: {}, after: {}".format(n_before, len(df_hloop)))
+
+
 class Predictor(object):
-    model_versions = {}  # nothing uploaded for now
+    model_versions = {}  # FIXME nothing uploaded for now
 
     def __init__(self, model_ckpt, in_size=9, d_model=100, N=5, heads=5, n_hid=20):
         # model file path
@@ -275,7 +293,10 @@ class Predictor(object):
         assert df['prob_median'].min() >= 0
         assert df['prob_median'].max() <= 1
         assert df['n_proposal_norm'].min() > 0
-        assert df['n_proposal_norm'].max() <= 1
+        # relax this one, TODO log warning
+        # assert df['n_proposal_norm'].max() <= 1
+        if df['n_proposal_norm'].max() > 1:
+            print("n_proposal_norm max {} > 1?".format(df['n_proposal_norm'].max()))
         # no duplicate bbs
         assert len(df[['bb_x', 'bb_y', 'siz_x', 'siz_y']].drop_duplicates()) == len(df)
 

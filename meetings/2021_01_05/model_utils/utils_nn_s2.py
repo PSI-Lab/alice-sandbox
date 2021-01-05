@@ -6,9 +6,43 @@ import pandas as pd
 import dgutils.pandas as dgp
 # from utils_s2 import Predictor
 # from util_global_struct import add_bb_bottom_left, compatible_counts, filter_non_standard_stem, validate_global_struct, LocalStructureBb, OneStepChain
+# from util_global_struct import filter_non_standard_stem
 
 
 # FIXME these functions are from util_global_struct
+
+
+def filter_non_standard_stem(df, seq):
+    # filter out stems with nonstandard base pairing
+    # df: df_stem
+    # 'bb_x', 'bb_y', 'siz_x', 'siz_y', 'prob', 'bl_x', 'bl_y'
+    allowed_pairs = ['AT', 'AU', 'TA', 'UA',
+                     'GC', 'CG',
+                     'GT', 'TG', 'GU', 'UG']
+    df_new = []
+    for _, row in df.iterrows():
+        bb_x = row['bb_x']
+        bb_y = row['bb_y']
+        siz_x = row['siz_x']
+        siz_y = row['siz_y']
+
+        # FIXME should have been int already...
+        assert int(bb_x) == bb_x
+        assert int(bb_y) == bb_y
+        assert int(siz_x) == siz_x
+        assert int(siz_y) == siz_y
+        bb_x = int(bb_x)
+        bb_y = int(bb_y)
+        siz_x = int(siz_x)
+        siz_y  =int(siz_y)
+
+        seq_x = seq[bb_x:bb_x+siz_x]
+        seq_y = seq[bb_y-siz_y+1:bb_y+1][::-1]
+        pairs = ['{}{}'.format(x, y) for x, y in zip(seq_x, seq_y)]
+        if all([x in allowed_pairs for x in pairs]):
+            df_new.append(row)
+    df_new = pd.DataFrame(df_new)
+    return df_new
 
 
 def add_bb_bottom_left(df):
@@ -47,27 +81,27 @@ def compatible_counts(df1, df2, col1, col2, out_name):
 
     return df
 
-
-def filter_non_standard_stem(df, seq):
-    # filter out stems with nonstandard base pairing
-    # df: df_stem
-    # 'bb_x', 'bb_y', 'siz_x', 'siz_y', 'prob', 'bl_x', 'bl_y'
-    allowed_pairs = ['AT', 'AU', 'TA', 'UA',
-                     'GC', 'CG',
-                     'GT', 'TG', 'GU', 'UG']
-    df_new = []
-    for _, row in df.iterrows():
-        bb_x = row['bb_x']
-        bb_y = row['bb_y']
-        siz_x = row['siz_x']
-        siz_y = row['siz_y']
-        seq_x = seq[bb_x:bb_x+siz_x]
-        seq_y = seq[bb_y-siz_y+1:bb_y+1][::-1]
-        pairs = ['{}{}'.format(x, y) for x, y in zip(seq_x, seq_y)]
-        if all([x in allowed_pairs for x in pairs]):
-            df_new.append(row)
-    df_new = pd.DataFrame(df_new)
-    return df_new
+#
+# def filter_non_standard_stem(df, seq):
+#     # filter out stems with nonstandard base pairing
+#     # df: df_stem
+#     # 'bb_x', 'bb_y', 'siz_x', 'siz_y', 'prob', 'bl_x', 'bl_y'
+#     allowed_pairs = ['AT', 'AU', 'TA', 'UA',
+#                      'GC', 'CG',
+#                      'GT', 'TG', 'GU', 'UG']
+#     df_new = []
+#     for _, row in df.iterrows():
+#         bb_x = row['bb_x']
+#         bb_y = row['bb_y']
+#         siz_x = row['siz_x']
+#         siz_y = row['siz_y']
+#         seq_x = seq[bb_x:bb_x+siz_x]
+#         seq_y = seq[bb_y-siz_y+1:bb_y+1][::-1]
+#         pairs = ['{}{}'.format(x, y) for x, y in zip(seq_x, seq_y)]
+#         if all([x in allowed_pairs for x in pairs]):
+#             df_new.append(row)
+#     df_new = pd.DataFrame(df_new)
+#     return df_new
 
 
 class LocalStructureBb(object):
@@ -251,6 +285,65 @@ def add_bb(id_bb, picked, remaining, df_info):
             picked, remaining = add_bb(id_wl2, picked, remaining, df_info)
     
     return picked, remaining
+
+# FIXME put everything in a class!
+
+def summarize_df(df, m_factor=2, hloop=False):
+    # calculate median prob and n_proposal_norm
+    # m_factor: max proposal per pixel, this can come from:
+    # each pixel predict via softmax and scalar size output
+    # each pixel predict topk marginal probability
+
+    def _tmp(siz_x, siz_y, prob):
+        prob_median = np.median(prob)
+        n_proposal_norm = len(prob) / (m_factor * float(siz_x * siz_y))
+        if hloop:
+            n_proposal_norm = 2 * n_proposal_norm
+        return prob_median, n_proposal_norm
+
+    df = dgp.add_columns(df, ['prob_median', 'n_proposal_norm'],
+                         ['siz_x', 'siz_y', 'prob'], _tmp)
+    # subset columns
+    df = df[['bb_x', 'bb_y', 'siz_x', 'siz_y', 'prob_median', 'n_proposal_norm']]
+
+    # TODO assert equal before converting to int!
+    df['bb_x'] = df['bb_x'].astype(int)
+    df['bb_y'] = df['bb_y'].astype(int)
+    df['siz_x'] = df['siz_x'].astype(int)
+    df['siz_y'] = df['siz_y'].astype(int)
+    return df
+
+
+def predict_wrapper(bb_stem, bb_iloop, bb_hloop, discard_ns_stem, min_hloop_size, seq, m_factor, predictor):  # TODO add terminate condition
+    """
+    preprocess s1 output: bb_stem, bb_iloop, bb_hloop = predictor.predict_bb(seq, threshold, topk)
+    """
+    # FIXME handle cases where some are None
+    df_stem = summarize_df(pd.DataFrame(bb_stem), m_factor)
+    df_iloop = summarize_df(pd.DataFrame(bb_iloop), m_factor)
+    df_hloop = summarize_df(pd.DataFrame(bb_hloop), m_factor=m_factor, hloop=True)
+
+    if discard_ns_stem:
+        n_before = len(df_stem)
+        df_stem = filter_non_standard_stem(df_stem, seq)
+        print("df_stem base pair pruning, before: {}, after: {}".format(n_before, len(df_stem)))
+    # hairpin loop - min size
+    if min_hloop_size > 0:
+        n_before = len(df_hloop)
+        df_hloop = df_hloop[df_hloop['siz_x'] >= min_hloop_size]
+        print("df_hloop min size pruning, before: {}, after: {}".format(n_before, len(df_hloop)))
+
+    # add bottom left coord
+    df_stem = add_bb_bottom_left(df_stem)
+    df_iloop = add_bb_bottom_left(df_iloop)
+    df_hloop = add_bb_bottom_left(df_hloop)
+
+    picked_bb, df_data = greedy_sample(df_stem, df_iloop, df_hloop, predictor)
+    df_picked = df_data[df_data['id_bb'].isin(picked_bb)][['bb_x', 'bb_y', 'siz_x', 'siz_y', 'pred', 'id_bb']]
+    # add bb type (using id, hacky)
+    df_picked = dgp.add_column(df_picked, 'bb_type', ['id_bb'], lambda x: x.split('_')[0])
+
+    return df_picked
 
 
 def greedy_sample(df_stem, df_iloop, df_hloop, predictor):

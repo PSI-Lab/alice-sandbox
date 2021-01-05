@@ -465,7 +465,7 @@ class Predictor(object):
     @staticmethod
     def predict_bounidng_box(pred_on, pred_loc_x, pred_loc_y,
                              pred_sm_siz_x, pred_sm_siz_y,
-                             pred_sl_siz_x, pred_sl_siz_y, thres=0.5, topk=1):
+                             pred_sl_siz_x, pred_sl_siz_y, thres=0.5, topk=1, perc_cutoff=0):
 
         def _make_mask(l):
             m = np.ones((l, l))
@@ -541,6 +541,36 @@ class Predictor(object):
                 result.append((bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm))
             return result
 
+        def sm_top_perc(p_on, pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j, cutoff):
+            """select those whose marginal probability >= cutoff*p_top,
+            setting cutoff == 1 correspond to picking the argmax"""
+            assert 0 < cutoff <= 1
+            # outer product between 4 arrays: loc_x, loc_y, siz_x, siz_y
+            loc_x = softmax(pred_loc_x[:, i, j])
+            loc_y = softmax(pred_loc_y[:, i, j])
+            siz_x = softmax(pred_sm_siz_x[:, i, j])
+            siz_y = softmax(pred_sm_siz_y[:, i, j])
+            joint_prob_all = p_on * loc_x[:, np.newaxis, np.newaxis, np.newaxis] * loc_y[np.newaxis, :, np.newaxis,
+                                                                                   np.newaxis] * siz_x[np.newaxis,
+                                                                                                 np.newaxis, :,
+                                                                                                 np.newaxis] * siz_y[
+                                                                                                               np.newaxis,
+                                                                                                               np.newaxis,
+                                                                                                               np.newaxis,
+                                                                                                               :]
+            joint_prob_max = np.max(joint_prob_all)
+            # find index where p > cutoff * joint_prob_max
+            idx_selected = np.where(joint_prob_all >= joint_prob_max * cutoff)
+            result = []
+            for idx in zip(*idx_selected):
+                bb_x = i - idx[0]
+                bb_y = j + idx[1]
+                sm_siz_x = idx[2] + 1
+                sm_siz_y = idx[3] + 1
+                prob_sm = joint_prob_all[idx]
+                result.append((bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm))
+            return result
+
         def sl_top_one(p_on, pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j):
             loc_x = np.argmax(pred_loc_x[:, i, j])
             loc_y = np.argmax(pred_loc_y[:, i, j])
@@ -594,6 +624,35 @@ class Predictor(object):
                 result.append((bb_x, bb_y, sl_siz_x, sl_siz_y, prob_sl))
             return result
 
+        def sl_top_perc(p_on, pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j, cutoff):
+            """select those whose marginal probability >= cutoff*p_top,
+                        setting cutoff == 1 correspond to picking the argmax"""
+            assert 0 < cutoff <= 1
+            # outer product between 2 arrays: loc_x, loc_y
+            loc_x = softmax(pred_loc_x[:, i, j])
+            loc_y = softmax(pred_loc_y[:, i, j])
+            # scalar size, round to int
+            sl_siz_x = int(np.round(pred_sl_siz_x[i, j]))
+            sl_siz_y = int(np.round(pred_sl_siz_y[i, j]))
+            # avoid setting size 0 or negative # TODO adding logging warning
+            if sl_siz_x < 1:
+                sl_siz_x = 1
+            if sl_siz_y < 1:
+                sl_siz_y = 1
+            joint_prob_all = p_on * loc_x[:, np.newaxis] * loc_y[np.newaxis, :] * norm.pdf(
+                sl_siz_x - pred_sl_siz_x[i, j]) * norm.pdf(sl_siz_y - pred_sl_siz_y[
+                i, j]) / norm.pdf(0) ** 2
+            joint_prob_max = np.max(joint_prob_all)
+            # find index where p > cutoff * joint_prob_max
+            idx_selected = np.where(joint_prob_all >= joint_prob_max * cutoff)
+            result = []
+            for idx in zip(*idx_selected):
+                bb_x = i - idx[0]
+                bb_y = j + idx[1]
+                prob_sl = joint_prob_all[idx]
+                result.append((bb_x, bb_y, sl_siz_x, sl_siz_y, prob_sl))
+            return result
+
         # remove singleton dimensions
         pred_on = np.squeeze(pred_on)
         pred_loc_x = np.squeeze(pred_loc_x)
@@ -623,10 +682,13 @@ class Predictor(object):
 
         for i, j in np.transpose(np.where(pred_on > thres)):  # TODO vectorize
             # # save sm box # TODO some computation is duplicated in sm/sl
-            if topk == 1:
-                result = sm_top_one(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j)
+            if perc_cutoff == 0:
+                if topk == 1:
+                    result = sm_top_one(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j)
+                else:
+                    result = sm_top_k(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j, topk)
             else:
-                result = sm_top_k(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j, topk)
+                result = sm_top_perc(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j, perc_cutoff)
             for bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm in result:
                 # assert 0 <= bb_x <= seq_len
                 # assert 0 <= bb_y <= seq_len
@@ -636,10 +698,13 @@ class Predictor(object):
                 proposed_boxes, pred_box = _update(bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm, proposed_boxes, pred_box)
 
             # save sl box (it's ok if sl box is identical with sm box, since probabilities will be aggregated in the end)
-            if topk == 1:
-                result = sl_top_one(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j)
+            if perc_cutoff == 0:
+                if topk == 1:
+                    result = sl_top_one(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j)
+                else:
+                    result = sl_top_k(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j, topk)
             else:
-                result = sl_top_k(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j, topk)
+                result = sl_top_perc(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j, perc_cutoff)
             for bb_x, bb_y, sl_siz_x, sl_siz_y, prob_sl in result:
                 # assert 0 <= bb_x <= seq_len
                 # assert 0 <= bb_y <= seq_len
@@ -652,7 +717,9 @@ class Predictor(object):
         pred_box = pred_box * m
         return proposed_boxes, pred_box
 
-    def _predict_bb(self, seq, threshold, topk=1, seq2=None):
+    def _predict_bb(self, seq, threshold, topk=1, perc_cutoff=0, seq2=None):
+        """topk and perc_cutoff are mutually excluisve params, one has to be 0"""
+        assert topk == 0 or perc_cutoff == 0
         # if seq2 specified, predict bb for RNA-RNA
         if seq2:
             de = SeqPairEncoder(seq, seq2)
@@ -665,26 +732,26 @@ class Predictor(object):
                                                                 pred_loc_y=yp['stem_location_y'],
                                                                 pred_sm_siz_x=yp['stem_sm_size'], pred_sm_siz_y=None, 
                                                                 pred_sl_siz_x=yp['stem_sl_size'], pred_sl_siz_y=None, 
-                                                                thres=threshold, topk=topk)
+                                                                thres=threshold, topk=topk, perc_cutoff=perc_cutoff)
         pred_bb_iloop, pred_box_iloop = self.predict_bounidng_box(pred_on=yp['iloop_on'],
                                                                   pred_loc_x=yp['iloop_location_x'],
                                                                   pred_loc_y=yp['iloop_location_y'],
                                                                   pred_sm_siz_x=yp['iloop_sm_size_x'], pred_sm_siz_y=yp['iloop_sm_size_y'],
                                                                   pred_sl_siz_x=yp['iloop_sl_size_x'],
                                                                   pred_sl_siz_y=yp['iloop_sl_size_y'],
-                                                                  thres=threshold, topk=topk)
+                                                                  thres=threshold, topk=topk, perc_cutoff=perc_cutoff)
         pred_bb_hloop, pred_box_hloop = self.predict_bounidng_box(pred_on=yp['hloop_on'],
                                                                   pred_loc_x=yp['hloop_location_x'],
                                                                   pred_loc_y=yp['hloop_location_y'],
                                                                   pred_sm_siz_x=yp['hloop_sm_size'], pred_sm_siz_y=None,
                                                                   pred_sl_siz_x=yp['hloop_sl_size'], pred_sl_siz_y=None,
-                                                                  thres=threshold, topk=topk)
+                                                                  thres=threshold, topk=topk, perc_cutoff=perc_cutoff)
         pred_bb_hloop = self.cleanup_hloop(pred_bb_hloop, len(seq))
         return yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop, pred_box_stem, pred_box_iloop, pred_box_hloop
 
-    def predict_bb(self, seq, threshold, topk=1, seq2=None):
+    def predict_bb(self, seq, threshold, topk=1, perc_cutoff=0, seq2=None):
 
-        yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop, pred_box_stem, pred_box_iloop, pred_box_hloop = self._predict_bb(seq, threshold, topk=topk, seq2=seq2)
+        yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop, pred_box_stem, pred_box_iloop, pred_box_hloop = self._predict_bb(seq, threshold, topk=topk, perc_cutoff=perc_cutoff, seq2=seq2)
 
         def uniq_boxes(pred_bb):
             # pred_bb: list

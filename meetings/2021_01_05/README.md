@@ -94,14 +94,38 @@ and we use the ratio: `pdf(y)/pdf(y0)`, which in the standardized form of Gaussi
 
 - Added new version of trained S1 model `'v1.0': 'KOE6Jb'`
 
+- Added top k prediction (TODO s2 training data processing update normalization)
+
+- WIP running inference with top-2 prediction
+
+
+
+- TODO eval: number of bbs old v.s. new, performance old v.s. new
+
+- instead of top k, pick all prediction within 90%? of the argmax? run inference
+(but we can't determine the normalizing factor of s2 data)
+
+```
+uniq_stem, uniq_iloop, uniq_hloop = predictor_s1.predict_bb(seq, threshold=0.02, topk=0, perc_cutoff=0.9)
+```
+
+TODO concrete example
+
 - Run inference pipeline to produce dataset for S2 training:
 
 Synthetic:
+
+argmax (top 1):
 
 ```
 python model_utils/run_stage_1.py --data "`dcl path ZQi8RT`" --num 0 --threshold 0.1 --model v1.0 --out_file data/synthetic_s1_pred.pkl.gz
 ```
 
+top k where k = 2 (running):
+
+```
+python model_utils/run_stage_1.py --data "`dcl path ZQi8RT`" --num 0 --threshold 0.1 --topk 2 --model v1.0 --out_file data/synthetic_s1_pred.topk2.pkl.gz
+```
 
 sample 50000 for debug training:
 
@@ -156,6 +180,7 @@ python model_utils/eval_model_dataset.py --data "`dcl path xs5Soq`" --num 200 --
 bounding box metric
 
 non-100% bb sensitivity: how about shift/expand bb?
+how about using not just argmax of softmax?
 
 pixel metric
 
@@ -221,6 +246,8 @@ update: n_proposed_normalized: denominator * 2 since each pixel can predict the 
 
 Copied from TODO
 
+TODO batch mode (otherwise super slow)
+
 TODO re-run S1 model s.t. each pixel predict multiple bbs,
 instead of taking argmax of all softmax, sample a few and take the highest k joint probability
 
@@ -243,6 +270,30 @@ upstream:
 downstream:
 
 ### Inference
+
+s1 + s2:
+
+```python
+import model_utils.utils_model as us1
+import model_utils.utils_s2 as us2 # TODO merge s2 util
+from model_utils.utils_nn_s2 import predict_wrapper
+
+predictor_s1 = us1.Predictor('v1.0')
+predictor_s2 = us2.Predictor('s2_training/result/synthetic/model_ckpt_ep_28.pth')
+
+discard_ns_stem = True
+min_hloop_size = 2
+# these paramters should be consistent with how we trained the s2 model
+topk = 1
+m_factor = 2 * topk # compatible w/ topk=1
+
+seq = 'ACGATGACGATAGACGCGACGACAGCGAT'
+
+uniq_stem, uniq_iloop, uniq_hloop = predictor_s1.predict_bb(seq, threshold=0.02, topk=topk)
+df_pred = predict_wrapper(uniq_stem, uniq_iloop, uniq_hloop, discard_ns_stem=True, min_hloop_size=2, seq=seq, m_factor=m_factor, predictor=predictor_s2)
+```
+
+
 
 Copied from [../2020_12_15/](../2020_12_15/), renamed to TODO
 
@@ -283,6 +334,10 @@ TODO bb cutoff?
 
 
 ## TODOs
+
+- s2 idea: stacked 2D map: seq + binary, one for each local structure (predicted by s1). self attn across 2d maps?
+
+- s2 idea: GNN? 'meta' node connects local structure? predict on/off of meta node? still can't incoportate non-local structure
 
 - S1 inference pipeline for super long sequences: break into chunks and stitch
 
