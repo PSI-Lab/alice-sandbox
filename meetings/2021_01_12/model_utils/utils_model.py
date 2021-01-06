@@ -472,13 +472,14 @@ class Predictor(object):
             m[np.tril_indices(l)] = 0
             return m
 
-        def _update(bb_x, bb_y, siz_x, siz_y, prob, proposed_boxes, pred_box):
+        def _update(bb_x, bb_y, siz_x, siz_y, prob, proposed_boxes, pred_box, bb_source):
+            assert bb_source in ['sm', 'sl']
             proposed_boxes.append({
                 'bb_x': bb_x,
                 'bb_y': bb_y,
                 'siz_x': siz_x,
                 'siz_y': siz_y,
-                'prob': prob,
+                'prob_{}'.format(bb_source): prob,
             })
             # set value in pred box, be careful with out of bound index
             x0 = bb_x
@@ -695,7 +696,7 @@ class Predictor(object):
                 # ignore out of bound bbs # TODO print warning?
                 if not (0 <= bb_x <= seq_len and 0 <= bb_y <= seq_len):
                     continue
-                proposed_boxes, pred_box = _update(bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm, proposed_boxes, pred_box)
+                proposed_boxes, pred_box = _update(bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm, proposed_boxes, pred_box, bb_source='sm')
 
             # save sl box (it's ok if sl box is identical with sm box, since probabilities will be aggregated in the end)
             if perc_cutoff == 0:
@@ -711,15 +712,21 @@ class Predictor(object):
                 # ignore out of bound bbs # TODO print warning?
                 if not (0 <= bb_x <= seq_len and 0 <= bb_y <= seq_len):
                     continue
-                proposed_boxes, pred_box = _update(bb_x, bb_y, sl_siz_x, sl_siz_y, prob_sl, proposed_boxes, pred_box)
+                proposed_boxes, pred_box = _update(bb_x, bb_y, sl_siz_x, sl_siz_y, prob_sl, proposed_boxes, pred_box, bb_source='sl')
 
         # apply hard-mask to pred box
         pred_box = pred_box * m
         return proposed_boxes, pred_box
 
     def _predict_bb(self, seq, threshold, topk=1, perc_cutoff=0, seq2=None):
-        """topk and perc_cutoff are mutually excluisve params, one has to be 0"""
-        assert topk == 0 or perc_cutoff == 0
+        """topk and perc_cutoff:
+        - only topk is specified (perc_cutoff=0): use topk predicted bb
+        - only perc_cutoff is specified (topk=0): use predicted bbs whose joint probability is within perc_cutoff * p(top_hit)
+        - both topk and perc_cutoff are specified: use predicted bbs whose joint probability is within perc_cutoff * p(top_hit) AND
+        is within topk
+        """
+        assert topk >= 1
+        assert 0<= perc_cutoff <= 1
         # if seq2 specified, predict bb for RNA-RNA
         if seq2:
             de = SeqPairEncoder(seq, seq2)
@@ -755,8 +762,11 @@ class Predictor(object):
 
         def uniq_boxes(pred_bb):
             # pred_bb: list
+            # group rows correspond to the same bb
+            # note that each row has only one of the values: prob_sm/ prob_sl
+            # we would like to summerize each into a list, so dropping the NaN rows (for each independently)
             df = pd.DataFrame(pred_bb)
-            data = df.groupby(by=['bb_x', 'bb_y', 'siz_x', 'siz_y'], as_index=False).agg(list).to_dict('records')
+            data = df.groupby(by=['bb_x', 'bb_y', 'siz_x', 'siz_y'], as_index=False).agg(lambda x:  x.dropna().tolist()).to_dict('records')
             return data
 
         if len(pred_bb_stem) > 0:
