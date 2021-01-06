@@ -510,7 +510,9 @@ class Predictor(object):
             result = [(bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm)]
             return result
 
-        def sm_top_k(p_on, pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j, k):
+        def sm_top_k(p_on, pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j, k, cutoff=0):
+            """take topk bbs,
+            if cutoff is specified (i.e. !=0), only pick those whose prob >= cutoff * p_top"""
             assert k >= 2
             # outer product between 4 arrays: loc_x, loc_y, siz_x, siz_y
             loc_x = softmax(pred_loc_x[:, i, j])
@@ -518,6 +520,7 @@ class Predictor(object):
             siz_x = softmax(pred_sm_siz_x[:, i, j])
             siz_y = softmax(pred_sm_siz_y[:, i, j])
             joint_prob_all = p_on * loc_x[:, np.newaxis, np.newaxis, np.newaxis] * loc_y[np.newaxis, :, np.newaxis, np.newaxis] * siz_x[np.newaxis, np.newaxis, :, np.newaxis] * siz_y[np.newaxis, np.newaxis, np.newaxis, :]
+            p_top = np.max(joint_prob_all)
             # sort along all axis (reverse idx so result is descending)
             idx_linear = np.argsort(joint_prob_all, axis=None)[::-1]
             # take top k
@@ -539,6 +542,10 @@ class Predictor(object):
                 sm_siz_x = idx[2] + 1
                 sm_siz_y = idx[3] + 1
                 prob_sm = joint_prob_all[idx]
+                # if cutoff is specified, we also check the probability
+                # break if it's lower than that (since loop is sorted descending)
+                if cutoff > 0 and prob_sm < cutoff * p_top:
+                    break
                 result.append((bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm))
             return result
 
@@ -592,8 +599,11 @@ class Predictor(object):
             result = [(bb_x, bb_y, sl_siz_x, sl_siz_y, prob_1)]
             return result
 
-        def sl_top_k(p_on, pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j, k):
+        def sl_top_k(p_on, pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j, k, cutoff=0):
+            """take topk bbs,
+            if cutoff is specified (i.e. !=0), only pick those whose prob >= cutoff * p_top"""
             assert k >= 2
+            assert 0 <= cutoff <= 1
             # outer product between 2 arrays: loc_x, loc_y
             loc_x = softmax(pred_loc_x[:, i, j])
             loc_y = softmax(pred_loc_y[:, i, j])
@@ -606,6 +616,7 @@ class Predictor(object):
             if sl_siz_y < 1:
                 sl_siz_y = 1
             joint_prob_all = p_on * loc_x[:, np.newaxis] * loc_y[np.newaxis, :]
+            p_top = np.max(joint_prob_all)
             # sort along all axis (reverse idx so result is descending)
             idx_linear = np.argsort(joint_prob_all, axis=None)[::-1]
             # take top k
@@ -618,6 +629,10 @@ class Predictor(object):
                 bb_x = i - idx[0]
                 bb_y = j + idx[1]
                 prob_sl = joint_prob_all[idx]
+                # if cutoff is specified, we also check the probability
+                # break if it's lower than that (since loop is sorted descending)
+                if cutoff > 0 and prob_sl < cutoff * p_top:
+                    break
                 result.append((bb_x, bb_y, sl_siz_x, sl_siz_y, prob_sl))
             return result
 
@@ -682,8 +697,10 @@ class Predictor(object):
                     result = sm_top_one(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j)
                 else:
                     result = sm_top_k(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j, topk)
-            else:
+            elif topk == 0:
                 result = sm_top_perc(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j, perc_cutoff)
+            else:
+                result = sm_top_k(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j, topk, perc_cutoff)
             for bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm in result:
                 # assert 0 <= bb_x <= seq_len
                 # assert 0 <= bb_y <= seq_len
@@ -698,8 +715,10 @@ class Predictor(object):
                     result = sl_top_one(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j)
                 else:
                     result = sl_top_k(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j, topk)
-            else:
+            elif topk == 0:
                 result = sl_top_perc(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j, perc_cutoff)
+            else:
+                result = sl_top_k(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j, topk, perc_cutoff)
             for bb_x, bb_y, sl_siz_x, sl_siz_y, prob_sl in result:
                 # assert 0 <= bb_x <= seq_len
                 # assert 0 <= bb_y <= seq_len
@@ -719,8 +738,8 @@ class Predictor(object):
         - both topk and perc_cutoff are specified: use predicted bbs whose joint probability is within perc_cutoff * p(top_hit) AND
         is within topk
         """
-        assert topk >= 1
-        assert 0<= perc_cutoff <= 1
+        assert topk >= 0   # 0 for unspecified
+        assert 0<= perc_cutoff <= 1  # 0 for unspecified
         # if seq2 specified, predict bb for RNA-RNA
         if seq2:
             de = SeqPairEncoder(seq, seq2)
