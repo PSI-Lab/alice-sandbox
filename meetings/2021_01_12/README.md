@@ -26,12 +26,75 @@ Intermediate:
 Result?? (for plotting?):
 
 
+## For testing utils interface
+
+TODO update parameters
+
+```python
+import model_utils.utils_model as us1
+import model_utils.utils_s2 as us2 # TODO merge s2 util
+from model_utils.utils_nn_s2 import predict_wrapper
+
+predictor_s1 = us1.Predictor('v1.0')
+predictor_s2 = us2.Predictor('s2_training/result/synthetic/model_ckpt_ep_28.pth')
+
+discard_ns_stem = True
+min_hloop_size = 2
+# these paramters should be consistent with how we trained the s2 model
+topk = 1
+m_factor = 2 * topk # compatible w/ topk=1
+
+seq = 'ACGATGACGATAGACGCGACGACAGCGAT'
+
+uniq_stem, uniq_iloop, uniq_hloop = predictor_s1.predict_bb(seq, threshold=0.02, topk=topk)
+df_pred = predict_wrapper(uniq_stem, uniq_iloop, uniq_hloop, discard_ns_stem=True, min_hloop_size=2, seq=seq, m_factor=m_factor, predictor=predictor_s2)
+```
+
+
 ## S1 inference update
 
 check in  env.yml
 
 
 - WIP running inference with top-2 prediction
+
+- Separate probabilities for softmax/scalar output unit predicted bb.
+For scalar predicted bb, only include joint probability of the two location softmax.
+(no longer need to be 'compatible' with the softmax-size output since they won't get aggregated in s2 feature!)
+
+```
+   bb_x  bb_y  siz_x  siz_y                                            prob_sm                                            prob_sl
+0     1    20      2      2  [0.13323026951860742, 0.15145190820696794, 0.1...  [0.13414366017942744, 0.1532410054271312, 0.11...
+1     1    26      2      2         [0.03666791894895221, 0.05569421539945699]         [0.0372739099538199, 0.056445935979234134]
+2     4    17      2      2  [0.05753037817173854, 0.052009115090564356, 0....  [0.05847623896762833, 0.05243706219068787, 0.0...
+3     7    15      2      2  [0.17595531032127867, 0.1839970953597975, 0.05...  [0.17786414010863807, 0.18647292494855539, 0.0...
+4    14    26      3      3  [0.8683679106068021, 0.8838014862709586, 0.854...  [0.8708090196355063, 0.8861603020200729, 0.856...
+```
+
+- topk & top_perc: for pixel where bb_on > threshold, use bbs whose joint probability is within a certain percentage of the top hit,
+only use up to k bbs.  Code updated TODO link
+
+Test:
+
+```
+import model_utils.utils_model as us1
+predictor_s1 = us1.Predictor('v1.0')
+seq = 'ACGATGACGATAGACGCGACGACAGCGAT'
+
+# only topk
+uniq_stem, uniq_iloop, uniq_hloop = predictor_s1.predict_bb(seq, threshold=0.02, topk=1)
+uniq_stem, uniq_iloop, uniq_hloop = predictor_s1.predict_bb(seq, threshold=0.02, topk=2)
+
+# only top_perc
+uniq_stem, uniq_iloop, uniq_hloop = predictor_s1.predict_bb(seq, threshold=0.02, topk=0, perc_cutoff=0.9)
+
+# both
+uniq_stem, uniq_iloop, uniq_hloop = predictor_s1.predict_bb(seq, threshold=0.02, topk=5, perc_cutoff=0.9)
+
+# encoding? (add to df? do not merge softmax and scalar)
+```
+
+
 
 - Added top k prediction (TODO s2 training data processing update normalization)
 
@@ -50,6 +113,7 @@ TODO concrete example
 
 different feature encoding for softmax/scalar prediction
 
+how to deal with missing value? sm/sl
 
 TODO batch mode (otherwise super slow)
 

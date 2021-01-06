@@ -585,14 +585,11 @@ class Predictor(object):
                 sl_siz_y = 1
             # prob of on/off & location
             prob_1 = p_on * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y]
-            # scalar size: local Gaussain
-            prob_sl = prob_1 * norm.pdf(sl_siz_x - pred_sl_siz_x[i, j]) * norm.pdf(sl_siz_y - pred_sl_siz_y[
-                i, j]) / norm.pdf(0) ** 2  # TODO using likelihood ratio between (x-x0) and x0 for now, better way to model the prob?
             # top right corner
             bb_x = i - loc_x
             bb_y = j + loc_y
             # list of one tuple
-            result = [(bb_x, bb_y, sl_siz_x, sl_siz_y, prob_sl)]
+            result = [(bb_x, bb_y, sl_siz_x, sl_siz_y, prob_1)]
             return result
 
         def sl_top_k(p_on, pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j, k):
@@ -608,8 +605,7 @@ class Predictor(object):
                 sl_siz_x = 1
             if sl_siz_y < 1:
                 sl_siz_y = 1
-            joint_prob_all = p_on * loc_x[:, np.newaxis] * loc_y[np.newaxis, :] * norm.pdf(sl_siz_x - pred_sl_siz_x[i, j]) * norm.pdf(sl_siz_y - pred_sl_siz_y[
-                i, j]) / norm.pdf(0) ** 2
+            joint_prob_all = p_on * loc_x[:, np.newaxis] * loc_y[np.newaxis, :]
             # sort along all axis (reverse idx so result is descending)
             idx_linear = np.argsort(joint_prob_all, axis=None)[::-1]
             # take top k
@@ -640,9 +636,7 @@ class Predictor(object):
                 sl_siz_x = 1
             if sl_siz_y < 1:
                 sl_siz_y = 1
-            joint_prob_all = p_on * loc_x[:, np.newaxis] * loc_y[np.newaxis, :] * norm.pdf(
-                sl_siz_x - pred_sl_siz_x[i, j]) * norm.pdf(sl_siz_y - pred_sl_siz_y[
-                i, j]) / norm.pdf(0) ** 2
+            joint_prob_all = p_on * loc_x[:, np.newaxis] * loc_y[np.newaxis, :]
             joint_prob_max = np.max(joint_prob_all)
             # find index where p > cutoff * joint_prob_max
             idx_selected = np.where(joint_prob_all >= joint_prob_max * cutoff)
