@@ -18,7 +18,7 @@ import pandas as pd
 #     return data
 
 
-def main(data_path, num_datapoints, threshold, topk, model_path, out_file):
+def main(data_path, num_datapoints, threshold, topk, perc_cutoff, model_path, out_file):
     df_data = pd.read_pickle(data_path, compression='gzip')
     # # drop those > max_len
     # df_data = dgp.add_column(df_data, 'tmp', ['seq'], len)
@@ -50,7 +50,7 @@ def main(data_path, num_datapoints, threshold, topk, model_path, out_file):
             continue
 
         new_row = row.copy()
-        uniq_stem, uniq_iloop, uniq_hloop = predictor.predict_bb(seq, threshold, topk)
+        uniq_stem, uniq_iloop, uniq_hloop = predictor.predict_bb(seq=seq, threshold=threshold, topk=topk, perc_cutoff=perc_cutoff)
         new_row['bb_stem'] = uniq_stem
         new_row['bb_iloop'] = uniq_iloop
         new_row['bb_hloop'] = uniq_hloop
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     parser.add_argument('--num', type=int, help='Number of data points to sample. Set to 0 to use all.')  # for debug use
     parser.add_argument('--threshold', type=float, help='threshold')
     parser.add_argument('--topk', type=int, default=1, help='max number of predictions per pixel (only for pixels where prob_on > threshold, k per softmax and scalar)')
-    parser.add_argument('--perc_cutoff', type=int, default=1,
+    parser.add_argument('--perc_cutoff', type=float, default=1,
                         help='picked bb needs to have joint probability within perc_cutoff * p_top_hit (only for pixels where prob_on > threshold, per softmax and scalar)')
     parser.add_argument('--model', type=str, help='Path to pytorch model params')
     parser.add_argument('--out_file', type=str, help='Path to output csv pickle')
@@ -78,5 +78,5 @@ if __name__ == "__main__":
     assert  0 < args.threshold < 1
     assert args.topk >= 1  # for generating s2 training data we require specifying a fixed number (in the actual inference interface 0 is allowed for switching to only perc_cutoff)
     assert 0 <= args.perc_cutoff <= 1
-    main(args.data, args.num, args.threshold, args.topk, args.model, args.out_file)
+    main(args.data, args.num, args.threshold, args.topk, args.perc_cutoff, args.model, args.out_file)
 
