@@ -58,7 +58,7 @@ check in  env.yml
 
 - WIP running inference with top-2 prediction
 
-- Separate probabilities for softmax/scalar output unit predicted bb.
+- `13c48ee..5388782` Separate probabilities for softmax/scalar output unit predicted bb.
 For scalar predicted bb, only include joint probability of the two location softmax.
 (no longer need to be 'compatible' with the softmax-size output since they won't get aggregated in s2 feature!)
 
@@ -71,8 +71,8 @@ For scalar predicted bb, only include joint probability of the two location soft
 4    14    26      3      3  [0.8683679106068021, 0.8838014862709586, 0.854...  [0.8708090196355063, 0.8861603020200729, 0.856...
 ```
 
-- topk & top_perc: for pixel where bb_on > threshold, use bbs whose joint probability is within a certain percentage of the top hit,
-only use up to k bbs.  Code updated TODO link
+- `5388782..4e8a579` topk & top_perc: for pixel where bb_on > threshold, use bbs whose joint probability is within a certain percentage of the top hit,
+AND only use up to k bbs.
 
 Test:
 
@@ -90,11 +90,17 @@ uniq_stem, uniq_iloop, uniq_hloop = predictor_s1.predict_bb(seq, threshold=0.02,
 
 # both
 uniq_stem, uniq_iloop, uniq_hloop = predictor_s1.predict_bb(seq, threshold=0.02, topk=5, perc_cutoff=0.9)
-
-# encoding? (add to df? do not merge softmax and scalar)
+uniq_stem, uniq_iloop, uniq_hloop = predictor_s1.predict_bb(seq, threshold=0.02, topk=5, perc_cutoff=0.5)
+uniq_stem, uniq_iloop, uniq_hloop = predictor_s1.predict_bb(seq, threshold=0.02, topk=20, perc_cutoff=0.5)
 ```
 
+- update run_s1 script and re-run inference, to prepare dataset for s2
 
+sample 5000 for debug training:
+
+```
+python model_utils/run_stage_1.py --data "`dcl path ZQi8RT`" --num 5000 --threshold 0.1 --topk 10 --perc_cutoff 0.8 --model v1.0 --out_file data/synthetic_s1_pred_5000.pkl.gz
+```
 
 - Added top k prediction (TODO s2 training data processing update normalization)
 

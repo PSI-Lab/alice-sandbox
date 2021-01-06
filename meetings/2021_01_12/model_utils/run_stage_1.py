@@ -69,10 +69,14 @@ if __name__ == "__main__":
     parser.add_argument('--data', type=str, help='Path to dataset')
     parser.add_argument('--num', type=int, help='Number of data points to sample. Set to 0 to use all.')  # for debug use
     parser.add_argument('--threshold', type=float, help='threshold')
-    parser.add_argument('--topk', type=int, default=1, help='number of predictions per pixel (only for pixels where prob_on > threshold, k per softmax and scalar)')
+    parser.add_argument('--topk', type=int, default=1, help='max number of predictions per pixel (only for pixels where prob_on > threshold, k per softmax and scalar)')
+    parser.add_argument('--perc_cutoff', type=int, default=1,
+                        help='picked bb needs to have joint probability within perc_cutoff * p_top_hit (only for pixels where prob_on > threshold, per softmax and scalar)')
     parser.add_argument('--model', type=str, help='Path to pytorch model params')
     parser.add_argument('--out_file', type=str, help='Path to output csv pickle')
     args = parser.parse_args()
     assert  0 < args.threshold < 1
+    assert args.topk >= 1  # for generating s2 training data we require specifying a fixed number (in the actual inference interface 0 is allowed for switching to only perc_cutoff)
+    assert 0 <= args.perc_cutoff <= 1
     main(args.data, args.num, args.threshold, args.topk, args.model, args.out_file)
 
