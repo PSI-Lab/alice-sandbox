@@ -1,4 +1,4 @@
-in_size: 9
+in_size: 10
 n_dim: 100
 n_attn_layer: 5
 n_heads: 5

@@ -58,6 +58,25 @@ check in  env.yml
 
 - WIP running inference with top-2 prediction
 
+```
+195000 77.518718957901
+Traceback (most recent call last):
+  File "model_utils/run_stage_1.py", line 77, in <module>
+    main(args.data, args.num, args.threshold, args.topk, args.model, args.out_file)
+  File "model_utils/run_stage_1.py", line 53, in main
+    uniq_stem, uniq_iloop, uniq_hloop = predictor.predict_bb(seq, threshold, topk)
+  File "/home/alice/work/psi-lab-sandbox/meetings/2021_01_05/model_utils/utils_model.py", line 687, in predict_bb
+    result = sm_top_one(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j)
+  File "/home/alice/work/psi-lab-sandbox/meetings/2021_01_05/model_utils/utils_model.py", line 675, in _predict_bb
+    # apply mask (for pred, only apply to pred_on since our processing starts from that array)
+  File "/home/alice/work/psi-lab-sandbox/meetings/2021_01_05/model_utils/utils_model.py", line 629, in predict_bounidng_box
+    setting cutoff == 1 correspond to picking the argmax"""
+  File "/home/alice/work/psi-lab-sandbox/meetings/2021_01_05/model_utils/utils_model.py", line 532, in sm_top_k
+    assert top_idx[3] == np.argmax(siz_y)
+AssertionError
+
+```
+
 - `13c48ee..5388782` Separate probabilities for softmax/scalar output unit predicted bb.
 For scalar predicted bb, only include joint probability of the two location softmax.
 (no longer need to be 'compatible' with the softmax-size output since they won't get aggregated in s2 feature!)
@@ -94,13 +113,23 @@ uniq_stem, uniq_iloop, uniq_hloop = predictor_s1.predict_bb(seq, threshold=0.02,
 uniq_stem, uniq_iloop, uniq_hloop = predictor_s1.predict_bb(seq, threshold=0.02, topk=20, perc_cutoff=0.5)
 ```
 
-- update run_s1 script and re-run inference, to prepare dataset for s2
+- `79b12c5..f47492f` -> `f47492f..f89e27e` update run_s1 script and re-run inference, to prepare dataset for s2
 
 sample 5000 for debug training:
 
 ```
 python model_utils/run_stage_1.py --data "`dcl path ZQi8RT`" --num 5000 --threshold 0.1 --topk 10 --perc_cutoff 0.8 --model v1.0 --out_file data/synthetic_s1_pred_5000.pkl.gz
 ```
+
+
+full:
+
+
+- TODO for scalar size, also save the difference between real valued prediction and the rounded integer?
+
+- TODO: even with topk, the same pixel won't predict k identical bb (softmax/scalar),
+so normalizing factor should stay the same? include a warning in data processing.
+
 
 - Added top k prediction (TODO s2 training data processing update normalization)
 
@@ -115,7 +144,33 @@ TODO concrete example
 
 ## S2 training update
 
+### pruning
+
+- `03e19e8..b5deec5` -> `b5deec5..c96250d` -> `c96250d..014b8cd` update to be compatible with new s1 inference output format
+
+debug
+
+```
+python model_utils/prune_stage_1.py --in_file data/synthetic_s1_pred_5000.pkl.gz --out_file data/synthetic_s1_5000_pruned.pkl.gz --min_pixel_pred 1 --min_prob 0.1 --min_hloop_size 2 --discard_ns_stem
+```
+
+```
+[(1506, "'prob_sm'"), (16299, "'prob_sm'"), (80813, "'prob_sm'"), (164275, "'prob_sm'"), (499793, "'prob_sm'"), (151855, "'prob_sm'"), (404563, "'prob_sm'"), (416422, "'prob_sm'"), (258234, "'prob_sm'"), (113048, "'prob_sm'"), (481662, "'prob_sm'"), (105158, "'prob_sm'"), (362755, "'prob_sm'"), (212875, "'prob_sm'"), (426563, "'prob_sm'"), (490598, "'bb_x'"), (399096, "'prob_sm'"), (356428, "'prob_sm'"), (42350, "'prob_sm'"), (331451, "'prob_sm'"), (421457, "'prob_sm'"), (405595, "'prob_sm'"), (346363, "'prob_sm'"), (416941, "'prob_sm'"), (97170, "'prob_sm'")]
+```
+
 ### Feature encoding
+
+
+- now that s1 inference generates two sets of probabilities, update data processing code.
+
+In [s2_training/](s2_training/):
+
+debug
+
+```
+python make_dataset.py --in_file ../data/synthetic_s1_5000_pruned.pkl.gz  --out_file ../data/synthetic_s2_5000_features.npz
+```
+
 
 different feature encoding for softmax/scalar prediction
 
@@ -127,6 +182,25 @@ TODO re-run S1 model s.t. each pixel predict multiple bbs,
 instead of taking argmax of all softmax, sample a few and take the highest k joint probability
 
 synthetic: add in missing bb (how?)
+
+
+### training
+
+- update config (n_input 9->10)
+
+
+
+In [s2_training/](s2_training/):
+
+
+
+debug:
+
+```
+CUDA_VISIBLE_DEVICES=0 python train_s2.py --in_file ../data/synthetic_s2_5000_features.npz --config config.yml --out_dir result/synthetic_5000/ 2>&1 | tee result/synthetic_5000/log.txt
+
+```
+
 
 ## S1 evaluation
 
