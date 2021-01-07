@@ -378,7 +378,8 @@ def prune_bb(df_bb, min_pixel_pred=3, min_prob=0.5):
     # bounding box is kept if one if the follow conditions is satisfied:
     # - num_proposal >= 3, or
     # - max(prob) >= 0.5
-    df_bb = df_bb[(df_bb['prob'].apply(len) >= min_pixel_pred) | (df_bb['prob'].apply(max) >= min_prob)]
+    df_bb = df_bb[(df_bb['prob_sm'].apply(len) >= min_pixel_pred) | (df_bb['prob_sm'].apply(max) >= min_prob) | (
+            df_bb['prob_sl'].apply(len) >= min_pixel_pred) | (df_bb['prob_sl'].apply(max) >= min_prob)]
     return df_bb
 
 
@@ -388,21 +389,21 @@ def make_bb_df(bb_stem, bb_iloop, bb_hloop, min_pixel_pred=3, min_prob=0.5):
         df_stem = prune_bb(df_stem, min_pixel_pred, min_prob)
         df_stem = add_bb_bottom_left(df_stem)
     else:
-        df_stem = pd.DataFrame([], columns=['bb_x', 'bb_y', 'siz_x', 'siz_y', 'prob', 'bl_x', 'bl_y'])
+        df_stem = pd.DataFrame([], columns=['bb_x', 'bb_y', 'siz_x', 'siz_y', 'prob_sm', 'prb_sl', 'bl_x', 'bl_y'])
 
     if isinstance(bb_iloop, list):  # missing val will be pd.NaN
         df_iloop = pd.DataFrame(bb_iloop)
         df_iloop = prune_bb(df_iloop, min_pixel_pred, min_prob)
         df_iloop = add_bb_bottom_left(df_iloop)
     else:
-        df_iloop = pd.DataFrame([], columns=['bb_x', 'bb_y', 'siz_x', 'siz_y', 'prob', 'bl_x', 'bl_y'])
+        df_iloop = pd.DataFrame([], columns=['bb_x', 'bb_y', 'siz_x', 'siz_y', 'prob_sm', 'prb_sl', 'bl_x', 'bl_y'])
 
     if isinstance(bb_hloop, list):  # missing val will be pd.NaN
         df_hloop = pd.DataFrame(bb_hloop)
         df_hloop = prune_bb(df_hloop, min_pixel_pred, min_prob)
         df_hloop = add_bb_bottom_left(df_hloop)
     else:
-        df_hloop = pd.DataFrame([], columns=['bb_x', 'bb_y', 'siz_x', 'siz_y', 'prob', 'bl_x', 'bl_y'])
+        df_hloop = pd.DataFrame([], columns=['bb_x', 'bb_y', 'siz_x', 'siz_y', 'prob_sm', 'prb_sl','bl_x', 'bl_y'])
     return df_stem, df_iloop, df_hloop
 
 
