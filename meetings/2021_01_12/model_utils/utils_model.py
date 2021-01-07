@@ -530,10 +530,15 @@ class Predictor(object):
             # checks
             arr_shape = joint_prob_all.shape
             top_idx = np.unravel_index(idx_linear[0], arr_shape)
-            assert top_idx[0] == np.argmax(loc_x)
-            assert top_idx[1] == np.argmax(loc_y)
-            assert top_idx[2] == np.argmax(siz_x)
-            assert top_idx[3] == np.argmax(siz_y)
+            # check whether it match the argmax, check value instead of index, in case there's a tie
+            assert loc_x[top_idx[0]] == np.max(loc_x), "top_idx {} loc_x {}".format(top_idx, loc_x)
+            assert loc_y[top_idx[1]] == np.max(loc_y), "top_idx {} loc_y {}".format(top_idx, loc_y)
+            assert siz_x[top_idx[2]] == np.max(siz_x), "top_idx {} siz_x {}".format(top_idx, siz_x)
+            assert siz_y[top_idx[3]] == np.max(siz_y), "top_idx {} loc_x {}".format(top_idx, siz_y)
+            # assert top_idx[0] == np.argmax(loc_x)
+            # assert top_idx[1] == np.argmax(loc_y)
+            # assert top_idx[2] == np.argmax(siz_x)
+            # assert top_idx[3] == np.argmax(siz_y)
             for _i in idx_linear:  # avoid clash with i
                 idx = np.unravel_index(_i, arr_shape)  # this idx is 4-D
                 # print(i, j, idx)
