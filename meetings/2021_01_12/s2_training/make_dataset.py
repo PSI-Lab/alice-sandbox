@@ -24,6 +24,24 @@ def find_match_bb(bb, df_target, bb_type):
         return False
 
 
+def encode_bb(x):
+    prob_sm = x['prob_sm']
+    if len(prob_sm) == 0:  # avoid nan with np.median
+        prob_sm_med = 0
+    else:
+        prob_sm_med = np.median(prob_sm)
+
+    prob_sl = x['prob_sl']
+    if len(prob_sl) == 0:  # avoid nan with np.median
+        prob_sl_med = 0
+    else:
+        prob_sl_med = np.median(prob_sl)
+
+    return [x['bb_x'], x['bb_y'], x['siz_x'], x['siz_y'],
+    prob_sm_med, len(x['prob_sm']) / (x['siz_x'] * x['siz_y']),
+    prob_sl_med, len(x['prob_sl']) / (x['siz_x'] * x['siz_y'])]
+
+
 def make_dataset(df):
     # for the sole purpose of training, subset to example where s2 label can be generated EXACTLY
     # i.e. subset to example where s1 bb sensitivity is 100%
@@ -55,8 +73,9 @@ def make_dataset(df):
                 else:
                     label = 0
                 # 100 for stem
-                _x.append([1, 0, 0, x['bb_x'], x['bb_y'], x['siz_x'], x['siz_y'], np.median(x['prob']),
-                           len(x['prob']) / (2 * x['siz_x'] * x['siz_y'])])
+                feature = [1, 0, 0]
+                feature.extend(encode_bb(x))
+                _x.append(feature)
                 _y.append(label)
         if row['bb_iloop'] is not None:
             for x in row['bb_iloop']:
@@ -65,8 +84,8 @@ def make_dataset(df):
                 else:
                     label = 0
                 # 010 for iloop
-                _x.append([0, 1, 0, x['bb_x'], x['bb_y'], x['siz_x'], x['siz_y'], np.median(x['prob']),
-                           len(x['prob']) / (2 * x['siz_x'] * x['siz_y'])])
+                feature.extend(encode_bb(x))
+                _x.append(feature)
                 _y.append(label)
         if row['bb_hloop'] is not None:
             for x in row['bb_hloop']:
@@ -75,8 +94,8 @@ def make_dataset(df):
                 else:
                     label = 0
                 # 001 for hloop, also multiple normalized n_proposal by 2 to make upper limit 1
-                _x.append([0, 0, 1, x['bb_x'], x['bb_y'], x['siz_x'], x['siz_y'], np.median(x['prob']),
-                           len(x['prob']) / (x['siz_x'] * x['siz_y'])])
+                feature.extend(encode_bb(x))
+                _x.append(feature)
                 _y.append(label)
         x_all.append(np.array(_x))
         y_all.append(np.array(_y))
