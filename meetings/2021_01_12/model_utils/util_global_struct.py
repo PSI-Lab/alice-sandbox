@@ -378,8 +378,8 @@ def prune_bb(df_bb, min_pixel_pred=3, min_prob=0.5):
     # bounding box is kept if one if the follow conditions is satisfied:
     # - num_proposal >= 3, or
     # - max(prob) >= 0.5
-    df_bb = df_bb[(df_bb['prob_sm'].apply(len) >= min_pixel_pred) | (df_bb['prob_sm'].apply(max) >= min_prob) | (
-            df_bb['prob_sl'].apply(len) >= min_pixel_pred) | (df_bb['prob_sl'].apply(max) >= min_prob)]
+    df_bb = df_bb[(df_bb['prob_sm'].apply(len) >= min_pixel_pred) | (df_bb['prob_sm'].apply(np.max) >= min_prob) | (
+            df_bb['prob_sl'].apply(len) >= min_pixel_pred) | (df_bb['prob_sl'].apply(np.max) >= min_prob)]
     return df_bb
 
 
