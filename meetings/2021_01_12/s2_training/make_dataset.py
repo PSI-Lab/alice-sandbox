@@ -84,6 +84,7 @@ def make_dataset(df):
                 else:
                     label = 0
                 # 010 for iloop
+                feature = [0, 1, 0]
                 feature.extend(encode_bb(x))
                 _x.append(feature)
                 _y.append(label)
@@ -94,12 +95,13 @@ def make_dataset(df):
                 else:
                     label = 0
                 # 001 for hloop, also multiple normalized n_proposal by 2 to make upper limit 1
+                feature = [0, 0, 1]
                 feature.extend(encode_bb(x))
                 _x.append(feature)
                 _y.append(label)
         x_all.append(np.array(_x))
         y_all.append(np.array(_y))
-    return np.asarray(x_all), np.asarray(y_all)
+    return x_all, y_all  # two lists
 
 
 def main(in_file, out_file):
@@ -109,7 +111,7 @@ def main(in_file, out_file):
     df = pd.read_pickle(in_file)
     logging.info("Loaded {} examples. Making dataset...".format(len(df)))
     x_all, y_all = make_dataset(df)
-    assert x_all.shape[0] == y_all.shape[0]
+    assert len(x_all) == len(y_all)
 
     np.savez(out_file, x=x_all, y=y_all)
 
