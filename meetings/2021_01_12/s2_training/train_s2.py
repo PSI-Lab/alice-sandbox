@@ -172,7 +172,7 @@ class MyModel(nn.Module):
         return self.act2(x)
 
 
-def bb_augmentation_shift(x, offset):
+def bb_augmentation_shift(x, offset, idx_bb_x, idx_bb_y):
     # transform bb features to mimic the effect of shifting all bounding boxes by the same (small) offset
     # we make sure that the resulting new features do not contain negative indices
     # input encoding is as in 'make_dataset': bb_type, x, y, wx, wy, median_prob, n_proposal_normalized
@@ -180,13 +180,13 @@ def bb_augmentation_shift(x, offset):
     # first check that offset won't result in negative location, if so, cap it
     assert len(x.shape) == 2
     assert x.shape[1] == 9
-    loc_min = min(np.min(x[:, 1]), np.min(x[:, 2]))
+    loc_min = min(np.min(x[:, idx_bb_x]), np.min(x[:, idx_bb_y]))
     if offset < 0 and loc_min < np.abs(offset):
         offset = - loc_min
     
     # apply offset
-    x[:, 1] += offset
-    x[:, 2] += offset
+    x[:, idx_bb_x] += offset
+    x[:, idx_bb_y] += offset
     
     return x
 
@@ -257,7 +257,8 @@ def main(in_file, config, out_dir):
 
             # data augmentation
             if config['bb_augmentation_shift']:
-                x_np = bb_augmentation_shift(x, random.choice(config['bb_shift']))[np.newaxis, :, :]
+                x_np = bb_augmentation_shift(x, random.choice(config['bb_shift']),
+                                             config['idx_bb_x'], config['idx_bb_y'])[np.newaxis, :, :]
             else:
                 x_np = x[np.newaxis, :, :]
             y_np = y[np.newaxis, :]

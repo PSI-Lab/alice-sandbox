@@ -101,7 +101,7 @@ def make_dataset(df):
                 _y.append(label)
         x_all.append(np.array(_x))
         y_all.append(np.array(_y))
-    return x_all, y_all  # two lists
+    return x_all, y_all  # two lists (can't convert to numpy array since different examples have different array size!)
 
 
 def main(in_file, out_file):

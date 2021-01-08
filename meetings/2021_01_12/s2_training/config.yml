@@ -17,6 +17,7 @@ bb_shift:  # global shift for all bounding boxes, both directions. e.g. bb_x=3, 
   - 1
   - 2
   - 3
-
+idx_bb_x: 3  # index of bb_x (x location) in the encoded feature vector
+idx_bb_y: 4  # index of bb_y (y location) in the encoded feature vector
 
 
