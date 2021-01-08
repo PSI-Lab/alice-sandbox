@@ -99,7 +99,7 @@ def make_dataset(df):
                 _y.append(label)
         x_all.append(np.array(_x))
         y_all.append(np.array(_y))
-    return x_all, y_all  # two lists
+    return np.asarray(x_all), np.asarray(y_all)
 
 
 def main(in_file, out_file):
@@ -109,7 +109,7 @@ def main(in_file, out_file):
     df = pd.read_pickle(in_file)
     logging.info("Loaded {} examples. Making dataset...".format(len(df)))
     x_all, y_all = make_dataset(df)
-    assert len(x_all) == len(y_all)
+    assert x_all.shape[0] == y_all.shape[0]
 
     np.savez(out_file, x=x_all, y=y_all)
 
