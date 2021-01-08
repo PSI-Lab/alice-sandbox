@@ -142,6 +142,15 @@ so normalizing factor should stay the same? include a warning in data processing
 
 TODO concrete example
 
+TODO debug
+
+```
+In [36]: df = pd.read_pickle('../data/synthetic_s1_pred_5000.pkl.gz')
+
+In [37]: len(df)
+Out[37]: 4539
+```
+
 ## S2 training update
 
 ### pruning
@@ -161,7 +170,20 @@ python model_utils/prune_stage_1.py --in_file data/synthetic_s1_pred_5000.pkl.gz
 ### Feature encoding
 
 
-- now that s1 inference generates two sets of probabilities, update data processing code.
+- `f8d1076..9e481c7` now that s1 inference generates two sets of probabilities, update data processing code.
+Different feature encoding for softmax/scalar prediction. Now each unique bb has the following features:
+
+    - 1-hot encoding of bb type  (3 features)
+
+    - location and size (4 features)
+
+    - median probability and number of proposals (normalized), from softmax size prediction (2 features)
+
+    - median probability and number of proposals (normalized), from scalar size prediction (2 features)
+
+We also note that even when k > 1 for topk prediction, normalizing factor is not affected,
+since if a pixel predicts k bbs, the bbs are different by definition,
+thus the max number of pixel that can predict the same bb is unchanged.
 
 In [s2_training/](s2_training/):
 
@@ -172,7 +194,7 @@ python make_dataset.py --in_file ../data/synthetic_s1_5000_pruned.pkl.gz  --out_
 ```
 
 
-different feature encoding for softmax/scalar prediction
+- data augmentation
 
 how to deal with missing value? sm/sl
 
@@ -200,6 +222,8 @@ debug:
 CUDA_VISIBLE_DEVICES=0 python train_s2.py --in_file ../data/synthetic_s2_5000_features.npz --config config.yml --out_dir result/synthetic_5000/ 2>&1 | tee result/synthetic_5000/log.txt
 
 ```
+
+WIP debugging...
 
 
 ## S1 evaluation
