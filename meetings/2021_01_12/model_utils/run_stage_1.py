@@ -18,7 +18,7 @@ import pandas as pd
 #     return data
 
 
-def main(data_path, num_datapoints, threshold, topk, perc_cutoff, model_path, out_file):
+def main(data_path, num_datapoints, random_state, threshold, topk, perc_cutoff, model_path, out_file):
     df_data = pd.read_pickle(data_path, compression='gzip')
     # # drop those > max_len
     # df_data = dgp.add_column(df_data, 'tmp', ['seq'], len)
@@ -28,7 +28,8 @@ def main(data_path, num_datapoints, threshold, topk, perc_cutoff, model_path, ou
     # sample data points
     # if set to <= 0 do not resample
     if num_datapoints > 0:
-        df_data = df_data.sample(n=min(num_datapoints, len(df_data)))
+        print("Sampling {} data points with rand seed {}".format(num_datapoints, random_state))
+        df_data = df_data.sample(n=min(num_datapoints, len(df_data)), random_state=random_state)
 
     predictor = Predictor(model_path)
 
@@ -68,6 +69,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--data', type=str, help='Path to dataset')
     parser.add_argument('--num', type=int, help='Number of data points to sample. Set to 0 to use all.')  # for debug use
+    parser.add_argument('--random_state', type=int, default=5555, help='Used if --num is set, random seed for sampling rows from df.')
     parser.add_argument('--threshold', type=float, help='threshold')
     parser.add_argument('--topk', type=int, default=1, help='max number of predictions per pixel (only for pixels where prob_on > threshold, k per softmax and scalar)')
     parser.add_argument('--perc_cutoff', type=float, default=1,
@@ -78,5 +80,5 @@ if __name__ == "__main__":
     assert  0 < args.threshold < 1
     assert args.topk >= 1  # for generating s2 training data we require specifying a fixed number (in the actual inference interface 0 is allowed for switching to only perc_cutoff)
     assert 0 <= args.perc_cutoff <= 1
-    main(args.data, args.num, args.threshold, args.topk, args.perc_cutoff, args.model, args.out_file)
+    main(args.data, args.num, args.random_state, args.threshold, args.topk, args.perc_cutoff, args.model, args.out_file)
 

@@ -122,21 +122,41 @@ python model_utils/run_stage_1.py --data "`dcl path ZQi8RT`" --num 5000 --thresh
 ```
 
 
-full:
+-  Added `--random_state` option to sample same subset when analysis
 
+sample 1000 using rand seed `5555`:
+
+threshold 0.1, top 1:
+
+```
+python model_utils/run_stage_1.py --data "`dcl path ZQi8RT`" --num 1000 --random_state 5555 --threshold 0.1 --topk 11--model v1.0 --out_file data/synthetic_s1_pred_1000_t0p1_k1.pkl.gz
+```
+
+threshold 0.1, top 10, perc_cutoff 0.9:
+
+```
+python model_utils/run_stage_1.py --data "`dcl path ZQi8RT`" --num 1000 --random_state 5555 --threshold 0.1 --topk 10 --perc_cutoff 0.9 --model v1.0 --out_file data/synthetic_s1_pred_1000_t0p1_k10_c0p9.pkl.gz
+```
+
+threshold 0.1, top 50, perc_cutoff 0.9:
+
+```
+python model_utils/run_stage_1.py --data "`dcl path ZQi8RT`" --num 1000 --random_state 5555 --threshold 0.1 --topk 50 --perc_cutoff 0.9 --model v1.0 --out_file data/synthetic_s1_pred_1000_t0p1_k50_c0p9.pkl.gz
+```
+
+threshold 0.1, top 50, perc_cutoff 0.5:
+
+```
+python model_utils/run_stage_1.py --data "`dcl path ZQi8RT`" --num 1000 --random_state 5555 --threshold 0.1 --topk 10 --perc_cutoff 0.5 --model v1.0 --out_file data/synthetic_s1_pred_1000_t0p1_k10_c0p5.pkl.gz
+```
+
+threshold 0.02, top 50, perc_cutoff 0.5:
+
+```
+python model_utils/run_stage_1.py --data "`dcl path ZQi8RT`" --num 1000 --random_state 5555 --threshold 0.02 --topk 10 --perc_cutoff 0.9 --model v1.0 --out_file data/synthetic_s1_pred_1000_t0p02_k10_c0p9.pkl.gz
+```
 
 - TODO for scalar size, also save the difference between real valued prediction and the rounded integer?
-
-- TODO: even with topk, the same pixel won't predict k identical bb (softmax/scalar),
-so normalizing factor should stay the same? include a warning in data processing.
-
-
-- Added top k prediction (TODO s2 training data processing update normalization)
-
-- instead of top k, pick all prediction within 90%? of the argmax? run inference
-(but we can't determine the normalizing factor of s2 data)
-
-- TODO separate softmax and scalar prediction
 
 - TODO eval: number of bbs old v.s. new, performance old v.s. new
 
@@ -208,7 +228,7 @@ synthetic: add in missing bb (how?)
 
 ### training
 
-- update config (n_input 9->10)
+- update config (n_input 9->11)
 
 
 
@@ -223,7 +243,16 @@ CUDA_VISIBLE_DEVICES=0 python train_s2.py --in_file ../data/synthetic_s2_5000_fe
 
 ```
 
-WIP debugging...
+WIP running
+
+- batch mode
+
+
+- partial mask prediction?
+giving local assignment predict inclusion/exclusion of a bb?
+anchor each example with a few selected (maybe the highest p?) bbs and predict the rest?
+break up the problem:
+sequence -> bbs -> anchor bb (maybe multi-modal?) -> rest of the bbs
 
 
 ## S1 evaluation
