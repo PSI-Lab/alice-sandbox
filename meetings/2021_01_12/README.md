@@ -124,12 +124,13 @@ python model_utils/run_stage_1.py --data "`dcl path ZQi8RT`" --num 5000 --thresh
 
 -  Added `--random_state` option to sample same subset when analysis
 
-sample 1000 using rand seed `5555`:
+sample 1000 using rand seed `5555` (note that result won't be exactly 1000 since sequence containing non-ACGTN (this won't happen for synthetic dataset
+or example with no structures is skipped (to be revisited):
 
 threshold 0.1, top 1:
 
 ```
-python model_utils/run_stage_1.py --data "`dcl path ZQi8RT`" --num 1000 --random_state 5555 --threshold 0.1 --topk 11--model v1.0 --out_file data/synthetic_s1_pred_1000_t0p1_k1.pkl.gz
+python model_utils/run_stage_1.py --data "`dcl path ZQi8RT`" --num 1000 --random_state 5555 --threshold 0.1 --topk 1 --perc_cutoff 0 --model v1.0 --out_file data/synthetic_s1_pred_1000_t0p1_k1.pkl.gz
 ```
 
 threshold 0.1, top 10, perc_cutoff 0.9:
@@ -155,6 +156,35 @@ threshold 0.02, top 50, perc_cutoff 0.5:
 ```
 python model_utils/run_stage_1.py --data "`dcl path ZQi8RT`" --num 1000 --random_state 5555 --threshold 0.02 --topk 10 --perc_cutoff 0.9 --model v1.0 --out_file data/synthetic_s1_pred_1000_t0p02_k10_c0p9.pkl.gz
 ```
+
+![plot/s1_pred_different_params_1.png](plot/s1_pred_different_params_1.png)
+
+Above plot: number of predicted stem bounding boxes per example using different inference parameters. For a subset of synthetic dataset.
+Each dot is one example (sequence).
+t: threshold for stem_on,
+k: top k,
+c: percentage (of top hit joint probability) cutoff.
+We see an increase with more relaxed threshold,
+and in most cases it is within 2x (for the parameters we tried).
+
+![plot/s1_pred_different_params_2.png](plot/s1_pred_different_params_2.png)
+
+Above plot: identical bb sensitivity per example using different inference parameters. For a subset of synthetic dataset.
+(note: subplot axis not identical)
+We can see that relaxed threshold almost always results in higher sensitivity,
+(probably not surprising at all).
+
+
+(plot produced by TODO)
+
+
+- run on full datatset
+
+```
+python model_utils/run_stage_1.py --data "`dcl path ZQi8RT`" --num 0 --threshold 0.1 --topk 10 --perc_cutoff 0.8 --model v1.0 --out_file data/synthetic_s1_pred_full_t0p1_k10_c0p8.pkl.gz
+```
+
+TODO running
 
 - TODO for scalar size, also save the difference between real valued prediction and the rounded integer?
 
@@ -285,6 +315,8 @@ TODO
 
 
 ## TODOs
+
+- when do we predict 'no structure'?
 
 - s1 inference: running on longer sequence, can create a wrapper of the existing interface:
 seq -> short seq pairs -> dfs -> translate -> stitch -> prediction. Be careful with boundary effect.
