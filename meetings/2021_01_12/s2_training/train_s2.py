@@ -13,6 +13,7 @@ import pandas as pd
 import dgutils.pandas as dgp
 import numpy as np
 import math
+from sklearn.metrics import roc_auc_score
 
 
 logging.basicConfig(level=logging.INFO,
@@ -201,15 +202,21 @@ def make_single_pred(model, x, y):
     
 def eval_model(model, _x, _y):
     model.eval()
-    total_loss = 0
+    losses = []
+    aucs = []
     for i, (x, y) in enumerate(zip(_x, _y)):  #TODO batch mode
         # add batch dim, convert to torch tensor, make pred
         x = torch.from_numpy(x[np.newaxis, :, :]).float()
         y = torch.from_numpy(y[np.newaxis, :]).float()
         preds = model(x, mask=None)  # no masking since parsing one example at a time for now
+        # loss
         loss = F.binary_cross_entropy(preds.squeeze(), y.squeeze())  #FIXME make sure this works for multi-example batch!
-        total_loss += loss.item()
-    return total_loss/len(_x)
+        # total_loss += loss.item()
+        losses.append(loss.item())
+        # au-ROC
+        auc = roc_auc_score(y_true=y, y_score=preds.squeeze().detach().cpu().numpy())
+        aucs.append(auc)
+    return np.mean(losses), np.mean(aucs)
     
     
 def main(in_file, config, out_dir):
@@ -248,9 +255,12 @@ def main(in_file, config, out_dir):
 
     # training
     model.train()
-    total_loss = 0
+    # total_loss = 0
+
     logging.info("Training start")
     for epoch in range(config['epoch']):
+        losses = []
+        aucs = []
         # parse one example at a time for now FIXME
         for i, (x, y) in enumerate(zip(x_tr, y_tr)):
 
@@ -271,6 +281,9 @@ def main(in_file, config, out_dir):
             optim.zero_grad()
 
             loss = F.binary_cross_entropy(preds.squeeze(), y.squeeze())  #FIXME make sure this works for multi-example batch!
+            losses.append(loss.item())
+            auc = roc_auc_score(y_true=y, y_score=preds.squeeze().detach().cpu().numpy())
+            aucs.append(auc)
 
             # TODO this ignore_index seems to be useful!
     #         loss = F.cross_entropy(preds.view(-1, preds.size(-1)),
@@ -279,7 +292,7 @@ def main(in_file, config, out_dir):
     
             loss.backward()
             optim.step()
-            total_loss += loss.item()
+            # total_loss += loss.item()
             
             if i % 1000 == 0:
                 logging.info("Processed {} examples".format(i))
@@ -288,7 +301,7 @@ def main(in_file, config, out_dir):
         torch.save(model.state_dict(), _model_path)
         logging.info("Model checkpoint saved at: {}".format(_model_path))
                 
-        logging.info("End of epoch {}, training: mean loss {}".format(epoch, total_loss/len(x_tr)))
+        logging.info("End of epoch {}, training: mean loss {}, mean au-ROC {}".format(epoch, np.mean(losses), np.mean(aucs)))
         total_loss = 0
         # pick a random training example and print the prediction
         idx = np.random.randint(0, len(x_tr))
@@ -296,8 +309,8 @@ def main(in_file, config, out_dir):
         logging.info("Training dataset idx {}\ny: {}\npred: {}".format(idx, y_tr[idx].flatten(), pred.squeeze()))
               
         # validation
-        loss_va = eval_model(model, x_va, y_va)
-        logging.info("validation mean loss {}".format(loss_va))
+        loss_va, aucs_va = eval_model(model, x_va, y_va)
+        logging.info("End of epoch {}, validation mean loss {}, mean au-ROC {}".format(np.mean(loss_va), np.mean(aucs_va)))
         # pick a random validation example and print the prediction
         idx = np.random.randint(0, len(x_va))
         pred = make_single_pred(model, x_va[idx], y_va[idx])
