@@ -154,7 +154,7 @@ python model_utils/run_stage_1.py --data "`dcl path ZQi8RT`" --num 1000 --random
 threshold 0.02, top 50, perc_cutoff 0.5:
 
 ```
-python model_utils/run_stage_1.py --data "`dcl path ZQi8RT`" --num 1000 --random_state 5555 --threshold 0.02 --topk 10 --perc_cutoff 0.9 --model v1.0 --out_file data/synthetic_s1_pred_1000_t0p02_k10_c0p9.pkl.gz
+python model_utils/run_stage_1.py --data "`dcl path ZQi8RT`" --num 1000 --random_state 5555 --threshold 0.02 --topk 10 --perc_cutoff 0.9 --model v1.0 --out_file data/synthetic_s1_pred_1000_t0p1_k10_c0p5.pkl.gz
 ```
 
 ![plot/s1_pred_different_params_1.png](plot/s1_pred_different_params_1.png)
@@ -175,7 +175,7 @@ We can see that relaxed threshold almost always results in higher sensitivity,
 (probably not surprising at all).
 
 
-(plot produced by TODO)
+(plot produced by make_plot.ipynb)
 
 
 - run on full datatset
@@ -275,6 +275,8 @@ CUDA_VISIBLE_DEVICES=0 python train_s2.py --in_file ../data/synthetic_s2_5000_fe
 
 WIP running
 
+- `e54c593..ba65a9b` -> `ba65a9b..db858db` -> `db858db..b860a3e` -> `b860a3e..ba661cf` -> `ba661cf..ae014a4` add au-ROC as metric, fix running loss bug (cumulated over all epochs?)
+
 - batch mode
 
 
@@ -285,10 +287,122 @@ break up the problem:
 sequence -> bbs -> anchor bb (maybe multi-modal?) -> rest of the bbs
 
 
-## S1 evaluation
 
-Would they be recovered if using top k or top percent inference (instead of argmax)?
-TODO
+### Experiment: train/validation performance using S1 dataset with different params
+
+
+TODO write script to plot training progress
+
+Use different config for this experiment:
+
+```
+(pytorch) alice@alice-new:~/work/psi-lab-sandbox/meetings/2021_01_12/s2_training(master)$ cat tmp/config.yml
+
+in_size: 11
+n_dim: 100
+n_attn_layer: 6
+n_heads: 5
+n_hid: 20
+lr: 0.001
+epoch: 20
+
+
+# data_augmentation
+bb_augmentation_shift: True
+bb_shift:  # global shift for all bounding boxes, both directions. e.g. bb_x=3, bb_y=5 -> bb_x=4, bb_y=6
+  - -3
+  - -2
+  - -1
+  - 0
+  - 1
+  - 2
+  - 3
+idx_bb_x: 3  # index of bb_x (x location) in the encoded feature vector
+idx_bb_y: 4  # index of bb_y (y location) in the encoded feature vector
+```
+
+- threshold=0.1, topk=1:
+
+In root dir:
+```
+python model_utils/prune_stage_1.py --in_file data/synthetic_s1_pred_1000_t0p1_k1.pkl.gz --out_file data/synthetic_s1_pred_1000_t0p1_k1_pruned.pkl.gz --min_pixel_pred 1 --min_prob 0.1 --min_hloop_size 2 --discard_ns_stem
+```
+
+In s2_training:
+```
+python make_dataset.py --in_file ../data/synthetic_s1_pred_1000_t0p1_k1_pruned.pkl.gz  --out_file ../data/synthetic_s1_pred_1000_t0p1_k1_features.npz
+mkdir -p result/synthetic_s1_pred_1000_t0p1_k1/
+CUDA_VISIBLE_DEVICES=0 python train_s2.py --in_file ../data/synthetic_s1_pred_1000_t0p1_k1_features.npz --config tmp/config.yml --out_dir result/synthetic_s1_pred_1000_t0p1_k1/ 2>&1 | tee result/synthetic_s1_pred_1000_t0p1_k1/log.txt
+```
+
+
+- threshold=0.02, topk=10, prec_cutoff=0.9:
+
+similar as above...
+
+
+- threshold=0.1, topk=10, perc_cutoff=0.5:
+
+In root dir:
+```
+python model_utils/prune_stage_1.py --in_file data/synthetic_s1_pred_1000_t0p1_k10_c0p5.pkl.gz --out_file data/synthetic_s1_pred_1000_t0p1_k10_c0p5_pruned.pkl.gz --min_pixel_pred 1 --min_prob 0.1 --min_hloop_size 2 --discard_ns_stem
+```
+
+In s2_training:
+```
+python make_dataset.py --in_file ../data/synthetic_s1_pred_1000_t0p1_k10_c0p5_pruned.pkl.gz  --out_file ../data/synthetic_s1_pred_1000_t0p1_k10_c0p5_features.npz
+mkdir -p result/synthetic_s1_pred_1000_t0p1_k10_c0p5/
+CUDA_VISIBLE_DEVICES=0 python train_s2.py --in_file ../data/synthetic_s1_pred_1000_t0p1_k10_c0p5_features.npz --config tmp/config.yml --out_dir result/synthetic_s1_pred_1000_t0p1_k10_c0p5/ 2>&1 | tee result/synthetic_s1_pred_1000_t0p1_k10_c0p5/log.txt
+```
+
+
+- threshold=0.1, topk=10, perc_cutoff=0.9:
+
+In root dir:
+```
+python model_utils/prune_stage_1.py --in_file data/synthetic_s1_pred_1000_t0p1_k10_c0p9.pkl.gz --out_file data/synthetic_s1_pred_1000_t0p1_k10_c0p9_pruned.pkl.gz --min_pixel_pred 1 --min_prob 0.1 --min_hloop_size 2 --discard_ns_stem
+```
+
+In s2_training:
+```
+python make_dataset.py --in_file ../data/synthetic_s1_pred_1000_t0p1_k10_c0p9_pruned.pkl.gz  --out_file ../data/synthetic_s1_pred_1000_t0p1_k10_c0p9_features.npz
+mkdir -p result/synthetic_s1_pred_1000_t0p1_k10_c0p9/
+CUDA_VISIBLE_DEVICES=0 python train_s2.py --in_file ../data/synthetic_s1_pred_1000_t0p1_k10_c0p9_features.npz --config tmp/config.yml --out_dir result/synthetic_s1_pred_1000_t0p1_k10_c0p9/ 2>&1 | tee result/synthetic_s1_pred_1000_t0p1_k10_c0p9/log.txt
+```
+
+
+- threshold=0.1, topk=50, perc_cutoff=0.9:
+
+
+In root dir:
+```
+python model_utils/prune_stage_1.py --in_file data/synthetic_s1_pred_1000_t0p1_k50_c0p9.pkl.gz --out_file data/synthetic_s1_pred_1000_t0p1_k50_c0p9_pruned.pkl.gz --min_pixel_pred 1 --min_prob 0.1 --min_hloop_size 2 --discard_ns_stem
+```
+
+In s2_training:
+```
+python make_dataset.py --in_file ../data/synthetic_s1_pred_1000_t0p1_k50_c0p9_pruned.pkl.gz  --out_file ../data/synthetic_s1_pred_1000_t0p1_k50_c0p9_features.npz
+mkdir -p result/synthetic_s1_pred_1000_t0p1_k50_c0p9/
+CUDA_VISIBLE_DEVICES=0 python train_s2.py --in_file ../data/synthetic_s1_pred_1000_t0p1_k50_c0p9_features.npz --config tmp/config.yml --out_dir result/synthetic_s1_pred_1000_t0p1_k50_c0p9/ 2>&1 | tee result/synthetic_s1_pred_1000_t0p1_k50_c0p9/log.txt
+```
+
+
+
+logs copy over:
+
+```
+scp alice@alice-new.dg:/home/alice/work/psi-lab-sandbox/meetings/2021_01_12/s2_training/result/synthetic_s1_pred_1000_t0p02_k10_c0p9/log.txt tmp/log_s2.synthetic_s1_pred_1000_t0p02_k10_c0p9.txt
+scp alice@alice-new.dg:/home/alice/work/psi-lab-sandbox/meetings/2021_01_12/s2_training/result/synthetic_s1_pred_1000_t0p1_k1/log.txt tmp/log_s2.synthetic_s1_pred_1000_t0p1_k1.txt
+scp alice@alice-new.dg:/home/alice/work/psi-lab-sandbox/meetings/2021_01_12/s2_training/result/synthetic_s1_pred_1000_t0p1_k10_c0p5/log.txt tmp/log_s2.synthetic_s1_pred_1000_t0p1_k10_c0p5.txt
+scp alice@alice-new.dg:/home/alice/work/psi-lab-sandbox/meetings/2021_01_12/s2_training/result/synthetic_s1_pred_1000_t0p1_k10_c0p9/log.txt tmp/log_s2.synthetic_s1_pred_1000_t0p1_k10_c0p9.txt
+scp alice@alice-new.dg:/home/alice/work/psi-lab-sandbox/meetings/2021_01_12/s2_training/result/synthetic_s1_pred_1000_t0p1_k50_c0p9/log.txt tmp/log_s2.synthetic_s1_pred_1000_t0p1_k50_c0p9.txt
+
+```
+
+![plot/s2_train_progress.png](plot/s2_train_progress.png)
+
+(only plotting 2 sets of params, run [s2_train_progress_plot.ipynb](s2_train_progress_plot.ipynb) to reproduce all plots)
+Based on a small dataset pf 1000 examples, it seems that S2 model can be trained successfully regardless of S1 inference settings.
 
 
 
