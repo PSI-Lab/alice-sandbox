@@ -319,7 +319,7 @@ def main(in_file, config, out_dir):
               
         # validation
         loss_va, aucs_va = eval_model(model, x_va, y_va)
-        logging.info("End of epoch {}, validation mean loss {}, mean au-ROC {}".format(np.mean(loss_va), np.mean(aucs_va)))
+        logging.info("End of epoch {}, validation mean loss {}, mean au-ROC {}".format(epoch, np.mean(loss_va), np.mean(aucs_va)))
         # pick a random validation example and print the prediction
         idx = np.random.randint(0, len(x_va))
         pred = make_single_pred(model, x_va[idx], y_va[idx])
