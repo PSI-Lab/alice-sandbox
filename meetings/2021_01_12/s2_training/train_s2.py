@@ -214,9 +214,13 @@ def eval_model(model, _x, _y):
         # total_loss += loss.item()
         losses.append(loss.item())
         # au-ROC
-        auc = roc_auc_score(y_true=y, y_score=preds.squeeze().detach().cpu().numpy())
+        pred_np = preds.squeeze().detach().cpu().numpy()
+        if np.max(y) == np.min(y):
+            auc = np.NaN
+        else:
+            auc = roc_auc_score(y_true=y, y_score=pred_np)
         aucs.append(auc)
-    return np.mean(losses), np.mean(aucs)
+    return np.mean(losses), np.nanmean(aucs)
     
     
 def main(in_file, config, out_dir):
@@ -282,7 +286,12 @@ def main(in_file, config, out_dir):
 
             loss = F.binary_cross_entropy(preds.squeeze(), y.squeeze())  #FIXME make sure this works for multi-example batch!
             losses.append(loss.item())
-            auc = roc_auc_score(y_true=y_np[0, :], y_score=preds.squeeze().detach().cpu().numpy())
+
+            pred_np = preds.squeeze().detach().cpu().numpy()
+            if np.max(y_np[0, :]) == np.min(y_np[0, :]):
+                auc = np.NaN
+            else:
+                auc = roc_auc_score(y_true=y_np[0, :], y_score=pred_np)
             aucs.append(auc)
 
             # TODO this ignore_index seems to be useful!
@@ -301,7 +310,7 @@ def main(in_file, config, out_dir):
         torch.save(model.state_dict(), _model_path)
         logging.info("Model checkpoint saved at: {}".format(_model_path))
                 
-        logging.info("End of epoch {}, training: mean loss {}, mean au-ROC {}".format(epoch, np.mean(losses), np.mean(aucs)))
+        logging.info("End of epoch {}, training: mean loss {}, mean au-ROC {}".format(epoch, np.mean(losses), np.nanmean(aucs)))
         total_loss = 0
         # pick a random training example and print the prediction
         idx = np.random.randint(0, len(x_tr))
