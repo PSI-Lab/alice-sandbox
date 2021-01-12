@@ -204,10 +204,10 @@ def eval_model(model, _x, _y):
     model.eval()
     losses = []
     aucs = []
-    for i, (x, y) in enumerate(zip(_x, _y)):  #TODO batch mode
+    for i, (x_np, y_np) in enumerate(zip(_x, _y)):  #TODO batch mode
         # add batch dim, convert to torch tensor, make pred
-        x = torch.from_numpy(x[np.newaxis, :, :]).float()
-        y = torch.from_numpy(y[np.newaxis, :]).float()
+        x = torch.from_numpy(x_np[np.newaxis, :, :]).float()
+        y = torch.from_numpy(y_np[np.newaxis, :]).float()
         preds = model(x, mask=None)  # no masking since parsing one example at a time for now
         # loss
         loss = F.binary_cross_entropy(preds.squeeze(), y.squeeze())  #FIXME make sure this works for multi-example batch!
@@ -218,7 +218,7 @@ def eval_model(model, _x, _y):
         if np.max(y) == np.min(y):
             auc = np.NaN
         else:
-            auc = roc_auc_score(y_true=y, y_score=pred_np)
+            auc = roc_auc_score(y_true=y_np, y_score=pred_np)
         aucs.append(auc)
     return np.mean(losses), np.nanmean(aucs)
     
