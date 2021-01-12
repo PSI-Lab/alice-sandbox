@@ -282,7 +282,7 @@ def main(in_file, config, out_dir):
 
             loss = F.binary_cross_entropy(preds.squeeze(), y.squeeze())  #FIXME make sure this works for multi-example batch!
             losses.append(loss.item())
-            auc = roc_auc_score(y_true=y, y_score=preds.squeeze().detach().cpu().numpy())
+            auc = roc_auc_score(y_true=y_np[0, :], y_score=preds.squeeze().detach().cpu().numpy())
             aucs.append(auc)
 
             # TODO this ignore_index seems to be useful!
