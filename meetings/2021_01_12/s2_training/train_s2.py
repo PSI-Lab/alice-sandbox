@@ -215,7 +215,7 @@ def eval_model(model, _x, _y):
         losses.append(loss.item())
         # au-ROC
         pred_np = preds.squeeze().detach().cpu().numpy()
-        if np.max(y) == np.min(y):
+        if np.max(y_np) == np.min(y_np):
             auc = np.NaN
         else:
             auc = roc_auc_score(y_true=y_np, y_score=pred_np)
