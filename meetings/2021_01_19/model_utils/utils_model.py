@@ -854,7 +854,7 @@ class Evaluator(object):
         df_target_hloop = []
         for (bb_x, bb_y), (siz_x, siz_y), bb_type in target_bb:
             if convert_tl_to_tr:
-                bb_y = bb_y - siz_y + 1
+                bb_y = bb_y + siz_y - 1
             row = {
                 'bb_x': bb_x,
                 'bb_y': bb_y,
