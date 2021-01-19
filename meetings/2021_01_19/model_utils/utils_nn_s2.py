@@ -288,11 +288,10 @@ def add_bb(id_bb, picked, remaining, df_info):
 
 # FIXME put everything in a class!
 
-def summarize_df(df, m_factor=2, hloop=False):
+def summarize_df(df, m_factor=1, hloop=False):
     # calculate median prob and n_proposal_norm
     # m_factor: max proposal per pixel, this can come from:
     # each pixel predict via softmax and scalar size output
-    # each pixel predict topk marginal probability
 
     def _tmp(siz_x, siz_y, prob):
         prob_median = np.median(prob)
