@@ -15,7 +15,7 @@ import math
 
 
 class MultiHeadAttention(nn.Module):
-    def __init__(self, heads, d_model, dropout = 0.1):
+    def __init__(self, heads, d_model, dropout=0.1):
         super().__init__()
 
         self.d_model = d_model
@@ -45,13 +45,13 @@ class MultiHeadAttention(nn.Module):
 
         # transpose to get dimensions bs * h * sl * d_model
 
-        k = k.transpose(1 ,2)
-        q = q.transpose(1 ,2)
-        v = v.transpose(1 ,2)
+        k = k.transpose(1, 2)
+        q = q.transpose(1, 2)
+        v = v.transpose(1, 2)
         scores = attention(q, k, v, self.d_k, mask, self.dropout)
 
         # concatenate heads and put through final linear layer
-        concat = scores.transpose(1 ,2).contiguous() \
+        concat = scores.transpose(1, 2).contiguous() \
             .view(bs, -1, self.d_model)
 
         output = self.out(concat)
@@ -65,13 +65,13 @@ class MultiHeadAttention(nn.Module):
 
 
 def attention(q, k, v, d_k, mask=None, dropout=None):
-
-    scores = torch.matmul(q, k.transpose(-2, -1)) /  math.sqrt(d_k)
+    scores = torch.matmul(q, k.transpose(-2, -1)) / math.sqrt(d_k)
     if mask is not None:
         #         print(mask.shape)
-        mask = mask.unsqueeze(1).unsqueeze \
-            (-1)  # add dimension for heads, so we can broadcast, this makes it batch x 1 x length x 1
-        mask = torch.matmul(mask, mask.transpose(-2, -1))  # use outer product to conver length-wise mask to matrix, e.g. l=5 ones will correspond to 5x5 ones matrix, this makes batch x 1 x length x length
+        mask = mask.unsqueeze(1).unsqueeze(
+            -1)  # add dimension for heads, so we can broadcast, this makes it batch x 1 x length x 1
+        mask = torch.matmul(mask, mask.transpose(-2,
+                                                 -1))  # use outer product to conver length-wise mask to matrix, e.g. l=5 ones will correspond to 5x5 ones matrix, this makes batch x 1 x length x length
         scores = scores.masked_fill(mask == 0, -1e9)
     scores = F.softmax(scores, dim=-1)
 
@@ -83,12 +83,13 @@ def attention(q, k, v, d_k, mask=None, dropout=None):
 
 
 class FeedForward(nn.Module):
-    def __init__(self, d_model, d_ff=2048, dropout = 0.1):
+    def __init__(self, d_model, d_ff=2048, dropout=0.1):
         super().__init__()
         # We set d_ff as a default to 2048
         self.linear_1 = nn.Linear(d_model, d_ff)
         self.dropout = nn.Dropout(dropout)
         self.linear_2 = nn.Linear(d_ff, d_model)
+
     def forward(self, x):
         x = self.dropout(F.relu(self.linear_1(x)))
         x = self.linear_2(x)
@@ -96,7 +97,7 @@ class FeedForward(nn.Module):
 
 
 class Norm(nn.Module):
-    def __init__(self, d_model, eps = 1e-6):
+    def __init__(self, d_model, eps=1e-6):
         super().__init__()
 
         self.size = d_model
@@ -104,6 +105,7 @@ class Norm(nn.Module):
         self.alpha = nn.Parameter(torch.ones(self.size))
         self.bias = nn.Parameter(torch.zeros(self.size))
         self.eps = eps
+
     def forward(self, x):
         norm = self.alpha * (x - x.mean(dim=-1, keepdim=True)) \
                / (x.std(dim=-1, keepdim=True) + self.eps) + self.bias
@@ -111,7 +113,7 @@ class Norm(nn.Module):
 
 
 class EncoderLayer(nn.Module):
-    def __init__(self, d_model, heads, dropout = 0.1):
+    def __init__(self, d_model, heads, dropout=0.1):
         super().__init__()
         self.norm_1 = Norm(d_model)
         self.norm_2 = Norm(d_model)
@@ -122,7 +124,7 @@ class EncoderLayer(nn.Module):
 
     def forward(self, x, mask):
         x2 = self.norm_1(x)
-        x = x + self.dropout_1(self.attn(x2 ,x2 ,x2 ,mask))
+        x = x + self.dropout_1(self.attn(x2, x2, x2, mask))
         x = self.dropout_1(x)
         x2 = self.norm_2(x)
         x = x + self.dropout_2(self.ff(x2))
@@ -169,8 +171,18 @@ class MyModel(nn.Module):
 
 class Predictor(object):
     model_versions = {
-        # debug versions
-        'v0.1': 'GBTqM9',  # https://github.com/PSI-Lab/alice-sandbox/tree/f094cf840424327629ed9ef22e642c728e401a6d/meetings/2021_01_12#s2-training-update
+        # deprecated: not compatible versions
+        'v0.1': 'GBTqM9',  # old data encoder (9 features?)
+
+        # compatible versions
+        # https://github.com/PSI-Lab/alice-sandbox/tree/f094cf840424327629ed9ef22e642c728e401a6d/meetings/2021_01_12#s2-training-update
+        # psi-lab-sandbox/meetings/2021_01_12/s2_training/result/synthetic_s1_pred_1000_t0p1_k1
+        'v0.2': 'vUOavG',
+
+    }
+
+    params = {
+        'v0.2': {'in_size': 11, 'd_model': 100, 'N': 6, 'heads': 5, 'n_hid': 20},
     }
 
     def __init__(self, model_ckpt, in_size=9, d_model=100, N=5, heads=5, n_hid=20):
@@ -178,11 +190,17 @@ class Predictor(object):
         dc_client = dc.Client()
         if model_ckpt in self.model_versions:
             model_file = dc_client.get_path(self.model_versions[model_ckpt])
+            in_size = self.params[model_ckpt]['in_size']
+            d_model = self.params[model_ckpt]['d_model']
+            N = self.params[model_ckpt]['N']
+            heads = self.params[model_ckpt]['heads']
+            n_hid = self.params[model_ckpt]['n_hid']
         elif os.path.isfile(model_ckpt):
             model_file = model_ckpt
         else:
             model_file = dc_client.get_path(model_ckpt)
 
+        print("Loading S2 model {} with params: in_size {}, d_model {}, N {}, heads {}, n_hid {}".format(model_ckpt, in_size, d_model, N, heads, n_hid))
         model = MyModel(in_size, d_model, N, heads, n_hid)
         model.load_state_dict(torch.load(model_file, map_location=torch.device('cpu')))
         # set to be in inference mode

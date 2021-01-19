@@ -45,7 +45,7 @@ Produced by [make_plot_2.ipynb](make_plot_2.ipynb)
 
 ## S2 inference & eval
 
-Upload a debug version model:
+Upload a debug version model (this is the wrong one, using old data encoder):
 
 ```
 (yeast_d_cell) alicegao@Alices-MacBook-Pro:~/work/psi-lab-sandbox/meetings/2021_01_19(master)$ dcl upload ../2021_01_12/s2_training/result/synthetic/model_ckpt_ep_28.pth
@@ -58,6 +58,52 @@ model_versions = {
     'v0.1': 'GBTqM9',  # https://github.com/PSI-Lab/alice-sandbox/tree/f094cf840424327629ed9ef22e642c728e401a6d/meetings/2021_01_12#s2-training-update
 }
 ```
+
+
+Uploaded the correct version, trained on 1000-dataset:
+
+```
+(pytorch_plot_py3) alice@alice-new:~/work/psi-lab-sandbox/meetings/2021_01_12/s2_training/result/synthetic_s1_pred_1000_t0p1_k1(master)$ dcl upload model_ckpt_ep_19.pth
+vUOavG
+```
+
+versions and params:
+
+```
+    model_versions = {
+        # deprecated: not compatible versions
+        'v0.1': 'GBTqM9',  # old data encoder (9 features?)
+
+        # compatible versions
+        'v0.2': 'vUOavG',  # https://github.com/PSI-Lab/alice-sandbox/tree/f094cf840424327629ed9ef22e642c728e401a6d/meetings/2021_01_12#s2-training-update
+    }
+
+    params = {
+        'v0.2': {'in_size': 11, 'd_model': 100, 'N': 6, 'heads': 5, 'n_hid': 20},
+    }
+```
+
+
+Updated pipeline to deal with both softmax and scalar output unit probabilities:
+
+```
+import model_utils.utils_model as us1
+import model_utils.utils_s2 as us2 # TODO merge s2 util
+from model_utils.utils_nn_s2 import predict_wrapper
+
+predictor_s1 = us1.Predictor('v1.0')
+predictor_s2 = us2.Predictor('v0.2')
+
+seq = 'ACGATGACGATAGACGCGACGACAGCGAT'
+
+uniq_stem, uniq_iloop, uniq_hloop = predictor_s1.predict_bb(seq, threshold=0.1, topk=1, perc_cutoff=0)
+df_pred = predict_wrapper(uniq_stem, uniq_iloop, uniq_hloop, discard_ns_stem=True, min_hloop_size=2, seq=seq, m_factor=1, predictor=predictor_s2)
+```
+
+(side note: last round of training used make_dataset.py which did not scale hloop n_proposal by 2, so the inference pipeline is implemented to
+be compatible to that. It should be ok since NN should be able to figure out, since we have 1-hot encoded bb type.)
+
+
 
 ## Batch Mode
 
