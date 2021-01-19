@@ -221,8 +221,8 @@ class Predictor(object):
         assert df['prob_sm_med'].max() <= 1
         assert df['prob_sl_med'].min() >= 0
         assert df['prob_sl_med'].max() <= 1
-        assert df['n_sm_proposal_norm'].min() > 0
-        assert df['n_sl_proposal_norm'].min() > 0
+        assert df['n_sm_proposal_norm'].min() >= 0
+        assert df['n_sl_proposal_norm'].min() >= 0
         # relax this one, TODO log warning
         # assert df['n_proposal_norm'].max() <= 1
         if df['n_sm_proposal_norm'].max() > 1:
