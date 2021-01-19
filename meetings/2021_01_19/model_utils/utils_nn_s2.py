@@ -293,17 +293,30 @@ def summarize_df(df, m_factor=1, hloop=False):
     # m_factor: max proposal per pixel, this can come from:
     # each pixel predict via softmax and scalar size output
 
-    def _tmp(siz_x, siz_y, prob):
-        prob_median = np.median(prob)
-        n_proposal_norm = len(prob) / (m_factor * float(siz_x * siz_y))
-        if hloop:
-            n_proposal_norm = 2 * n_proposal_norm
-        return prob_median, n_proposal_norm
+    def _tmp(siz_x, siz_y, prob_sm, prob_sl):  # compatible with https://github.com/PSI-Lab/alice-sandbox/blob/master/meetings/2021_01_12/s2_training/make_dataset.py#L27
+        if len(prob_sm) == 0:  # avoid nan with np.median
+            prob_sm_med = 0
+        else:
+            prob_sm_med = np.median(prob_sm)
 
-    df = dgp.add_columns(df, ['prob_median', 'n_proposal_norm'],
-                         ['siz_x', 'siz_y', 'prob'], _tmp)
+        if len(prob_sl) == 0:  # avoid nan with np.median
+            prob_sl_med = 0
+        else:
+            prob_sl_med = np.median(prob_sl)
+
+        n_sm_proposal_norm = len(prob_sm) / (m_factor * float(siz_x * siz_y))
+        n_sl_proposal_norm = len(prob_sl) / (m_factor * float(siz_x * siz_y))
+
+        # not doing this since S2 training make_dataset didn't do it (NN should be smart enought to figure out since we have the 1-hot encoding bb type)
+        # if hloop:
+        #     n_sm_proposal_norm = 2 * n_sm_proposal_norm
+        #     n_sl_proposal_norm = 2 * n_sl_proposal_norm
+        return prob_sm_med, n_sm_proposal_norm, prob_sl_med, n_sl_proposal_norm
+
+    df = dgp.add_columns(df, ['prob_sm_med', 'n_sm_proposal_norm', 'prob_sl_med', 'n_sl_proposal_norm'],
+                         ['siz_x', 'siz_y', 'prob_sm', 'prob_sl'], _tmp)
     # subset columns
-    df = df[['bb_x', 'bb_y', 'siz_x', 'siz_y', 'prob_median', 'n_proposal_norm']]
+    df = df[['bb_x', 'bb_y', 'siz_x', 'siz_y', 'prob_sm_med', 'n_sm_proposal_norm', 'prob_sl_med', 'n_sl_proposal_norm']]
 
     # TODO assert equal before converting to int!
     df['bb_x'] = df['bb_x'].astype(int)

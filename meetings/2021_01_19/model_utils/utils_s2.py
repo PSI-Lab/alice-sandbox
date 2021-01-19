@@ -192,17 +192,25 @@ class Predictor(object):
 
     @staticmethod
     def _validate_df(df):
+        # skip if no data
+        if len(df) == 0:
+            return
         # validate S1 processed output
         # required fields
-        assert {'bb_x', 'bb_y', 'siz_x', 'siz_y', 'prob_median', 'n_proposal_norm'}.issubset(set(df.columns))
+        assert {'bb_x', 'bb_y', 'siz_x', 'siz_y', 'prob_sm_med', 'n_sm_proposal_norm', 'prob_sl_med', 'n_sl_proposal_norm'}.issubset(set(df.columns))
         # values
-        assert df['prob_median'].min() >= 0
-        assert df['prob_median'].max() <= 1
-        assert df['n_proposal_norm'].min() > 0
+        assert df['prob_sm_med'].min() >= 0
+        assert df['prob_sm_med'].max() <= 1
+        assert df['prob_sl_med'].min() >= 0
+        assert df['prob_sl_med'].max() <= 1
+        assert df['n_sm_proposal_norm'].min() > 0
+        assert df['n_sl_proposal_norm'].min() > 0
         # relax this one, TODO log warning
         # assert df['n_proposal_norm'].max() <= 1
-        if df['n_proposal_norm'].max() > 1:
-            print("n_proposal_norm max {} > 1?".format(df['n_proposal_norm'].max()))
+        if df['n_sm_proposal_norm'].max() > 1:
+            print("n_sm_proposal_norm max {} > 1?".format(df['n_sm_proposal_norm'].max()))
+        if df['n_sm_proposal_norm'].max() > 1:
+            print("n_sl_proposal_norm max {} > 1?".format(df['n_sl_proposal_norm'].max()))
         # no duplicate bbs
         assert len(df[['bb_x', 'bb_y', 'siz_x', 'siz_y']].drop_duplicates()) == len(df)
 
@@ -216,15 +224,18 @@ class Predictor(object):
         if stems is not None:
             self._validate_df(stems)
             for _, x in stems.iterrows():
-                features.append([1, 0, 0, x['bb_x'], x['bb_y'], x['siz_x'], x['siz_y'], x['prob_median'], x['n_proposal_norm']])
+                features.append([1, 0, 0, x['bb_x'], x['bb_y'], x['siz_x'], x['siz_y'],
+                                 x['prob_sm_med'], x['n_sm_proposal_norm'], x['prob_sl_med'], x['n_sl_proposal_norm']])
         if iloops is not None:
             self._validate_df(iloops)
             for _, x in iloops.iterrows():
-                features.append([0, 1, 0, x['bb_x'], x['bb_y'], x['siz_x'], x['siz_y'], x['prob_median'], x['n_proposal_norm']])
+                features.append([0, 1, 0, x['bb_x'], x['bb_y'], x['siz_x'], x['siz_y'],
+                                 x['prob_sm_med'], x['n_sm_proposal_norm'], x['prob_sl_med'], x['n_sl_proposal_norm']])
         if hloops is not None:
             self._validate_df(hloops)
             for _, x in hloops.iterrows():
-                features.append([0, 0, 1, x['bb_x'], x['bb_y'], x['siz_x'], x['siz_y'], x['prob_median'], x['n_proposal_norm']])
+                features.append([0, 0, 1, x['bb_x'], x['bb_y'], x['siz_x'], x['siz_y'],
+                                 x['prob_sm_med'], x['n_sm_proposal_norm'], x['prob_sl_med'], x['n_sl_proposal_norm']])
         features = np.asarray(features)
         return features
 
