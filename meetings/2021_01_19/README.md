@@ -26,6 +26,43 @@ See https://docs.google.com/presentation/d/13zUHleI0qxjxiadpLi_kK5VMamjEQ_hwrLPQ
 
 Produced by [investigate_s1_pred.ipynb](investigate_s1_pred.ipynb)
 
+TODO: investigate
+
+## lower on_prob threshold for inference and check S1 performance
+
+threshold=0.001
+
+```
+python model_utils/run_stage_1.py --data "`dcl path ZQi8RT`" --num 1000 --random_state 5555 --threshold 0.001 --topk 1 --perc_cutoff 0 --model v1.0 --out_file data/synthetic_s1_pred_1000_t0p001_k1.pkl.gz
+```
+
+![plot/s1_performance_very_low_threshold.png](plot/s1_performance_very_low_threshold.png)
+
+Lowering the `on` threshold to 0.001 increased the sensitivity a lot (as expected),
+but at a cost of 10x the number of bounding boxes.
+
+Produced by [make_plot_2.ipynb](make_plot_2.ipynb)
+
+## S2 inference & eval
+
+Upload a debug version model:
+
+```
+(yeast_d_cell) alicegao@Alices-MacBook-Pro:~/work/psi-lab-sandbox/meetings/2021_01_19(master)$ dcl upload ../2021_01_12/s2_training/result/synthetic/model_ckpt_ep_28.pth
+GBTqM9
+```
+
+```
+model_versions = {
+    # debug versions
+    'v0.1': 'GBTqM9',  # https://github.com/PSI-Lab/alice-sandbox/tree/f094cf840424327629ed9ef22e642c728e401a6d/meetings/2021_01_12#s2-training-update
+}
+```
+
+## Batch Mode
+
+WIP
+
 ## Read paper
 
 ### DeepSets
