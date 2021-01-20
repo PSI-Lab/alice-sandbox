@@ -293,7 +293,13 @@ def summarize_df(df, m_factor=1, hloop=False):
     # m_factor: max proposal per pixel, this can come from:
     # each pixel predict via softmax and scalar size output
 
-    def _tmp(siz_x, siz_y, prob_sm, prob_sl):  # compatible with https://github.com/PSI-Lab/alice-sandbox/blob/master/meetings/2021_01_12/s2_training/make_dataset.py#L27
+    # handle cases where no prediction
+    if len(df) == 0:
+        return pd.DataFrame(data=None, columns=['bb_x', 'bb_y', 'siz_x', 'siz_y', 'prob_sm_med', 'n_sm_proposal_norm',
+                                                'prob_sl_med', 'n_sl_proposal_norm'])
+
+    def _tmp(siz_x, siz_y, prob_sm,
+             prob_sl):  # compatible with https://github.com/PSI-Lab/alice-sandbox/blob/master/meetings/2021_01_12/s2_training/make_dataset.py#L27
         if len(prob_sm) == 0:  # avoid nan with np.median
             prob_sm_med = 0
         else:
