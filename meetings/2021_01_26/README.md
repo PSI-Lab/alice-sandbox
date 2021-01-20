@@ -4,8 +4,78 @@
 Continued from last week.
 
 
-WIP debugging pruning + s2 inference: eval_s2.ipynb
+### debugging pruning + s2 inference: eval_s2.ipynb
 
+non standard stems not pruned? min loop size not pruned? -> nope,
+pruning working, plot was wrong since we didn't generate the correct db_str, due to pseudoknot.
+Temp fix: alternating use of 3 sets of brackets '()', '[]', '{}' when generating the string.
+Didn't want to spend too much time making a better fix since db_str itself is a handicapped system.
+A proper way tp visualize is to use the base pairing matrix as the graph structure.
+
+```
+def stem2db_str(df_stem, seq_len):
+    bracket_pairs = cycle([('(', ')'), ('[', ']'), ('{', '}')])
+
+    db_str = ['.'] * seq_len
+    for _, row in df_stem.iterrows():
+        bb_x = int(row['bb_x'])
+        bb_y = int(row['bb_y'])
+        siz = int(row['siz_x'])
+        siz_y = int(row['siz_y'])
+        assert siz == siz_y
+        bracket_pair = next(bracket_pairs)  # py3
+        for i in range(siz):
+            db_str[bb_x+i] = bracket_pair[0]
+            db_str[bb_y-i] = bracket_pair[1]
+    return ''.join(db_str)
+```
+
+![plot/update_bracket_for_forna_display.png](plot/update_bracket_for_forna_display.png)
+
+### Added plot using networkx
+
+```
+def display_ss_graph(df_stem, seq):
+    G = nx.Graph()
+    nodes = []
+    for i, base in enumerate(seq):
+        nodes.append((i, {"label": base}))
+    G.add_nodes_from(nodes)
+    # backbone
+    for i in range(len(seq)-1):
+        G.add_edge(i, i+1)
+    # hydrogen bonds
+    for _, row in df_stem.iterrows():
+        bb_x = int(row['bb_x'])
+        bb_y = int(row['bb_y'])
+        siz = int(row['siz_x'])
+        siz_y = int(row['siz_y'])
+        assert siz == siz_y
+        for i in range(siz):
+            G.add_edge(bb_x+i,bb_y-i)
+    return G
+
+
+G = display_ss_graph(df_pred[df_pred['bb_type'] == 'stem'], seq)
+nx.draw(G, with_labels=True)
+```
+
+![plot/forna_vs_networkx.png](plot/forna_vs_networkx.png)
+
+WIP how to display base on node?
+
+WIP does not display nicely for complex structure. Need tweaks?
+
+
+
+### handle cases where some bb type is empty
+
+Fixed, e.g. no iloop:
+
+```
+CGUAUCCGCCCGGAUUA
+...((((....))))..
+```
 
 ## TODOs
 
@@ -58,6 +128,9 @@ Intermediate:
 
 
 ## TODOs
+
+- use graph visualization package instead of forna, so we can use base pair matrix directly,
+and no need to deal with the use of different bracket types in db_str
 
 - latent variable model
 
