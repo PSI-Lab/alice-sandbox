@@ -1,113 +1,24 @@
 
-
-## Update plot from last week
-
-Fixed bug in calculating sensitivity for plotting:
-target bb represented in old data format (top left corner as reference),
-but prediction in new data format (top right corner reference),
-which resulted in very low sensitivity.
-
-Updated plot:
-
-![plot/s1_performance_param_pair.png](plot/s1_performance_param_pair.png)
-Above plot: scatter plot of per-example identical bb sensitivity, for all parameter pairwise comparison.
-Each data point is one example.
-
-![plot/s1_performance_histogram.png](plot/s1_performance_histogram.png)
-Above plot: histogram of per-example identical bb sensitivity for different parameter setting.
-
-
-produced by make_plot.ipynb.
-
-
-## Investigate missed bounding boxes
-
-See https://docs.google.com/presentation/d/13zUHleI0qxjxiadpLi_kK5VMamjEQ_hwrLPQinNZ7Ls/edit#slide=id.gb702f07afc_0_0
-
-Produced by [investigate_s1_pred.ipynb](investigate_s1_pred.ipynb)
-
-TODO: investigate
-
-## lower on_prob threshold for inference and check S1 performance
-
-threshold=0.001
-
-```
-python model_utils/run_stage_1.py --data "`dcl path ZQi8RT`" --num 1000 --random_state 5555 --threshold 0.001 --topk 1 --perc_cutoff 0 --model v1.0 --out_file data/synthetic_s1_pred_1000_t0p001_k1.pkl.gz
-```
-
-![plot/s1_performance_very_low_threshold.png](plot/s1_performance_very_low_threshold.png)
-
-Lowering the `on` threshold to 0.001 increased the sensitivity a lot (as expected),
-but at a cost of 10x the number of bounding boxes.
-
-Produced by [make_plot_2.ipynb](make_plot_2.ipynb)
-
 ## S2 inference & eval
 
-Upload a debug version model (this is the wrong one, using old data encoder):
+Continued from last week.
 
-```
-(yeast_d_cell) alicegao@Alices-MacBook-Pro:~/work/psi-lab-sandbox/meetings/2021_01_19(master)$ dcl upload ../2021_01_12/s2_training/result/synthetic/model_ckpt_ep_28.pth
-GBTqM9
-```
-
-```
-model_versions = {
-    # debug versions
-    'v0.1': 'GBTqM9',  # https://github.com/PSI-Lab/alice-sandbox/tree/f094cf840424327629ed9ef22e642c728e401a6d/meetings/2021_01_12#s2-training-update
-}
-```
-
-
-Uploaded the correct version, trained on 1000-dataset:
-
-```
-(pytorch_plot_py3) alice@alice-new:~/work/psi-lab-sandbox/meetings/2021_01_12/s2_training/result/synthetic_s1_pred_1000_t0p1_k1(master)$ dcl upload model_ckpt_ep_19.pth
-vUOavG
-```
-
-versions and params:
-
-```
-    model_versions = {
-        # deprecated: not compatible versions
-        'v0.1': 'GBTqM9',  # old data encoder (9 features?)
-
-        # compatible versions
-        'v0.2': 'vUOavG',  # https://github.com/PSI-Lab/alice-sandbox/tree/f094cf840424327629ed9ef22e642c728e401a6d/meetings/2021_01_12#s2-training-update
-    }
-
-    params = {
-        'v0.2': {'in_size': 11, 'd_model': 100, 'N': 6, 'heads': 5, 'n_hid': 20},
-    }
-```
-
-
-Updated pipeline to deal with both softmax and scalar output unit probabilities:
-
-```
-import model_utils.utils_model as us1
-import model_utils.utils_s2 as us2 # TODO merge s2 util
-from model_utils.utils_nn_s2 import predict_wrapper
-
-predictor_s1 = us1.Predictor('v1.0')
-predictor_s2 = us2.Predictor('v0.2')
-
-seq = 'ACGATGACGATAGACGCGACGACAGCGAT'
-
-uniq_stem, uniq_iloop, uniq_hloop = predictor_s1.predict_bb(seq, threshold=0.1, topk=1, perc_cutoff=0)
-df_pred = predict_wrapper(uniq_stem, uniq_iloop, uniq_hloop, discard_ns_stem=True, min_hloop_size=2, seq=seq, m_factor=1, predictor=predictor_s2)
-```
-
-(side note: last round of training used make_dataset.py which did not scale hloop n_proposal by 2, so the inference pipeline is implemented to
-be compatible to that. It should be ok since NN should be able to figure out, since we have 1-hot encoded bb type.)
 
 WIP debugging pruning + s2 inference: eval_s2.ipynb
+
+
+## TODOs
+
+try a few more params for S1 comparison plot: (1) t=0.02, k=1,c=0, (2) t=0.1,k=0,c=0.9, (3) t=0.1,k=0,c=0.5, ….etc.
+generate another random test dataset (use new data format with top right corner)
+try t=0.000001
+try t=0.000001 and k=2
 
 ## Batch Mode
 
 WIP
+
+
 
 ## Read paper
 
@@ -239,3 +150,4 @@ min hloop size?
 
 
 old dataset in top left corner format, convert everything to top right?
+
