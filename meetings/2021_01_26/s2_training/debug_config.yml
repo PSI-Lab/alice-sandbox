@@ -4,7 +4,7 @@ n_dim: 20
 n_attn_layer: 2
 n_heads: 5
 n_hid: 20
-lr: 0.0001
+lr: 0.002
 epoch: 5
 
 

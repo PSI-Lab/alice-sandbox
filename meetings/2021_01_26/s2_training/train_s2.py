@@ -8,6 +8,7 @@ import random
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.utils.data import Dataset, DataLoader, ConcatDataset
 import copy
 import pandas as pd
 import dgutils.pandas as dgp
@@ -66,8 +67,9 @@ class MultiHeadAttention(nn.Module):
         if mask is not None:
             # mask out positions on output
             mask = mask.unsqueeze(-1)  # add feature dimension for broadcasting
+            # print(output)
             output = output.masked_fill(mask == 0, 0)
-
+            # print(output)
         return output
 
 
@@ -78,7 +80,9 @@ def attention(q, k, v, d_k, mask=None, dropout=None):
 #         print(mask.shape)
         mask = mask.unsqueeze(1).unsqueeze(-1)  # add dimension for heads, so we can broadcast, this makes it batch x 1 x length x 1
         mask = torch.matmul(mask, mask.transpose(-2, -1))  # use outer product to conver length-wise mask to matrix, e.g. l=5 ones will correspond to 5x5 ones matrix, this makes batch x 1 x length x length
+        # print(scores)
         scores = scores.masked_fill(mask == 0, -1e9)
+        # print(scores)
     scores = F.softmax(scores, dim=-1)
     
     if dropout is not None:
@@ -136,7 +140,9 @@ class EncoderLayer(nn.Module):
         if mask is not None:
             # mask out positions on output
             mask = mask.unsqueeze(-1)  # add feature dimension for broadcasting
+            # print(x[0, :, 0])
             x = x.masked_fill(mask == 0, 0)
+            # print(x[0, :, 0])
         return x    
 
 
@@ -168,8 +174,9 @@ class MyModel(nn.Module):
         if mask is not None:
             # mask out positions on output before sigmoid (mask using -1e9 so the output will be ~0)
             mask = mask.unsqueeze(-1)  # add feature dimension for broadcasting
+            # print(x[0, :, 0])
             x = x.masked_fill(mask == 0, -1e9)
-        
+            # print(x[0, :, 0])
         return self.act2(x)
 
 
@@ -221,7 +228,104 @@ def eval_model(model, _x, _y):
             auc = roc_auc_score(y_true=y_np, y_score=pred_np)
         aucs.append(auc)
     return np.mean(losses), np.nanmean(aucs)
-    
+
+
+def pad_tensor(vec, pad, dim):
+    """
+    args:
+        vec - tensor to pad
+        pad - the size to pad to
+        dim - dimension to pad
+    return:
+        a new tensor padded to 'pad' in dimension 'dim'
+    """
+    pad_size = list(vec.shape)
+    pad_size[dim] = pad - vec.size(dim)
+    return torch.cat([vec, torch.zeros(*pad_size)], dim=dim)
+
+
+class PadBatch:
+    def __init__(self):
+        pass
+
+    def pad(self, batch):
+        """
+        args:
+            batch - list of (x, y)
+        reutrn:
+            x after padding
+            y after padding
+            mask
+        """
+        max_len = max(map(lambda x: x[0].shape[0], batch))
+        x_all = []
+        y_all = []
+        m_all = []
+        for x, y in batch:
+            current_len = x.shape[0]
+            assert current_len == y.shape[0]
+            x_pad = np.zeros((max_len, x.shape[1]))
+            x_pad[:current_len, :] = x
+            y_pad = np.zeros(max_len)
+            y_pad[:current_len] = y
+            mask = np.zeros(max_len)
+            mask[:current_len] = 1
+            x_all.append(x_pad)
+            y_all.append(y_pad)
+            m_all.append(mask)
+        x_all = np.asarray(x_all)
+        y_all = np.asarray(y_all)
+        m_all = np.asarray(m_all)
+        assert x_all.shape[0] == y_all.shape[0]
+        assert x_all.shape[0] == m_all.shape[0]
+        return x_all, y_all, m_all
+
+    def __call__(self, batch):
+        return self.pad(batch)
+
+
+class MyDataSet(Dataset):
+    # TODO length grouping
+
+    def __init__(self, x, y):
+        # both x and y are list of np arr (since they are of variable length)
+        assert len(x) == len(y)
+        self.x = x
+        self.y = y
+        self.len = len(x)
+
+    def __getitem__(self, index):
+        return self.x[index], self.y[index]
+
+
+    def __len__(self):
+        return self.len
+
+
+loss_b = torch.nn.BCELoss(reduction='none')
+
+
+def masked_loss_b(x, y, m):
+    # batch x len
+    l = loss_b(x, y)
+    n_valid_output = torch.sum(m, dim=1)  # vector of length = batch
+    loss_spatial_sum = torch.sum(torch.mul(l, m), dim=1)
+    n_valid_output[n_valid_output == 0] = 1  # in case some example has all 0
+    loss_spatial_mean = loss_spatial_sum / n_valid_output
+    loss_batch_mean = torch.mean(loss_spatial_mean, dim=0)
+    return torch.mean(loss_batch_mean)
+
+
+def group_by_length(x, n_group):
+    # x: list of np arr with variable length in dim 0
+    # return a list of n_group lists, of indexes
+    # with equal number of elements in each group
+    # TODO better version: with each group covering roughly the same range of length ( max_len - min_len roughly the same)
+    all_len = [len(a) for a in x]
+    idx_sorted = np.argsort(all_len)
+    idx_group = np.array_split(idx_sorted, n_group)
+    return idx_group
+
     
 def main(in_file, config, out_dir):
     # load config
@@ -255,7 +359,38 @@ def main(in_file, config, out_dir):
     x_va = x_all[n_tr:]
     y_tr = y_all[:n_tr]
     y_va = y_all[n_tr:]
+
+    # partition by length
+    data_tr = []
+    idx_group = group_by_length(x_tr, n_group=10)
+    for idx in idx_group:
+        data_tr.append(([x_tr[i] for i in idx], [y_tr[i] for i in idx]))
+    data_va = []
+    idx_group = group_by_length(x_va, n_group=10)
+    for idx in idx_group:
+        data_va.append(([x_va[i] for i in idx], [y_va[i] for i in idx]))
     
+    # data loader
+    # data_loader_tr = DataLoader(MyDataSet(x_tr, y_tr),
+    #                             batch_size=100,
+    #                             shuffle=True,
+    #                             collate_fn=PadBatch())
+    data_loader_tr = DataLoader(torch.utils.data.ConcatDataset([MyDataSet(x, y) for x, y in data_tr]),
+                                batch_size=100,
+                                shuffle=True,
+                                collate_fn=PadBatch())
+    # data_loader_va = DataLoader(MyDataSet(x_va, y_va),
+    #                             batch_size=100,
+    #                             shuffle=True,
+    #                             collate_fn=PadBatch())
+    data_loader_va = DataLoader(torch.utils.data.ConcatDataset([MyDataSet(x, y) for x, y in data_va]),
+                                batch_size=100,
+                                shuffle=True,
+                                collate_fn=PadBatch())
+    # data_loader_tr = DataLoader(torch.utils.data.ConcatDataset([MyDataSet(x) for x in length_grouping(df_tr, n_groups)]),
+    #                             batch_size=batch_size,
+    #                             shuffle=True, num_workers=n_cpu,
+    #                             collate_fn=PadCollate2D())
 
     # training
     model.train()
@@ -265,65 +400,93 @@ def main(in_file, config, out_dir):
     for epoch in range(config['epoch']):
         losses = []
         aucs = []
-        # parse one example at a time for now FIXME
-        for i, (x, y) in enumerate(zip(x_tr, y_tr)):
+        print(epoch)
 
-            # data augmentation
-            if config['bb_augmentation_shift']:
-                x_np = bb_augmentation_shift(x, random.choice(config['bb_shift']),
-                                             config['idx_bb_x'], config['idx_bb_y'])[np.newaxis, :, :]
-            else:
-                x_np = x[np.newaxis, :, :]
-            y_np = y[np.newaxis, :]
-
+        # TODO add back bb_augmentation_shift (add as dataloader option)
+        for x_np, y_np, m_np in data_loader_tr:
             # convert to torch tensor
             x = torch.from_numpy(x_np).float()
             y = torch.from_numpy(y_np).float()
+            m = torch.from_numpy(m_np).float()
 
-            preds = model(x, mask=None)  # no masking since parsing one example at a time for now
+            preds = model(x, mask=m)
 
             optim.zero_grad()
 
-            loss = F.binary_cross_entropy(preds.squeeze(), y.squeeze())  #FIXME make sure this works for multi-example batch!
+            loss = masked_loss_b(preds.squeeze(), y.squeeze(), m)
             losses.append(loss.item())
+            print(loss)
 
-            pred_np = preds.squeeze().detach().cpu().numpy()
-            if np.max(y_np[0, :]) == np.min(y_np[0, :]):
-                auc = np.NaN
-            else:
-                auc = roc_auc_score(y_true=y_np[0, :], y_score=pred_np)
-            aucs.append(auc)
 
-            # TODO this ignore_index seems to be useful!
-    #         loss = F.cross_entropy(preds.view(-1, preds.size(-1)),
-    #         results, ignore_index=target_pad)
-    
-    
+            # TODO metric
+
             loss.backward()
             optim.step()
-            # total_loss += loss.item()
-            
-            if i % 1000 == 0:
-                logging.info("Processed {} examples".format(i))
 
-        _model_path = os.path.join(out_dir, 'model_ckpt_ep_{}.pth'.format(epoch))
-        torch.save(model.state_dict(), _model_path)
-        logging.info("Model checkpoint saved at: {}".format(_model_path))
-                
-        logging.info("End of epoch {}, training: mean loss {}, mean au-ROC {}".format(epoch, np.mean(losses), np.nanmean(aucs)))
-        total_loss = 0
-        # pick a random training example and print the prediction
-        idx = np.random.randint(0, len(x_tr))
-        pred = make_single_pred(model, x_tr[idx], y_tr[idx])
-        logging.info("Training dataset idx {}\ny: {}\npred: {}".format(idx, y_tr[idx].flatten(), pred.squeeze()))
-              
-        # validation
-        loss_va, aucs_va = eval_model(model, x_va, y_va)
-        logging.info("End of epoch {}, validation mean loss {}, mean au-ROC {}".format(epoch, np.mean(loss_va), np.mean(aucs_va)))
-        # pick a random validation example and print the prediction
-        idx = np.random.randint(0, len(x_va))
-        pred = make_single_pred(model, x_va[idx], y_va[idx])
-        logging.info("Validation dataset idx {}\ny: {}\npred: {}".format(idx, y_va[idx].flatten(), pred.squeeze()))
+    #     # parse one example at a time for now FIXME
+    #     for i, (x, y) in enumerate(zip(x_tr, y_tr)):
+    #
+    #         # data augmentation
+    #         if config['bb_augmentation_shift']:
+    #             x_np = bb_augmentation_shift(x, random.choice(config['bb_shift']),
+    #                                          config['idx_bb_x'], config['idx_bb_y'])[np.newaxis, :, :]
+    #         else:
+    #             x_np = x[np.newaxis, :, :]
+    #         y_np = y[np.newaxis, :]
+    #
+    #         # convert to torch tensor
+    #         x = torch.from_numpy(x_np).float()
+    #         y = torch.from_numpy(y_np).float()
+    #
+    #         # preds = model(x, mask=None)  # no masking since parsing one example at a time for now
+    #         # debug
+    #         mask_batch = torch.ones([x.shape[0], x.shape[1]])   # n_examples x max_length_in_batch
+    #         preds = model(x, mask=mask_batch)
+    #         # print(y[0, :])
+    #         # print(preds[0, :, 0])
+    #
+    #         optim.zero_grad()
+    #
+    #         loss = F.binary_cross_entropy(preds.squeeze(), y.squeeze())  #FIXME make sure this works for multi-example batch!
+    #         losses.append(loss.item())
+    #
+    #         pred_np = preds.squeeze().detach().cpu().numpy()
+    #         if np.max(y_np[0, :]) == np.min(y_np[0, :]):
+    #             auc = np.NaN
+    #         else:
+    #             auc = roc_auc_score(y_true=y_np[0, :], y_score=pred_np)
+    #         aucs.append(auc)
+    #
+    #         # TODO this ignore_index seems to be useful!
+    # #         loss = F.cross_entropy(preds.view(-1, preds.size(-1)),
+    # #         results, ignore_index=target_pad)
+    #
+    #
+    #         loss.backward()
+    #         optim.step()
+    #         # total_loss += loss.item()
+    #
+    #         if i % 1000 == 0:
+    #             logging.info("Processed {} examples".format(i))
+    #
+    #     _model_path = os.path.join(out_dir, 'model_ckpt_ep_{}.pth'.format(epoch))
+    #     torch.save(model.state_dict(), _model_path)
+    #     logging.info("Model checkpoint saved at: {}".format(_model_path))
+    #
+    #     logging.info("End of epoch {}, training: mean loss {}, mean au-ROC {}".format(epoch, np.mean(losses), np.nanmean(aucs)))
+    #     total_loss = 0
+    #     # pick a random training example and print the prediction
+    #     idx = np.random.randint(0, len(x_tr))
+    #     pred = make_single_pred(model, x_tr[idx], y_tr[idx])
+    #     logging.info("Training dataset idx {}\ny: {}\npred: {}".format(idx, y_tr[idx].flatten(), pred.squeeze()))
+    #
+    #     # validation
+    #     loss_va, aucs_va = eval_model(model, x_va, y_va)
+    #     logging.info("End of epoch {}, validation mean loss {}, mean au-ROC {}".format(epoch, np.mean(loss_va), np.mean(aucs_va)))
+    #     # pick a random validation example and print the prediction
+    #     idx = np.random.randint(0, len(x_va))
+    #     pred = make_single_pred(model, x_va[idx], y_va[idx])
+    #     logging.info("Validation dataset idx {}\ny: {}\npred: {}".format(idx, y_va[idx].flatten(), pred.squeeze()))
               
 #     # FIXME debug
 #     logging.info(preds.squeeze())
