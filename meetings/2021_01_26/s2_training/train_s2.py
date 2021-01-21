@@ -230,8 +230,11 @@ def make_single_pred(model, x, y):
 #     return np.mean(losses), np.nanmean(aucs)
 
 
-def eval_model(model, dataset):
-    model.eval()
+def run_one_batch(model, dataset, training=False, optim=None):
+    if not training:
+        model.eval()
+    else:
+        assert optim is not None
     losses = []
     aucs = []
     for x_np, y_np, m_np in dataset:
@@ -240,8 +243,16 @@ def eval_model(model, dataset):
         y = torch.from_numpy(y_np).float()
         m = torch.from_numpy(m_np).float()
         preds = model(x, mask=m)
+
+        if training:
+            optim.zero_grad()
+
         loss = masked_loss_b(preds.squeeze(), y.squeeze(), m)
         losses.append(loss.item())
+
+        if training:
+            loss.backward()
+            optim.step()
 
         # au-ROC
         pred_np = preds.squeeze().detach().cpu().numpy()
@@ -428,40 +439,41 @@ def main(in_file, config, out_dir):
 
     logging.info("Training start")
     for epoch in range(config['epoch']):
-        losses = []
-        aucs = []
-        print(epoch)
-
-        # TODO add back bb_augmentation_shift (add as dataloader option)
-        for x_np, y_np, m_np in data_loader_tr:  # TODo combine with eval_model, add param train=True/False
-            # convert to torch tensor
-            x = torch.from_numpy(x_np).float()
-            y = torch.from_numpy(y_np).float()
-            m = torch.from_numpy(m_np).float()
-
-            preds = model(x, mask=m)
-
-            optim.zero_grad()
-
-            loss = masked_loss_b(preds.squeeze(), y.squeeze(), m)
-            losses.append(loss.item())
-
-            loss.backward()
-            optim.step()
-
-            pred_np = preds.squeeze().detach().cpu().numpy()
-            for j in range(y_np.shape[0]):
-                mask = m_np[j, :]
-                y_true = y_np[j, :]
-                y_pred = pred_np[j, :]
-                y_true = y_true[mask == 1]
-                y_pred = y_pred[mask == 1]
-
-                if np.max(y_true) == np.min(y_true):
-                    auc = np.NaN
-                else:
-                    auc = roc_auc_score(y_true=y_true, y_score=y_pred)
-                aucs.append(auc)
+        # losses = []
+        # aucs = []
+        # print(epoch)
+        #
+        # # TODO add back bb_augmentation_shift (add as dataloader option)
+        # for x_np, y_np, m_np in data_loader_tr:  # TODo combine with eval_model, add param train=True/False
+        #     # convert to torch tensor
+        #     x = torch.from_numpy(x_np).float()
+        #     y = torch.from_numpy(y_np).float()
+        #     m = torch.from_numpy(m_np).float()
+        #
+        #     preds = model(x, mask=m)
+        #
+        #     optim.zero_grad()
+        #
+        #     loss = masked_loss_b(preds.squeeze(), y.squeeze(), m)
+        #     losses.append(loss.item())
+        #
+        #     loss.backward()
+        #     optim.step()
+        #
+        #     pred_np = preds.squeeze().detach().cpu().numpy()
+        #     for j in range(y_np.shape[0]):
+        #         mask = m_np[j, :]
+        #         y_true = y_np[j, :]
+        #         y_pred = pred_np[j, :]
+        #         y_true = y_true[mask == 1]
+        #         y_pred = y_pred[mask == 1]
+        #
+        #         if np.max(y_true) == np.min(y_true):
+        #             auc = np.NaN
+        #         else:
+        #             auc = roc_auc_score(y_true=y_true, y_score=y_pred)
+        #         aucs.append(auc)
+        losses, aucs = run_one_batch(model, data_loader_tr, training=True, optim=optim)
 
         _model_path = os.path.join(out_dir, 'model_ckpt_ep_{}.pth'.format(epoch))
         torch.save(model.state_dict(), _model_path)
@@ -475,7 +487,7 @@ def main(in_file, config, out_dir):
         logging.info("Training dataset idx {}\ny: {}\npred: {}".format(idx, y_tr[idx].flatten(), pred.squeeze()))
 
         # validation
-        loss_va, aucs_va = eval_model(model, data_loader_va)
+        loss_va, aucs_va = run_one_batch(model, data_loader_va, training=False)
         logging.info("End of epoch {}, validation mean loss {}, mean au-ROC {}".format(epoch, np.mean(loss_va), np.mean(aucs_va)))
         # pick a random validation example and print the prediction
         idx = np.random.randint(0, len(x_va))
