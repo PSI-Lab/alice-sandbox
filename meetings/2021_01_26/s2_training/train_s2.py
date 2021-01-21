@@ -205,32 +205,9 @@ def make_single_pred(model, x, y):
     y = torch.from_numpy(y[np.newaxis, :]).float()
     preds = model(x, mask=None)  # no masking since parsing one example at a time for now
     return preds
-    
-    
-# def eval_model(model, _x, _y):
-#     model.eval()
-#     losses = []
-#     aucs = []
-#     for i, (x_np, y_np) in enumerate(zip(_x, _y)):  #TODO batch mode
-#         # add batch dim, convert to torch tensor, make pred
-#         x = torch.from_numpy(x_np[np.newaxis, :, :]).float()
-#         y = torch.from_numpy(y_np[np.newaxis, :]).float()
-#         preds = model(x, mask=None)  # no masking since parsing one example at a time for now
-#         # loss
-#         loss = F.binary_cross_entropy(preds.squeeze(), y.squeeze())  #FIXME make sure this works for multi-example batch!
-#         # total_loss += loss.item()
-#         losses.append(loss.item())
-#         # au-ROC
-#         pred_np = preds.squeeze().detach().cpu().numpy()
-#         if np.max(y_np) == np.min(y_np):
-#             auc = np.NaN
-#         else:
-#             auc = roc_auc_score(y_true=y_np, y_score=pred_np)
-#         aucs.append(auc)
-#     return np.mean(losses), np.nanmean(aucs)
 
 
-def run_one_batch(model, dataset, training=False, optim=None):
+def run_one_batch(model, dataset, device, training=False, optim=None):
     if not training:
         model.eval()
     else:
@@ -242,6 +219,9 @@ def run_one_batch(model, dataset, training=False, optim=None):
         x = torch.from_numpy(x_np).float()
         y = torch.from_numpy(y_np).float()
         m = torch.from_numpy(m_np).float()
+        x = x.to(device)
+        y = y.to(device)
+        m = m.to(device)
         preds = model(x, mask=m)
 
         if training:
@@ -381,14 +361,7 @@ def main(in_file, config, out_dir):
    
     optim = torch.optim.Adam(model.parameters(), lr=config['lr'], betas=(0.9, 0.98), eps=1e-9)
     
-    # # dataset
-    # # hacky - using s2 dataset since this one has the bb sensitivity (s1 datset does not, too lazy to recompute)
-    # # use rfam for debug - will replace wtih bigger dataset (synthetic)
-    # logging.info("Loading {}".format(in_file))
-    # df = pd.read_pickle(in_file)
-    # logging.info("Loaded {} examples. Making dataset...".format(len(df)))
-    # x_all, y_all = make_dataset(df)
-    # assert len(x_all) == len(y_all)
+    # dataset
     dataset = np.load(in_file, allow_pickle=True)
     x_all = dataset['x']
     y_all = dataset['y']
@@ -412,68 +385,25 @@ def main(in_file, config, out_dir):
         data_va.append(([x_va[i] for i in idx], [y_va[i] for i in idx]))
     
     # data loader
-    # data_loader_tr = DataLoader(MyDataSet(x_tr, y_tr),
-    #                             batch_size=100,
-    #                             shuffle=True,
-    #                             collate_fn=PadBatch())
     data_loader_tr = DataLoader(torch.utils.data.ConcatDataset([MyDataSet(x, y) for x, y in data_tr]),
                                 batch_size=100,
                                 shuffle=True,
                                 collate_fn=PadBatch())
-    # data_loader_va = DataLoader(MyDataSet(x_va, y_va),
-    #                             batch_size=100,
-    #                             shuffle=True,
-    #                             collate_fn=PadBatch())
     data_loader_va = DataLoader(torch.utils.data.ConcatDataset([MyDataSet(x, y) for x, y in data_va]),
                                 batch_size=100,
                                 shuffle=True,
                                 collate_fn=PadBatch())
-    # data_loader_tr = DataLoader(torch.utils.data.ConcatDataset([MyDataSet(x) for x in length_grouping(df_tr, n_groups)]),
-    #                             batch_size=batch_size,
-    #                             shuffle=True, num_workers=n_cpu,
-    #                             collate_fn=PadCollate2D())
 
+    # device
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    logging.info("Torch device: {}".format(device))
+    model = model.to(device)
     # training
     model.train()
-    # total_loss = 0
 
     logging.info("Training start")
     for epoch in range(config['epoch']):
-        # losses = []
-        # aucs = []
-        # print(epoch)
-        #
-        # # TODO add back bb_augmentation_shift (add as dataloader option)
-        # for x_np, y_np, m_np in data_loader_tr:  # TODo combine with eval_model, add param train=True/False
-        #     # convert to torch tensor
-        #     x = torch.from_numpy(x_np).float()
-        #     y = torch.from_numpy(y_np).float()
-        #     m = torch.from_numpy(m_np).float()
-        #
-        #     preds = model(x, mask=m)
-        #
-        #     optim.zero_grad()
-        #
-        #     loss = masked_loss_b(preds.squeeze(), y.squeeze(), m)
-        #     losses.append(loss.item())
-        #
-        #     loss.backward()
-        #     optim.step()
-        #
-        #     pred_np = preds.squeeze().detach().cpu().numpy()
-        #     for j in range(y_np.shape[0]):
-        #         mask = m_np[j, :]
-        #         y_true = y_np[j, :]
-        #         y_pred = pred_np[j, :]
-        #         y_true = y_true[mask == 1]
-        #         y_pred = y_pred[mask == 1]
-        #
-        #         if np.max(y_true) == np.min(y_true):
-        #             auc = np.NaN
-        #         else:
-        #             auc = roc_auc_score(y_true=y_true, y_score=y_pred)
-        #         aucs.append(auc)
-        losses, aucs = run_one_batch(model, data_loader_tr, training=True, optim=optim)
+        losses, aucs = run_one_batch(model, data_loader_tr, device, training=True, optim=optim)
 
         _model_path = os.path.join(out_dir, 'model_ckpt_ep_{}.pth'.format(epoch))
         torch.save(model.state_dict(), _model_path)
@@ -487,82 +417,13 @@ def main(in_file, config, out_dir):
         logging.info("Training dataset idx {}\ny: {}\npred: {}".format(idx, y_tr[idx].flatten(), pred.squeeze()))
 
         # validation
-        loss_va, aucs_va = run_one_batch(model, data_loader_va, training=False)
+        loss_va, aucs_va = run_one_batch(model, data_loader_va, device, training=False)
         logging.info("End of epoch {}, validation mean loss {}, mean au-ROC {}".format(epoch, np.mean(loss_va), np.mean(aucs_va)))
         # pick a random validation example and print the prediction
         idx = np.random.randint(0, len(x_va))
         pred = make_single_pred(model, x_va[idx], y_va[idx])
         logging.info("Validation dataset idx {}\ny: {}\npred: {}".format(idx, y_va[idx].flatten(), pred.squeeze()))
 
-    #     # parse one example at a time for now FIXME
-    #     for i, (x, y) in enumerate(zip(x_tr, y_tr)):
-    #
-    #         # data augmentation
-    #         if config['bb_augmentation_shift']:
-    #             x_np = bb_augmentation_shift(x, random.choice(config['bb_shift']),
-    #                                          config['idx_bb_x'], config['idx_bb_y'])[np.newaxis, :, :]
-    #         else:
-    #             x_np = x[np.newaxis, :, :]
-    #         y_np = y[np.newaxis, :]
-    #
-    #         # convert to torch tensor
-    #         x = torch.from_numpy(x_np).float()
-    #         y = torch.from_numpy(y_np).float()
-    #
-    #         # preds = model(x, mask=None)  # no masking since parsing one example at a time for now
-    #         # debug
-    #         mask_batch = torch.ones([x.shape[0], x.shape[1]])   # n_examples x max_length_in_batch
-    #         preds = model(x, mask=mask_batch)
-    #         # print(y[0, :])
-    #         # print(preds[0, :, 0])
-    #
-    #         optim.zero_grad()
-    #
-    #         loss = F.binary_cross_entropy(preds.squeeze(), y.squeeze())  #FIXME make sure this works for multi-example batch!
-    #         losses.append(loss.item())
-    #
-    #         pred_np = preds.squeeze().detach().cpu().numpy()
-    #         if np.max(y_np[0, :]) == np.min(y_np[0, :]):
-    #             auc = np.NaN
-    #         else:
-    #             auc = roc_auc_score(y_true=y_np[0, :], y_score=pred_np)
-    #         aucs.append(auc)
-    #
-    #         # TODO this ignore_index seems to be useful!
-    # #         loss = F.cross_entropy(preds.view(-1, preds.size(-1)),
-    # #         results, ignore_index=target_pad)
-    #
-    #
-    #         loss.backward()
-    #         optim.step()
-    #         # total_loss += loss.item()
-    #
-    #         if i % 1000 == 0:
-    #             logging.info("Processed {} examples".format(i))
-    #
-    #     _model_path = os.path.join(out_dir, 'model_ckpt_ep_{}.pth'.format(epoch))
-    #     torch.save(model.state_dict(), _model_path)
-    #     logging.info("Model checkpoint saved at: {}".format(_model_path))
-    #
-    #     logging.info("End of epoch {}, training: mean loss {}, mean au-ROC {}".format(epoch, np.mean(losses), np.nanmean(aucs)))
-    #     total_loss = 0
-    #     # pick a random training example and print the prediction
-    #     idx = np.random.randint(0, len(x_tr))
-    #     pred = make_single_pred(model, x_tr[idx], y_tr[idx])
-    #     logging.info("Training dataset idx {}\ny: {}\npred: {}".format(idx, y_tr[idx].flatten(), pred.squeeze()))
-    #
-    #     # validation
-    #     loss_va, aucs_va = eval_model(model, x_va, y_va)
-    #     logging.info("End of epoch {}, validation mean loss {}, mean au-ROC {}".format(epoch, np.mean(loss_va), np.mean(aucs_va)))
-    #     # pick a random validation example and print the prediction
-    #     idx = np.random.randint(0, len(x_va))
-    #     pred = make_single_pred(model, x_va[idx], y_va[idx])
-    #     logging.info("Validation dataset idx {}\ny: {}\npred: {}".format(idx, y_va[idx].flatten(), pred.squeeze()))
-              
-#     # FIXME debug
-#     logging.info(preds.squeeze())
-#     logging.info(y.squeeze())
-    
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
