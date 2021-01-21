@@ -207,26 +207,56 @@ def make_single_pred(model, x, y):
     return preds
     
     
-def eval_model(model, _x, _y):
+# def eval_model(model, _x, _y):
+#     model.eval()
+#     losses = []
+#     aucs = []
+#     for i, (x_np, y_np) in enumerate(zip(_x, _y)):  #TODO batch mode
+#         # add batch dim, convert to torch tensor, make pred
+#         x = torch.from_numpy(x_np[np.newaxis, :, :]).float()
+#         y = torch.from_numpy(y_np[np.newaxis, :]).float()
+#         preds = model(x, mask=None)  # no masking since parsing one example at a time for now
+#         # loss
+#         loss = F.binary_cross_entropy(preds.squeeze(), y.squeeze())  #FIXME make sure this works for multi-example batch!
+#         # total_loss += loss.item()
+#         losses.append(loss.item())
+#         # au-ROC
+#         pred_np = preds.squeeze().detach().cpu().numpy()
+#         if np.max(y_np) == np.min(y_np):
+#             auc = np.NaN
+#         else:
+#             auc = roc_auc_score(y_true=y_np, y_score=pred_np)
+#         aucs.append(auc)
+#     return np.mean(losses), np.nanmean(aucs)
+
+
+def eval_model(model, dataset):
     model.eval()
     losses = []
     aucs = []
-    for i, (x_np, y_np) in enumerate(zip(_x, _y)):  #TODO batch mode
-        # add batch dim, convert to torch tensor, make pred
-        x = torch.from_numpy(x_np[np.newaxis, :, :]).float()
-        y = torch.from_numpy(y_np[np.newaxis, :]).float()
-        preds = model(x, mask=None)  # no masking since parsing one example at a time for now
-        # loss
-        loss = F.binary_cross_entropy(preds.squeeze(), y.squeeze())  #FIXME make sure this works for multi-example batch!
-        # total_loss += loss.item()
+    for x_np, y_np, m_np in dataset:
+        # convert to torch tensor
+        x = torch.from_numpy(x_np).float()
+        y = torch.from_numpy(y_np).float()
+        m = torch.from_numpy(m_np).float()
+        preds = model(x, mask=m)
+        loss = masked_loss_b(preds.squeeze(), y.squeeze(), m)
         losses.append(loss.item())
+
         # au-ROC
         pred_np = preds.squeeze().detach().cpu().numpy()
-        if np.max(y_np) == np.min(y_np):
-            auc = np.NaN
-        else:
-            auc = roc_auc_score(y_true=y_np, y_score=pred_np)
-        aucs.append(auc)
+        for j in range(y_np.shape[0]):
+            mask = m_np[j, :]
+            y_true = y_np[j, :]
+            y_pred = pred_np[j, :]
+            y_true = y_true[mask == 1]
+            y_pred = y_pred[mask == 1]
+
+            if np.max(y_true) == np.min(y_true):
+                auc = np.NaN
+            else:
+                auc = roc_auc_score(y_true=y_true, y_score=y_pred)
+            aucs.append(auc)
     return np.mean(losses), np.nanmean(aucs)
 
 
@@ -403,7 +433,7 @@ def main(in_file, config, out_dir):
         print(epoch)
 
         # TODO add back bb_augmentation_shift (add as dataloader option)
-        for x_np, y_np, m_np in data_loader_tr:
+        for x_np, y_np, m_np in data_loader_tr:  # TODo combine with eval_model, add param train=True/False
             # convert to torch tensor
             x = torch.from_numpy(x_np).float()
             y = torch.from_numpy(y_np).float()
@@ -415,13 +445,42 @@ def main(in_file, config, out_dir):
 
             loss = masked_loss_b(preds.squeeze(), y.squeeze(), m)
             losses.append(loss.item())
-            print(loss)
-
-
-            # TODO metric
 
             loss.backward()
             optim.step()
+
+            pred_np = preds.squeeze().detach().cpu().numpy()
+            for j in range(y_np.shape[0]):
+                mask = m_np[j, :]
+                y_true = y_np[j, :]
+                y_pred = pred_np[j, :]
+                y_true = y_true[mask == 1]
+                y_pred = y_pred[mask == 1]
+
+                if np.max(y_true) == np.min(y_true):
+                    auc = np.NaN
+                else:
+                    auc = roc_auc_score(y_true=y_true, y_score=y_pred)
+                aucs.append(auc)
+
+        _model_path = os.path.join(out_dir, 'model_ckpt_ep_{}.pth'.format(epoch))
+        torch.save(model.state_dict(), _model_path)
+        logging.info("Model checkpoint saved at: {}".format(_model_path))
+
+        logging.info("End of epoch {}, training: mean loss {}, mean au-ROC {}".format(epoch, np.mean(losses), np.nanmean(aucs)))
+        total_loss = 0
+        # pick a random training example and print the prediction
+        idx = np.random.randint(0, len(x_tr))
+        pred = make_single_pred(model, x_tr[idx], y_tr[idx])
+        logging.info("Training dataset idx {}\ny: {}\npred: {}".format(idx, y_tr[idx].flatten(), pred.squeeze()))
+
+        # validation
+        loss_va, aucs_va = eval_model(model, data_loader_va)
+        logging.info("End of epoch {}, validation mean loss {}, mean au-ROC {}".format(epoch, np.mean(loss_va), np.mean(aucs_va)))
+        # pick a random validation example and print the prediction
+        idx = np.random.randint(0, len(x_va))
+        pred = make_single_pred(model, x_va[idx], y_va[idx])
+        logging.info("Validation dataset idx {}\ny: {}\npred: {}".format(idx, y_va[idx].flatten(), pred.squeeze()))
 
     #     # parse one example at a time for now FIXME
     #     for i, (x, y) in enumerate(zip(x_tr, y_tr)):
