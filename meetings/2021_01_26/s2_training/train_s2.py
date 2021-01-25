@@ -432,6 +432,7 @@ def main(in_file, config, out_dir):
         logging.info("Validation dataset idx {}\ny: {}\npred: {}".format(idx, y_va[idx].flatten(), pred.squeeze()))
 
     # export metric
+    df_log_metric = pd.DataFrame(df_log_metric)
     df_log_metric.to_csv(os.path.join(out_dir, 'run_log_metric.csv'), index=False)
 
     
