@@ -401,6 +401,11 @@ def main(in_file, config, out_dir):
     # training
     model.train()
 
+    # out dir and metric logging
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+    df_log_metric = []
+
     logging.info("Training start")
     for epoch in range(config['epoch']):
         losses, aucs = run_one_batch(model, data_loader_tr, device, training=True, optim=optim)
@@ -410,6 +415,7 @@ def main(in_file, config, out_dir):
         logging.info("Model checkpoint saved at: {}".format(_model_path))
 
         logging.info("End of epoch {}, training: mean loss {}, mean au-ROC {}".format(epoch, np.mean(losses), np.nanmean(aucs)))
+        df_log_metric.append({'epoch': epoch, 'tv': 'training', 'loss': np.mean(losses), 'auc': np.nanmean(aucs)})
         total_loss = 0
         # pick a random training example and print the prediction
         idx = np.random.randint(0, len(x_tr))
@@ -418,11 +424,15 @@ def main(in_file, config, out_dir):
 
         # validation
         loss_va, aucs_va = run_one_batch(model, data_loader_va, device, training=False)
-        logging.info("End of epoch {}, validation mean loss {}, mean au-ROC {}".format(epoch, np.mean(loss_va), np.mean(aucs_va)))
+        logging.info("End of epoch {}, validation mean loss {}, mean au-ROC {}".format(epoch, np.mean(loss_va), np.nanmean(aucs_va)))
+        df_log_metric.append({'epoch': epoch, 'tv': 'validation', 'loss': np.mean(loss_va), 'auc': np.nanmean(aucs_va)})
         # pick a random validation example and print the prediction
         idx = np.random.randint(0, len(x_va))
         pred = make_single_pred(model, x_va[idx], y_va[idx])
         logging.info("Validation dataset idx {}\ny: {}\npred: {}".format(idx, y_va[idx].flatten(), pred.squeeze()))
+
+    # export metric
+    df_log_metric.to_csv(os.path.join(out_dir, 'run_log_metric.csv'), index=False)
 
     
 if __name__ == "__main__":
