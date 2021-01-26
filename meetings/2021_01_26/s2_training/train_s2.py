@@ -214,7 +214,7 @@ def run_one_epoch(model, dataset, device, training=False, optim=None):
         assert optim is not None
     losses = []
     aucs = []
-    for x_np, y_np, m_np in dataset:
+    for x_np, y_np, m_np in tqdm.tqdm(dataset):
         # convert to torch tensor
         x = torch.from_numpy(x_np).float()
         y = torch.from_numpy(y_np).float()
