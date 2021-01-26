@@ -217,7 +217,12 @@ def pick_one_bb(to_be_picked, picked, remaining, df_info):
     assert isinstance(to_be_picked, set)
     assert isinstance(picked, set)
     assert isinstance(remaining, set)
-    assert to_be_picked.issubset(remaining)
+    # to_be_picked needs to intersect with remaining, but does not
+    # necessarily need to be subset, e.g.
+    # to_be_picked can be whitelist of a just picked_bb, which was
+    # computed based on local constraints, which might include bbs that are
+    # no longer available when this function is called
+    # assert to_be_picked.issubset(remaining)
     assert len(to_be_picked.intersection(picked)) == 0
     assert isinstance(df_info, pd.DataFrame)
     
@@ -318,6 +323,12 @@ def summarize_df(df, m_factor=1, hloop=False):
         #     n_sm_proposal_norm = 2 * n_sm_proposal_norm
         #     n_sl_proposal_norm = 2 * n_sl_proposal_norm
         return prob_sm_med, n_sm_proposal_norm, prob_sl_med, n_sl_proposal_norm
+
+    # in case s1 inference only outputs one of the prob FIXME we should fix s1 inference instead
+    if 'prob_sm' not in df.columns:
+        df = dgp.add_column(df, 'prob_sm', ['siz_x'], lambda x: [])  # hacky way to add empty list as element
+    if 'prob_sl' not in df.columns:
+        df = dgp.add_column(df, 'prob_sm', ['siz_x'], lambda x: [])  # hacky way to add empty list as element
 
     df = dgp.add_columns(df, ['prob_sm_med', 'n_sm_proposal_norm', 'prob_sl_med', 'n_sl_proposal_norm'],
                          ['siz_x', 'siz_y', 'prob_sm', 'prob_sl'], _tmp)
