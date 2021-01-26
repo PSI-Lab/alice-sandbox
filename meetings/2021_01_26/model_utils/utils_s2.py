@@ -179,16 +179,27 @@ class Predictor(object):
         # psi-lab-sandbox/meetings/2021_01_12/s2_training/result/synthetic_s1_pred_1000_t0p1_k1
         'v0.2': 'vUOavG',
 
+        # https://github.com/PSI-Lab/alice-sandbox/tree/700dcd24f78312dc6b5c9e18467ff61bbbc06f92/meetings/2021_01_26#run-on-5000-dataset
+        # psi-lab-sandbox/meetings/2021_01_26/s2_training
+        'v0.3': 'PCRZSU',
     }
 
     params = {
         'v0.2': {'in_size': 11, 'd_model': 100, 'N': 6, 'heads': 5, 'n_hid': 20},
+        'v0.3': {'in_size': 11, 'd_model': 100, 'N': 5, 'heads': 5, 'n_hid': 20},
     }
 
-    def __init__(self, model_ckpt, in_size=9, d_model=100, N=5, heads=5, n_hid=20):
+    info = {
+        'v0.2': "compatible S1 inference params: threshold=0.1, topk=1, perc_cutoff=0 (not applied)",
+        'v0.3': "compatible S1 inference params: threshold=0.1, topk=1, perc_cutoff=0 (not applied)",
+    }
+
+    def __init__(self, model_ckpt, in_size=11, d_model=100, N=5, heads=5, n_hid=20):
         # model file path
         dc_client = dc.Client()
         if model_ckpt in self.model_versions:
+            assert model_ckpt in self.params
+            assert model_ckpt in self.info
             model_file = dc_client.get_path(self.model_versions[model_ckpt])
             in_size = self.params[model_ckpt]['in_size']
             d_model = self.params[model_ckpt]['d_model']
@@ -201,6 +212,11 @@ class Predictor(object):
             model_file = dc_client.get_path(model_ckpt)
 
         print("Loading S2 model {} with params: in_size {}, d_model {}, N {}, heads {}, n_hid {}".format(model_ckpt, in_size, d_model, N, heads, n_hid))
+        if model_ckpt in self.info:
+            print("Known version: {}, info:\n{}".format(model_ckpt, self.info[model_ckpt]))
+        else:
+            print("Unknown version: {}, make sure to use compatible S2 inference params".format(model_ckpt))
+
         model = MyModel(in_size, d_model, N, heads, n_hid)
         model.load_state_dict(torch.load(model_file, map_location=torch.device('cpu')))
         # set to be in inference mode
