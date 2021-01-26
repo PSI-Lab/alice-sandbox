@@ -113,7 +113,7 @@ CUDA_VISIBLE_DEVICES=2 python train_s2.py --in_file ../../2021_01_12/data/synthe
 (best model at epoch 34, plot produced by s2_training/training_progress.ipynb)
 
 
-TODO upload model?
+uploaded trained model: `PCRZSU`
 
 ### run on full dataset
 
@@ -135,12 +135,85 @@ mkdir -p result/synthetic_s2_full/
 CUDA_VISIBLE_DEVICES=2 python train_s2.py --in_file ../../2021_01_12/data/synthetic_s2_full_features.npz --config config.yml --out_dir result/synthetic_s2_full/
 ```
 
-## TODOs
+running (re-generating data)
 
-try a few more params for S1 comparison plot: (1) t=0.02, k=1,c=0, (2) t=0.1,k=0,c=0.9, (3) t=0.1,k=0,c=0.5, ….etc.
-generate another random test dataset (use new data format with top right corner)
-try t=0.000001
-try t=0.000001 and k=2
+
+## Eval
+
+### Code update
+
+- update pick_one_bb: to_be_picked needs to intersect with remaining, but does not necessarily need to be subset, e.g.
+to_be_picked can be whitelist of a just picked_bb, which was computed based on local constraints, which might include bbs that are
+no longer available when this function is called
+
+- tmp fix for a rare case: for some example, and some bb types, one of `prob_sm` and `prob_sl` might be missing,
+we add in a empty column just to be compatible for feature extraction. (proper fix is to update s1 inference to output consistent df columns)
+
+### Result
+
+
+Using s2 model `v0.3` and compatible s1 inference params (see predictor class). Eval on sub sampled 1000 data points.
+
+Sensitivity and ppv computed on base pairs:
+
+![plot/s2_eval_1000_metric.png](plot/s2_eval_1000_metric.png)
+
+Examples of groud truth and prediction in different performance categories:
+
+Perfect hit (sensitivity = ppv = 1):
+
+```
+>s1
+CGGCCCUGGUUCGUAGUGGUUGCCGUUCGAGAUGCGG
+((((([[[.....]]].))))){{{{.......}}}}
+>s2
+CGGCCCUGGUUCGUAGUGGUUGCCGUUCGAGAUGCGG
+{{{{{(((.....))).}}}}}[[[[.......]]]]
+```
+
+![plot/s2_eval_example_1.png](plot/s2_eval_example_1.png)
+
+High (>= 0.9):
+
+```
+>s1
+AUUGAAAGGGACCAUGGGGACCGCAUCUUGCGCGGGGCUCAUGAGGCGCCUUUCAAAAGUAUCCGCG
+.((((((((..[{{{{{{..((((.......))))..}}}}}}.]...))))))))...........
+>s2
+AUUGAAAGGGACCAUGGGGACCGCAUCUUGCGCGGGGCUCAUGAGGCGCCUUUCAAAAGUAUCCGCG
+.{{{{{{{{...((((((..[[[[.......]]]]..)))))).....}}}}}}}}..((....)).
+```
+
+![plot/s2_eval_example_2.png](plot/s2_eval_example_2.png)
+
+Middle (0.4-0.6):
+
+```
+>s1
+AACACUUGAGCCUAUUGUACCAACACUAAGUCUCAUCAUCAGUACAUAUACACCAAGAACAGGGCGUCAGCACUACUGCAGUCGUCCGUAACC
+....((((.[..{{{(((((.....................))))).}}}..]))))....[[[[[.{.(((....))).}.]]]]]......
+>s2
+AACACUUGAGCCUAUUGUACCAACACUAAGUCUCAUCAUCAGUACAUAUACACCAAGAACAGGGCGUCAGCACUACUGCAGUCGUCCGUAACC
+......[[[[[.[[[(((((.........].]]]]......))))).]]]..{{....((..}}...(.{{{....}}}.)......))....
+```
+
+![plot/s2_eval_example_3.png](plot/s2_eval_example_3.png)
+
+Low (<0.1):
+
+```
+>s1
+AAAGCGGCUCGUCAAGGUAUCAUGUGACAGUAGGAUUACACUGUACUUCUACUCCUGCCUAGAAA
+.....(((..[[..{{{{{{..(((((........)))))..}}}}}}..]]....)))......
+>s2
+AAAGCGGCUCGUCAAGGUAUCAUGUGACAGUAGGAUUACACUGUACUUCUACUCCUGCCUAGAAA
+....{.{{{.[[[[.[......].]]]]}}}.}...(((...))).(((((........))))).
+```
+
+![plot/s2_eval_example_4.png](plot/s2_eval_example_4.png)
+
+
+
 
 
 ## Read paper
@@ -182,9 +255,18 @@ Intermediate:
 
 ## TODOs
 
+- visualize attention matrix
+
+- s2 inference: sampling mode, instead of taking argmax at each step (including the starting bb), sample w.r.t. the model output probability
+
 - latent variable model
 
 - when do we predict 'no structure'?
+
+- try a few more params for S1 comparison plot: (1) t=0.02, k=1,c=0, (2) t=0.1,k=0,c=0.9, (3) t=0.1,k=0,c=0.5, ….etc.
+generate another random test dataset (use new data format with top right corner)
+try t=0.000001
+try t=0.000001 and k=2
 
 - s1 inference: running on longer sequence, can create a wrapper of the existing interface:
 seq -> short seq pairs -> dfs -> translate -> stitch -> prediction. Be careful with boundary effect.
