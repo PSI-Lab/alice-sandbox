@@ -207,7 +207,7 @@ def make_single_pred(model, x, y):
     return preds
 
 
-def run_one_batch(model, dataset, device, training=False, optim=None):
+def run_one_epoch(model, dataset, device, training=False, optim=None):
     if not training:
         model.eval()
     else:
@@ -376,21 +376,21 @@ def main(in_file, config, out_dir):
 
     # partition by length
     data_tr = []
-    idx_group = group_by_length(x_tr, n_group=10)
+    idx_group = group_by_length(x_tr, n_group=config['n_length_groups'])
     for idx in idx_group:
         data_tr.append(([x_tr[i] for i in idx], [y_tr[i] for i in idx]))
     data_va = []
-    idx_group = group_by_length(x_va, n_group=10)
+    idx_group = group_by_length(x_va, n_group=config['n_length_groups'])
     for idx in idx_group:
         data_va.append(([x_va[i] for i in idx], [y_va[i] for i in idx]))
     
     # data loader
     data_loader_tr = DataLoader(torch.utils.data.ConcatDataset([MyDataSet(x, y) for x, y in data_tr]),
-                                batch_size=100,
+                                batch_size=config['batch_size'],
                                 shuffle=True,
                                 collate_fn=PadBatch())
     data_loader_va = DataLoader(torch.utils.data.ConcatDataset([MyDataSet(x, y) for x, y in data_va]),
-                                batch_size=100,
+                                batch_size=config['batch_size'],
                                 shuffle=True,
                                 collate_fn=PadBatch())
 
@@ -408,7 +408,7 @@ def main(in_file, config, out_dir):
 
     logging.info("Training start")
     for epoch in range(config['epoch']):
-        losses, aucs = run_one_batch(model, data_loader_tr, device, training=True, optim=optim)
+        losses, aucs = run_one_epoch(model, data_loader_tr, device, training=True, optim=optim)
 
         _model_path = os.path.join(out_dir, 'model_ckpt_ep_{}.pth'.format(epoch))
         torch.save(model.state_dict(), _model_path)
@@ -423,7 +423,7 @@ def main(in_file, config, out_dir):
         logging.info("Training dataset idx {}\ny: {}\npred: {}".format(idx, y_tr[idx].flatten(), pred.squeeze()))
 
         # validation
-        loss_va, aucs_va = run_one_batch(model, data_loader_va, device, training=False)
+        loss_va, aucs_va = run_one_epoch(model, data_loader_va, device, training=False)
         logging.info("End of epoch {}, validation mean loss {}, mean au-ROC {}".format(epoch, np.mean(loss_va), np.nanmean(aucs_va)))
         df_log_metric.append({'epoch': epoch, 'tv': 'validation', 'loss': np.mean(loss_va), 'auc': np.nanmean(aucs_va)})
         # pick a random validation example and print the prediction
