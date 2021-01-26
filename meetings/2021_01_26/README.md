@@ -77,17 +77,70 @@ CGUAUCCGCCCGGAUUA
 ...((((....))))..
 ```
 
+
+## Batch Mode
+
+- Added batch mode
+
+    - Data loader with length grouping and batch padding
+
+    - masking in attention weight matrix, and all subsequent layer activation
+
+    - masked BCE loss
+
+- added unified batch workflow (train/validation) and device switch
+
+
+<!--local debug, inside `s2_training`:-->
+
+<!--```-->
+<!--mkdir result/debug/-->
+<!--python train_s2.py --in_file ../data/synthetic_s1_pred_1000_t0p1_k1_features.npz --config debug_config.yml --out_dir result/debug/-->
+<!--```-->
+
+
+### run on 5000 dataset
+
+(workstation):
+
+```
+mkdir -p result/synthetic_s2_5000/
+CUDA_VISIBLE_DEVICES=2 python train_s2.py --in_file ../../2021_01_12/data/synthetic_s2_5000_features.npz --config config.yml --out_dir result/synthetic_s2_5000/
+```
+
+
+![plot/s2_5000_train_progress.png](plot/s2_5000_train_progress.png)
+(best model at epoch 34, plot produced by s2_training/training_progress.ipynb)
+
+
+TODO upload model?
+
+### run on full dataset
+
+? (need pruning) (also note the params used by s1 inference, make sure to reflect when running inference <- shall we save it in the wrapper as a known version?)
+
+(run from previous week's folder since upstream data is there: ~/work/psi-lab-sandbox/meetings/2021_01_12/)
+
+```
+(root)
+python model_utils/prune_stage_1.py --in_file data/synthetic_s1_pred_full_t0p1_k10_c0p8.pkl.gz --out_file data/synthetic_s1_pred_full_t0p1_k10_c0p8_pruned.pkl.gz --min_pixel_pred 1 --min_prob 0.1 --min_hloop_size 2 --discard_ns_stem
+(s2_training/)
+python make_dataset.py --in_file ../data/synthetic_s1_pred_full_t0p1_k10_c0p8_pruned.pkl.gz  --out_file ../data/synthetic_s2_full_features.npz
+```
+
+(back to this folder)
+
+```
+mkdir -p result/synthetic_s2_full/
+CUDA_VISIBLE_DEVICES=2 python train_s2.py --in_file ../../2021_01_12/data/synthetic_s2_full_features.npz --config config.yml --out_dir result/synthetic_s2_full/
+```
+
 ## TODOs
 
 try a few more params for S1 comparison plot: (1) t=0.02, k=1,c=0, (2) t=0.1,k=0,c=0.9, (3) t=0.1,k=0,c=0.5, ….etc.
 generate another random test dataset (use new data format with top right corner)
 try t=0.000001
 try t=0.000001 and k=2
-
-## Batch Mode
-
-WIP
-
 
 
 ## Read paper
@@ -128,9 +181,6 @@ Intermediate:
 
 
 ## TODOs
-
-- use graph visualization package instead of forna, so we can use base pair matrix directly,
-and no need to deal with the use of different bracket types in db_str
 
 - latent variable model
 
