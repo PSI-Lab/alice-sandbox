@@ -9,11 +9,74 @@ re-generating data
 
 (backup before pruning)
 
-? (need pruning) (also note the params used by s1 inference, make sure to reflect when running inference <- shall we save it in the wrapper as a known version?)
+(need pruning) (also note the params used by s1 inference, make sure to reflect when running inference <- shall we save it in the wrapper as a known version?)
+
 
 
 ## S1 inference on long sequence
 
+### Update SeqPairEncoder
+
+Updated data encoder. Model works with two input sequences of unequal lengths now.
+
+### array method
+
+predict on patches,
+save the prediction matrix and concatenate,
+then run bounding box prediction on the concatenated array.
+
+1. determine trim size based on conv filter sizes.
+We don't have dilation, and all filter width are odd number, so this is quite straight-forward.
+trim_size on each side is: sum_i(layer_i_filter_width//2).
+For example, 3 layers of filter with width of 9 will yield trim_size = 12,
+i.e. extend 12 bases on each side of the sub sequence.
+
+2. split seq-seq on 2D grid into patches, each patch has a input region and output region,
+where input region correspond to the two sub sequences which will be encoded and fed into the NN,
+and output region correspond to the pixels from which we get bounding box predictions from.
+Pixels fall outside of the output region is trimmed off before concatenation.
+
+![plot/long_seq_split.png](plot/long_seq_split.png)
+
+3. run predictor on each patch, trim prediction, and assign back to the original-length-shaped
+arrays at the corresponding location.
+
+4. after all patches are run, run bounding box prediction on the entire arrays.
+
+
+Observation: N padding affect output!
+-> avoid N padding at boundary, only extend if there is actual sequence.
+
+![plot/n_padding.png](plot/n_padding.png)
+
+
+We also note that for each patch, the input seq_1 and seq_2 do not need to be of equal length.
+For example, certain patches might have only one side extended, or some sides extended by smaller than trim_size.
+For those cases we make sure to use the corresponding index when slicing the result prediction arrays,
+so we still end up with the intended region for output.
+
+
+testing:
+
+- seq_len=80, patch_size=40, trim_size=28 (working)
+
+- seq_len=60, patch_size=30, trim_size=28 (working)
+
+- seq_len=80, patch_size=50, trim_size=28 (working)
+
+- seq_len=100, patch_size=60, trim_size=28 (working)
+
+
+### run on rfam
+
+```
+python model_utils/run_stage_1.py --data "`dcl path 903rfx`" --num 0 --threshold 0.01 --topk 1 --perc_cutoff 0 --patch_size 100 --model v1.0 --out_file data/rfam_t0p01_k1.pkl.gz
+```
+
+### S1 inference on long sequence - bounding box method
+
+This rather complicated procedure (as opposed to "array method") is better for longer sequences,
+since for those cases, even storing the prediction matrix might be costly.
 
 1. determine trim size based on conv filter sizes.
 We don't have dilation, and all filter width are odd number, so this is quite straight-forward.
@@ -28,8 +91,6 @@ and output region correspond to the pixels from which we get bounding box predic
 Pixels fall outside of the output region is masked at prediction time, i.e. they do not
 contribute to bounding box prediction (since these pixel don't 'see' sufficient context)
 
-![plot/long_seq_split.png](plot/long_seq_split.png)
-
 3. run predictor on each patch with output mask, and 'translate' the patch-predicted bounding boxes
 by adding in the patch input coordinate of top left corner.
 
@@ -37,68 +98,26 @@ by adding in the patch input coordinate of top left corner.
 This is necessary since bounding box sitting across patches could be predicted by more than one patch.
 
 
-Note that we're doing this rather complicated procedure (as opposed to just predict on patches,
-save the prediction matrix and concatenate, then run bounding box prediction on the concatenated array),
-since for long sequences, even storing the prediction matrix might be costly.
+TODO migrate fix from array method.
 
 
-Sanity check:
 
-- trivial case: seq_len=200, patch_size=200, trim_size=100 (working)
-
-- easy case (no padding): seq_len=200, patch_size=100, trim_size=100 (working, TODO git commit notebook)
-
-- ?: seq_len=56, patch_size=28, trim_size=28 (working! this confirms that trim_size is indeed 28 as expected, but there's something wrong with our padding in wrapper)
-
-- ?: seq_len=56, patch_size=28, trim_size=30 (working, as expected)
-
-- ?: seq_len=56, patch_size=28, trim_size=20 (not working, as expected)
-
-- ?: seq_len=80, patch_size=40, trim_size=28 (not working?)
-
-- ?: seq_len=80, patch_size=40, trim_size=40 (working, this is where each ext_patch is exactly the original arr...)
-
-- ?: seq_len=56, patch_size=30, trim_size=28 (not working?)
-
-- ?: seq_len=112, patch_size=56, trim_size=28 (not working?)
-
-- ?: seq_len=112, patch_size=28, trim_size=28 (not working? so the problem is with middle patches where both sides are extended???)
-
-- ?: seq_len=200, patch_size=100, trim_size=50 (does not work, to debug)
-
-major bug somewhere? is it only working when the ext_patch is the full arr?
-
-TODO tmp work-around: pad input seq to int multiple of 28??
-
-TODO figure out context size -> N padding doesn't seems to be working properly, could also be due to this.
-ervert back to 28 after fixing N padding.
-
-
-TODO clean up code and put in model_utils
-
-TODO run on rfam
-
-
- wrapper, split and merge, be careful with trimming conv context
-
-TODO debug to make sure it yield same result
-
-TODO test on rfam
-
-## S2 inference
-
-
-s2 inference: sampling (instead of argmax at every step)
-s2 inference: topn at each step?
-s2 inference: maintain max size stack? hard since recursion depth is unknown
-
-## S2 eval
+## visualize attention weight matrix
 
 visualize attention weight matrix.
 
 ![plot/attn_softmax.png](plot/attn_softmax.png)
 
 Produced by [visualize_attn.ipynb](visualize_attn.ipynb). (rely on a hacked version of predictor class that prints attn softmax, commit `3ffdac2..daa996c`)
+
+
+## S2 inference
+
+WIP
+
+s2 inference: sampling (instead of argmax at every step)
+s2 inference: topn at each step?
+s2 inference: maintain max size stack? hard since recursion depth is unknown
 
 
 ## Read paper
