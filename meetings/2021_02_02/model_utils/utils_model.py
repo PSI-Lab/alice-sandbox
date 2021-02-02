@@ -737,8 +737,6 @@ class Predictor(object):
         return proposed_boxes, pred_box
 
     def _nn_pred_to_bb(self, seq, yp, threshold, topk=1, perc_cutoff=0, mask=None):
-        # single example, remove batch dimension
-        yp = {k: v.detach().cpu().numpy()[0, :, :, :] for k, v in yp.items()}
         # apply mask (if specified)
         # mask is applied to *_on output, masked entries set to 0 (thus those pixels won't predict anything)
         if mask is not None:
@@ -779,57 +777,6 @@ class Predictor(object):
         pred_bb_hloop = self.cleanup_hloop(pred_bb_hloop, len(seq))
         return yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop, pred_box_stem, pred_box_iloop, pred_box_hloop
 
-    # def _predict_bb(self, seq, threshold, topk=1, perc_cutoff=0, seq2=None, mask=None):
-    #     """topk and perc_cutoff:
-    #     - only topk is specified (perc_cutoff=0): use topk predicted bb
-    #     - only perc_cutoff is specified (topk=0): use predicted bbs whose joint probability is within perc_cutoff * p(top_hit)
-    #     - both topk and perc_cutoff are specified: use predicted bbs whose joint probability is within perc_cutoff * p(top_hit) AND
-    #     is within topk
-    #     """
-    #     assert topk >= 0   # 0 for unspecified
-    #     assert 0<= perc_cutoff <= 1  # 0 for unspecified
-    #     # if seq2 specified, predict bb for RNA-RNA
-    #     if seq2:
-    #         de = SeqPairEncoder(seq, seq2)
-    #     else:
-    #         de = DataEncoder(seq)
-    #     yp = self.model(torch.tensor(de.x_torch))
-    #     yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop, pred_box_stem, pred_box_iloop, pred_box_hloop = self._nn_pred_to_bb(seq, yp, threshold, topk, perc_cutoff, mask)
-    #     # yp = {k: v.detach().cpu().numpy()[0, :, :, :] for k, v in yp.items()}
-    #     #
-    #     # # apply mask (if specified)
-    #     # # mask is applied to *_on output, masked entries set to 0 (thus those pixels won't predict anything)
-    #     # if mask is not None:
-    #     #     # print(yp['stem_on'].shape, mask.shape)
-    #     #     stem_on = yp['stem_on'] * mask
-    #     #     iloop_on = yp['iloop_on'] * mask
-    #     #     hloop_on = yp['hloop_on'] * mask
-    #     # else:
-    #     #     stem_on = yp['stem_on']
-    #     #     iloop_on = yp['iloop_on']
-    #     #     hloop_on = yp['hloop_on']
-    #     # # bb
-    #     # pred_bb_stem, pred_box_stem = self.predict_bounidng_box(pred_on=stem_on, pred_loc_x=yp['stem_location_x'],
-    #     #                                                         pred_loc_y=yp['stem_location_y'],
-    #     #                                                         pred_sm_siz_x=yp['stem_sm_size'], pred_sm_siz_y=None,
-    #     #                                                         pred_sl_siz_x=yp['stem_sl_size'], pred_sl_siz_y=None,
-    #     #                                                         thres=threshold, topk=topk, perc_cutoff=perc_cutoff)
-    #     # pred_bb_iloop, pred_box_iloop = self.predict_bounidng_box(pred_on=iloop_on,
-    #     #                                                           pred_loc_x=yp['iloop_location_x'],
-    #     #                                                           pred_loc_y=yp['iloop_location_y'],
-    #     #                                                           pred_sm_siz_x=yp['iloop_sm_size_x'], pred_sm_siz_y=yp['iloop_sm_size_y'],
-    #     #                                                           pred_sl_siz_x=yp['iloop_sl_size_x'],
-    #     #                                                           pred_sl_siz_y=yp['iloop_sl_size_y'],
-    #     #                                                           thres=threshold, topk=topk, perc_cutoff=perc_cutoff)
-    #     # pred_bb_hloop, pred_box_hloop = self.predict_bounidng_box(pred_on=hloop_on,
-    #     #                                                           pred_loc_x=yp['hloop_location_x'],
-    #     #                                                           pred_loc_y=yp['hloop_location_y'],
-    #     #                                                           pred_sm_siz_x=yp['hloop_sm_size'], pred_sm_siz_y=None,
-    #     #                                                           pred_sl_siz_x=yp['hloop_sl_size'], pred_sl_siz_y=None,
-    #     #                                                           thres=threshold, topk=topk, perc_cutoff=perc_cutoff)
-    #     # pred_bb_hloop = self.cleanup_hloop(pred_bb_hloop, len(seq))
-    #     return yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop, pred_box_stem, pred_box_iloop, pred_box_hloop
-
     def _unique_bbs(self, pred_bb_stem, pred_bb_iloop, pred_bb_hloop):
         def uniq_boxes(pred_bb):
             # pred_bb: list
@@ -854,6 +801,125 @@ class Predictor(object):
             uniq_hloop = None
         return uniq_stem, uniq_iloop, uniq_hloop
 
+    def _predict_patch(self, seq, patch_row_start, patch_row_end, patch_col_start, patch_col_end, ext_patch_row_start, ext_patch_row_end, ext_patch_col_start, ext_patch_col_end):
+        # extract 'left' and 'right' sequence
+        # for now, due to the way we encode input in the predictor class, we require l1 = l2,
+        # so we extend (at the end) if they don't equal
+        # (extend at the end since we don't want to mess up with the start - top left corner)
+        if ext_patch_row_end - ext_patch_row_start != ext_patch_col_end - ext_patch_col_start:
+            longer_len = max(ext_patch_row_end - ext_patch_row_start, ext_patch_col_end - ext_patch_col_start)
+            ext_patch_row_end = ext_patch_row_start + longer_len
+            ext_patch_col_end = ext_patch_col_start + longer_len
+            print(
+                "Extend input region: {}-{}, {}-{}".format(ext_patch_row_start, ext_patch_row_end, ext_patch_col_start,
+                                                           ext_patch_col_end))
+        seq_1 = seq[ext_patch_row_start:ext_patch_row_end]
+        seq_2 = seq[ext_patch_col_start:ext_patch_col_end]
+        # in case the above extention went out-of-bound, the two seq's will be of unequal length
+        # pad if necessary (won't affect our result since it'll be trimmed)
+        if len(seq_1) != len(seq_2):
+            longer_len = max(len(seq_1), len(seq_2))
+            seq_1 = seq_1 + 'N' * (longer_len - len(seq_1))
+            seq_2 = seq_2 + 'N' * (longer_len - len(seq_2))
+            print("Extend seq to {}".format(longer_len))
+
+        # index for picking output
+        output_row_start = patch_row_start - ext_patch_row_start
+        output_row_end = output_row_start + (patch_row_end - patch_row_start)
+        output_col_start = patch_col_start - ext_patch_col_start
+        output_col_end = output_col_start + (patch_col_end - patch_col_start)
+
+        # predict
+        de = SeqPairEncoder(seq_1, seq_2)
+        yp = self.model(torch.tensor(de.x_torch))
+        # select output
+        # for k, v in yp.items():
+        #     print(k, v.shape)
+        # print(output_row_start, output_row_end, output_col_start, output_col_end)
+        yp = {k: v.detach().cpu().numpy()[0, :, output_row_start:output_row_end, output_col_start:output_col_end] for k, v in yp.items()}
+        # for k, v in yp.items():
+        #     print(k, v.shape)
+        return yp
+
+    def predict_bb_split(self, seq, threshold, topk=1, perc_cutoff=0, patch_size=100, trim_size=28):
+        """ for predicting on long sequence.
+        TODO more details
+
+        :param seq:
+        :param threshold:
+        :param topk:
+        :param perc_cutoff:
+        :return:
+        """
+        # FIXME trim_size should be calculated automatically from model params
+
+        assert topk >= 0  # 0 for unspecified
+        assert 0 <= perc_cutoff <= 1  # 0 for unspecified
+
+        seq_len = len(seq)
+        n_splits = int(np.ceil(seq_len/patch_size))
+
+        pred_all = {}
+
+        for idx_row in range(n_splits):
+            for idx_col in range(n_splits):
+                # top left corner
+                # this is the output range we'll be extracting
+                patch_row_start = idx_row * patch_size
+                patch_col_start = idx_col * patch_size
+                if patch_row_start + patch_size > seq_len:
+                    patch_row_end = seq_len
+                else:
+                    patch_row_end = patch_row_start + patch_size
+                if patch_col_start + patch_size > seq_len:
+                    patch_col_end = seq_len
+                else:
+                    patch_col_end = patch_col_start + patch_size
+                # this is what we feed into the NN, with enough context for conv layers
+                # note the predicted bb location is w.r.t. to this and we'll need to translate accordingly
+                if patch_row_start - trim_size < 0:
+                    ext_patch_row_start = 0
+                else:
+                    ext_patch_row_start = patch_row_start - trim_size
+                if patch_col_start - trim_size < 0:
+                    ext_patch_col_start = 0
+                else:
+                    ext_patch_col_start = patch_col_start - trim_size
+                # size (make sure to not go beyond the whole seq)
+                if patch_row_start + patch_size + trim_size > seq_len:
+                    ext_patch_row_end = seq_len
+                else:
+                    ext_patch_row_end = patch_row_start + patch_size + trim_size
+                if patch_col_start + patch_size + trim_size > seq_len:
+                    ext_patch_col_end = seq_len
+                else:
+                    ext_patch_col_end = patch_col_start + patch_size + trim_size
+
+                # get prediction for the patch
+                # returns dict (already converted to np) (selected region)
+                pred_patch = self._predict_patch(seq, patch_row_start, patch_row_end,
+                                                 patch_col_start, patch_col_end,
+                                                 ext_patch_row_start, ext_patch_row_end,
+                                                 ext_patch_col_start, ext_patch_col_end)
+
+                # merge into original size array
+                for k, v in pred_patch.items():
+                    if len(v.shape) == 3:
+                        if k not in pred_all:
+                            pred_all[k] = np.empty((v.shape[0], seq_len, seq_len))
+                        pred_all[k][:, patch_row_start:patch_row_end, patch_col_start:patch_col_end] = v
+                    elif len(v.shape) == 4:
+                        if k not in pred_all:
+                            pred_all[k] = np.empty((v.shape[0], seq_len, seq_len, v.shape[3]))
+                        pred_all[k][:, patch_row_start:patch_row_end, patch_col_start:patch_col_end, :] = v
+
+        yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop, pred_box_stem, pred_box_iloop, pred_box_hloop = self._nn_pred_to_bb(
+            seq, pred_all, threshold, topk, perc_cutoff, mask=None)
+
+        uniq_stem, uniq_iloop, uniq_hloop = self._unique_bbs(pred_bb_stem, pred_bb_iloop, pred_bb_hloop)
+        return uniq_stem, uniq_iloop, uniq_hloop
+
+
     def predict_bb(self, seq, threshold, topk=1, perc_cutoff=0, seq2=None, mask=None):
 
         # yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop, pred_box_stem, pred_box_iloop, pred_box_hloop = self._predict_bb(seq, threshold, topk=topk, perc_cutoff=perc_cutoff, seq2=seq2, mask=mask)
@@ -872,32 +938,13 @@ class Predictor(object):
         else:
             de = DataEncoder(seq)
         yp = self.model(torch.tensor(de.x_torch))
+        # single example, remove batch dimension
+        yp = {k: v.detach().cpu().numpy()[0, :, :, :] for k, v in yp.items()}
+
         yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop, pred_box_stem, pred_box_iloop, pred_box_hloop = self._nn_pred_to_bb(
             seq, yp, threshold, topk, perc_cutoff, mask)
 
         uniq_stem, uniq_iloop, uniq_hloop = self._unique_bbs(pred_bb_stem, pred_bb_iloop, pred_bb_hloop)
-        # def uniq_boxes(pred_bb):
-        #     # pred_bb: list
-        #     # group rows correspond to the same bb
-        #     # note that each row has only one of the values: prob_sm/ prob_sl
-        #     # we would like to summerize each into a list, so dropping the NaN rows (for each independently)
-        #     df = pd.DataFrame(pred_bb)
-        #     data = df.groupby(by=['bb_x', 'bb_y', 'siz_x', 'siz_y'], as_index=False).agg(lambda x:  x.dropna().tolist()).to_dict('records')
-        #     return data
-        #
-        # if len(pred_bb_stem) > 0:
-        #     uniq_stem = uniq_boxes(pred_bb_stem)
-        # else:
-        #     uniq_stem = None
-        # if len(pred_bb_iloop) > 0:
-        #     uniq_iloop = uniq_boxes(pred_bb_iloop)
-        # else:
-        #     uniq_iloop = None
-        # if len(pred_bb_hloop) > 0:
-        #     uniq_hloop = uniq_boxes(pred_bb_hloop)
-        # else:
-        #     uniq_hloop = None
-
         return uniq_stem, uniq_iloop, uniq_hloop
 
 
