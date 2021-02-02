@@ -294,57 +294,6 @@ class SeqPairEncoder(object):
         return x
 
 
-# class SeqPairEncoder(object):
-#     DNA_ENCODING = np.asarray([[0, 0, 0, 0],
-#                                [1, 0, 0, 0],
-#                                [0, 1, 0, 0],
-#                                [0, 0, 1, 0],
-#                                [0, 0, 0, 1]])
-#
-#     def __init__(self, x1, x2):
-#         # x1 & x2: sequence, for now require to be same length (caller should pad with N if needed)
-#         assert len(x2) == len(x2), "For now require two seqs of same length. Please pad with N."
-#         x1 = x1.upper().replace('U', 'T')
-#         x2 = x2.upper().replace('U', 'T')
-#         assert set(x1).issubset(set(list('ACGTN')))
-#         assert set(x2).issubset(set(list('ACGTN')))
-#         self.x1 = x1
-#         self.x2 = x2
-#         # encode
-#         self.x1_1d = self.encode_seq(self.x1)
-#         self.x2_1d = self.encode_seq(self.x2)
-#         self.x_2d = self.encode_x(self.x1_1d, self.x2_1d)
-#         self.x_torch = self.encode_torch_input(self.x_2d)
-#
-#     def encode_seq(self, x):
-#         seq = x.replace('A', '1').replace('C', '2').replace('G', '3').replace('T', '4').replace('U', '4').replace('N', '0')
-#         x = np.asarray([int(x) for x in list(seq)])
-#         x = self.DNA_ENCODING[x.astype('int8')]
-#         return x
-#
-#     def encode_x(self, x1, x2):
-#         # outer product
-#         assert len(x1.shape) == 2
-#         assert x1.shape[1] == 4
-#         assert len(x2.shape) == 2
-#         assert x2.shape[1] == 4
-#         l = x1.shape[0]
-#         x1 = x1[:, np.newaxis, :]
-#         x2 = x2[np.newaxis, :, :]
-#         x1 = np.repeat(x1, l, axis=1)
-#         x2 = np.repeat(x2, l, axis=0)
-#         return np.concatenate([x1, x2], axis=2)
-#
-#     def encode_torch_input(self, x):
-#         # add batch dim
-#         assert len(x.shape) == 3
-#         x = x[np.newaxis, :, :, :]
-#         # convert to torch tensor
-#         x = torch.from_numpy(x).float()
-#         # reshape: batch x channel x H x W
-#         x = x.permute(0, 3, 1, 2)
-#         return x
-
 class DataEncoder(object):
     DNA_ENCODING = np.asarray([[0, 0, 0, 0],
                                [1, 0, 0, 0],
@@ -460,6 +409,12 @@ class Predictor(object):
         'v1.0': 'KOE6Jb',
     }
 
+    model_params = {
+        'v1.0': {"num_filters": [32, 32, 64, 64, 64, 128, 128],
+                 "filter_width": [9, 9, 9, 9, 9, 9, 9],
+                 "dropout": 0.0},
+    }
+
     def __init__(self, model_ckpt, num_filters=None, filter_width=None, dropout=None):
         # model_ckpt: model params checkpoint
         # can be any of the following:
@@ -470,19 +425,27 @@ class Predictor(object):
         # model file path
         dc_client = dc.Client()
         if model_ckpt in self.model_versions:
+            assert model_ckpt in self.model_params
             model_file = dc_client.get_path(self.model_versions[model_ckpt])
+            print("Loading know version {} with params {}".format(model_ckpt, self.model_params[model_ckpt]))
+            num_filters = self.model_params[model_ckpt]['num_filters']
+            filter_width = self.model_params[model_ckpt]['filter_width']
+            dropout = self.model_params[model_ckpt]['dropout']
         elif os.path.isfile(model_ckpt):
             model_file = model_ckpt
         else:
             model_file = dc_client.get_path(model_ckpt)
 
-        # default params
-        if num_filters is None:
-            num_filters = [32, 32, 64, 64, 64, 128, 128]
-        if filter_width is None:
-            filter_width = [9, 9, 9, 9, 9, 9, 9]
-        if dropout is None:
-            dropout = 0.0
+        # # default params
+        # if num_filters is None:
+        #     num_filters = [32, 32, 64, 64, 64, 128, 128]
+        # if filter_width is None:
+        #     filter_width = [9, 9, 9, 9, 9, 9, 9]
+        # if dropout is None:
+        #     dropout = 0.0
+
+        # for computing trim_size
+        self.filter_width = filter_width
 
         model = SimpleConvNet(num_filters=num_filters,
                               filter_width=filter_width, dropout=dropout)
@@ -859,63 +822,8 @@ class Predictor(object):
 
     def _predict_patch(self, seq, patch_row_start, patch_row_end, patch_col_start, patch_col_end, ext_patch_row_start, ext_patch_row_end, ext_patch_col_start, ext_patch_col_end):
         # # extract 'left' and 'right' sequence
-        # # for now, due to the way we encode input in the predictor class, we require l1 = l2,
-        # # so we extend (at the end) if they don't equal
-        # # (extend at the end since we don't want to mess up with the start - top left corner)
-        # if ext_patch_row_end - ext_patch_row_start != ext_patch_col_end - ext_patch_col_start:
-        #     longer_len = max(ext_patch_row_end - ext_patch_row_start, ext_patch_col_end - ext_patch_col_start)
-        #     ext_patch_row_end = ext_patch_row_start + longer_len
-        #     ext_patch_col_end = ext_patch_col_start + longer_len
-        #     print(
-        #         "Extend input region: {}-{}, {}-{}".format(ext_patch_row_start, ext_patch_row_end, ext_patch_col_start,
-        #                                                    ext_patch_col_end))
-        # seq_1 = seq[ext_patch_row_start:ext_patch_row_end]
-        # seq_2 = seq[ext_patch_col_start:ext_patch_col_end]
-        # # in case the above extention went out-of-bound, the two seq's will be of unequal length
-        # # pad if necessary (won't affect our result since it'll be trimmed)
-        # if len(seq_1) != len(seq_2):
-        #     longer_len = max(len(seq_1), len(seq_2))
-        #     seq_1 = seq_1 + 'N' * (longer_len - len(seq_1))
-        #     seq_2 = seq_2 + 'N' * (longer_len - len(seq_2))
-        #     print("Extend seq to {}".format(longer_len))
-        #     # print(seq_1)
-        #     # print(seq_2)
-
         seq_1 = seq[ext_patch_row_start:ext_patch_row_end]
         seq_2 = seq[ext_patch_col_start:ext_patch_col_end]
-
-        # # deal with out-of-bound index
-        # # we'll pad accordingly, to make sure there's enough context on all sides!
-        # if ext_patch_row_start < 0:
-        #     n_pad_row_start = abs(ext_patch_row_start)
-        #     seq_row_start = 0
-        # else:
-        #     n_pad_row_start = 0
-        #     seq_row_start = ext_patch_row_start
-        # if ext_patch_row_end > len(seq):
-        #     n_pad_row_end = ext_patch_row_end - len(seq)
-        #     seq_row_end = len(seq)
-        # else:
-        #     n_pad_row_end = 0
-        #     seq_row_end = ext_patch_row_end
-        #
-        # if ext_patch_col_start < 0:
-        #     n_pad_col_start = abs(ext_patch_col_start)
-        #     seq_col_start = 0
-        # else:
-        #     n_pad_col_start = 0
-        #     seq_col_start = ext_patch_col_start
-        # if ext_patch_col_end > len(seq):
-        #     n_pad_col_end = ext_patch_col_end - len(seq)
-        #     seq_col_end = len(seq)
-        # else:
-        #     n_pad_col_end = 0
-        #     seq_col_end = ext_patch_col_end
-        #
-        # seq_1 = 'N' * n_pad_row_start + seq[seq_row_start:seq_row_end] + 'N' * n_pad_row_end
-        # seq_2 = 'N' * n_pad_col_start + seq[seq_col_start:seq_col_end] + 'N' * n_pad_col_end
-        # print(seq_1)
-        # print(seq_2)
 
         # index for picking output
         output_row_start = patch_row_start - ext_patch_row_start
@@ -935,7 +843,7 @@ class Predictor(object):
         #     print(k, v.shape)
         return yp
 
-    def predict_bb_split(self, seq, threshold, topk=1, perc_cutoff=0, patch_size=100, trim_size=28):
+    def predict_bb_split(self, seq, threshold, topk=1, perc_cutoff=0, patch_size=100, trim_size=None):
         """ for predicting on long sequence.
         TODO more details
 
@@ -945,7 +853,11 @@ class Predictor(object):
         :param perc_cutoff:
         :return:
         """
-        # FIXME trim_size should be calculated automatically from model params
+        # trim_size should be calculated automatically from model params
+        if trim_size is not None:
+            print("Warning: trim_size set by caller {}. Make sure you're debugging!".format(trim_size))
+        else:
+            trim_size = sum([x//2 for x in self.filter_width])
 
         assert topk >= 0  # 0 for unspecified
         assert 0 <= perc_cutoff <= 1  # 0 for unspecified
@@ -970,13 +882,6 @@ class Predictor(object):
                 else:
                     patch_col_end = patch_col_start + patch_size
                 # this is what we feed into the NN, with enough context for conv layers
-
-                # # we keep negative and out-of-bound index, and leave those for self._predict_patch to resolve
-                # ext_patch_row_start = patch_row_start - trim_size
-                # ext_patch_col_start = patch_col_start - trim_size
-                # ext_patch_row_end = patch_row_start + patch_size + trim_size
-                # ext_patch_col_end = patch_col_start + patch_size + trim_size
-
                 if patch_row_start - trim_size < 0:
                     ext_patch_row_start = 0
                 else:
