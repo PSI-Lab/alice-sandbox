@@ -18,7 +18,7 @@ import pandas as pd
 #     return data
 
 
-def main(data_path, num_datapoints, random_state, threshold, topk, perc_cutoff, model_path, out_file):
+def main(data_path, num_datapoints, random_state, threshold, topk, perc_cutoff, patch_size, model_path, out_file):
     df_data = pd.read_pickle(data_path, compression='gzip')
     # # drop those > max_len
     # df_data = dgp.add_column(df_data, 'tmp', ['seq'], len)
@@ -51,7 +51,13 @@ def main(data_path, num_datapoints, random_state, threshold, topk, perc_cutoff, 
             continue
 
         new_row = row.copy()
-        uniq_stem, uniq_iloop, uniq_hloop = predictor.predict_bb(seq=seq, threshold=threshold, topk=topk, perc_cutoff=perc_cutoff)
+
+        if patch_size == 0:  # run on full sequence at once
+            uniq_stem, uniq_iloop, uniq_hloop = predictor.predict_bb(seq=seq, threshold=threshold, topk=topk, perc_cutoff=perc_cutoff)
+        else:
+            assert patch_size > 0
+            uniq_stem, uniq_iloop, uniq_hloop = predictor.predict_bb_split(seq=seq, threshold=threshold, topk=topk, perc_cutoff=perc_cutoff, patch_size=patch_size)
+
         new_row['bb_stem'] = uniq_stem
         new_row['bb_iloop'] = uniq_iloop
         new_row['bb_hloop'] = uniq_hloop
@@ -74,11 +80,12 @@ if __name__ == "__main__":
     parser.add_argument('--topk', type=int, default=1, help='max number of predictions per pixel (only for pixels where prob_on > threshold, k per softmax and scalar)')
     parser.add_argument('--perc_cutoff', type=float, default=1,
                         help='picked bb needs to have joint probability within perc_cutoff * p_top_hit (only for pixels where prob_on > threshold, per softmax and scalar)')
+    parser.add_argument('--patch_size', type=int, default=0, help='patch_size for splitting sequence, used to avoid OOM when running long sequence. Set to 0 to turn this off.')
     parser.add_argument('--model', type=str, help='Path to pytorch model params')
     parser.add_argument('--out_file', type=str, help='Path to output csv pickle')
     args = parser.parse_args()
     assert  0 < args.threshold < 1
     assert args.topk >= 1  # for generating s2 training data we require specifying a fixed number (in the actual inference interface 0 is allowed for switching to only perc_cutoff)
     assert 0 <= args.perc_cutoff <= 1
-    main(args.data, args.num, args.random_state, args.threshold, args.topk, args.perc_cutoff, args.model, args.out_file)
+    main(args.data, args.num, args.random_state, args.threshold, args.topk, args.perc_cutoff, args.patch_size, args.model, args.out_file)
 
