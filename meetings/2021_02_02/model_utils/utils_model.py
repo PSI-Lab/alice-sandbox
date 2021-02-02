@@ -736,48 +736,101 @@ class Predictor(object):
         pred_box = pred_box * m
         return proposed_boxes, pred_box
 
-    def _predict_bb(self, seq, threshold, topk=1, perc_cutoff=0, seq2=None):
-        """topk and perc_cutoff:
-        - only topk is specified (perc_cutoff=0): use topk predicted bb
-        - only perc_cutoff is specified (topk=0): use predicted bbs whose joint probability is within perc_cutoff * p(top_hit)
-        - both topk and perc_cutoff are specified: use predicted bbs whose joint probability is within perc_cutoff * p(top_hit) AND
-        is within topk
-        """
-        assert topk >= 0   # 0 for unspecified
-        assert 0<= perc_cutoff <= 1  # 0 for unspecified
-        # if seq2 specified, predict bb for RNA-RNA
-        if seq2:
-            de = SeqPairEncoder(seq, seq2)
-        else:
-            de = DataEncoder(seq)
-        yp = self.model(torch.tensor(de.x_torch))
+    def _nn_pred_to_bb(self, seq, yp, threshold, topk=1, perc_cutoff=0, mask=None):
+        # single example, remove batch dimension
         yp = {k: v.detach().cpu().numpy()[0, :, :, :] for k, v in yp.items()}
+        # apply mask (if specified)
+        # mask is applied to *_on output, masked entries set to 0 (thus those pixels won't predict anything)
+        if mask is not None:
+            # print(yp['stem_on'].shape, mask.shape)
+            stem_on = yp['stem_on'] * mask
+            iloop_on = yp['iloop_on'] * mask
+            hloop_on = yp['hloop_on'] * mask
+        else:
+            stem_on = yp['stem_on']
+            iloop_on = yp['iloop_on']
+            hloop_on = yp['hloop_on']
         # bb
-        pred_bb_stem, pred_box_stem = self.predict_bounidng_box(pred_on=yp['stem_on'], pred_loc_x=yp['stem_location_x'],
+        pred_bb_stem, pred_box_stem = self.predict_bounidng_box(pred_on=stem_on, pred_loc_x=yp['stem_location_x'],
                                                                 pred_loc_y=yp['stem_location_y'],
-                                                                pred_sm_siz_x=yp['stem_sm_size'], pred_sm_siz_y=None, 
-                                                                pred_sl_siz_x=yp['stem_sl_size'], pred_sl_siz_y=None, 
+                                                                pred_sm_siz_x=yp['stem_sm_size'],
+                                                                pred_sm_siz_y=None,
+                                                                pred_sl_siz_x=yp['stem_sl_size'],
+                                                                pred_sl_siz_y=None,
                                                                 thres=threshold, topk=topk, perc_cutoff=perc_cutoff)
-        pred_bb_iloop, pred_box_iloop = self.predict_bounidng_box(pred_on=yp['iloop_on'],
+        pred_bb_iloop, pred_box_iloop = self.predict_bounidng_box(pred_on=iloop_on,
                                                                   pred_loc_x=yp['iloop_location_x'],
                                                                   pred_loc_y=yp['iloop_location_y'],
-                                                                  pred_sm_siz_x=yp['iloop_sm_size_x'], pred_sm_siz_y=yp['iloop_sm_size_y'],
+                                                                  pred_sm_siz_x=yp['iloop_sm_size_x'],
+                                                                  pred_sm_siz_y=yp['iloop_sm_size_y'],
                                                                   pred_sl_siz_x=yp['iloop_sl_size_x'],
                                                                   pred_sl_siz_y=yp['iloop_sl_size_y'],
-                                                                  thres=threshold, topk=topk, perc_cutoff=perc_cutoff)
-        pred_bb_hloop, pred_box_hloop = self.predict_bounidng_box(pred_on=yp['hloop_on'],
+                                                                  thres=threshold, topk=topk,
+                                                                  perc_cutoff=perc_cutoff)
+        pred_bb_hloop, pred_box_hloop = self.predict_bounidng_box(pred_on=hloop_on,
                                                                   pred_loc_x=yp['hloop_location_x'],
                                                                   pred_loc_y=yp['hloop_location_y'],
-                                                                  pred_sm_siz_x=yp['hloop_sm_size'], pred_sm_siz_y=None,
-                                                                  pred_sl_siz_x=yp['hloop_sl_size'], pred_sl_siz_y=None,
-                                                                  thres=threshold, topk=topk, perc_cutoff=perc_cutoff)
+                                                                  pred_sm_siz_x=yp['hloop_sm_size'],
+                                                                  pred_sm_siz_y=None,
+                                                                  pred_sl_siz_x=yp['hloop_sl_size'],
+                                                                  pred_sl_siz_y=None,
+                                                                  thres=threshold, topk=topk,
+                                                                  perc_cutoff=perc_cutoff)
         pred_bb_hloop = self.cleanup_hloop(pred_bb_hloop, len(seq))
         return yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop, pred_box_stem, pred_box_iloop, pred_box_hloop
 
-    def predict_bb(self, seq, threshold, topk=1, perc_cutoff=0, seq2=None):
+    # def _predict_bb(self, seq, threshold, topk=1, perc_cutoff=0, seq2=None, mask=None):
+    #     """topk and perc_cutoff:
+    #     - only topk is specified (perc_cutoff=0): use topk predicted bb
+    #     - only perc_cutoff is specified (topk=0): use predicted bbs whose joint probability is within perc_cutoff * p(top_hit)
+    #     - both topk and perc_cutoff are specified: use predicted bbs whose joint probability is within perc_cutoff * p(top_hit) AND
+    #     is within topk
+    #     """
+    #     assert topk >= 0   # 0 for unspecified
+    #     assert 0<= perc_cutoff <= 1  # 0 for unspecified
+    #     # if seq2 specified, predict bb for RNA-RNA
+    #     if seq2:
+    #         de = SeqPairEncoder(seq, seq2)
+    #     else:
+    #         de = DataEncoder(seq)
+    #     yp = self.model(torch.tensor(de.x_torch))
+    #     yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop, pred_box_stem, pred_box_iloop, pred_box_hloop = self._nn_pred_to_bb(seq, yp, threshold, topk, perc_cutoff, mask)
+    #     # yp = {k: v.detach().cpu().numpy()[0, :, :, :] for k, v in yp.items()}
+    #     #
+    #     # # apply mask (if specified)
+    #     # # mask is applied to *_on output, masked entries set to 0 (thus those pixels won't predict anything)
+    #     # if mask is not None:
+    #     #     # print(yp['stem_on'].shape, mask.shape)
+    #     #     stem_on = yp['stem_on'] * mask
+    #     #     iloop_on = yp['iloop_on'] * mask
+    #     #     hloop_on = yp['hloop_on'] * mask
+    #     # else:
+    #     #     stem_on = yp['stem_on']
+    #     #     iloop_on = yp['iloop_on']
+    #     #     hloop_on = yp['hloop_on']
+    #     # # bb
+    #     # pred_bb_stem, pred_box_stem = self.predict_bounidng_box(pred_on=stem_on, pred_loc_x=yp['stem_location_x'],
+    #     #                                                         pred_loc_y=yp['stem_location_y'],
+    #     #                                                         pred_sm_siz_x=yp['stem_sm_size'], pred_sm_siz_y=None,
+    #     #                                                         pred_sl_siz_x=yp['stem_sl_size'], pred_sl_siz_y=None,
+    #     #                                                         thres=threshold, topk=topk, perc_cutoff=perc_cutoff)
+    #     # pred_bb_iloop, pred_box_iloop = self.predict_bounidng_box(pred_on=iloop_on,
+    #     #                                                           pred_loc_x=yp['iloop_location_x'],
+    #     #                                                           pred_loc_y=yp['iloop_location_y'],
+    #     #                                                           pred_sm_siz_x=yp['iloop_sm_size_x'], pred_sm_siz_y=yp['iloop_sm_size_y'],
+    #     #                                                           pred_sl_siz_x=yp['iloop_sl_size_x'],
+    #     #                                                           pred_sl_siz_y=yp['iloop_sl_size_y'],
+    #     #                                                           thres=threshold, topk=topk, perc_cutoff=perc_cutoff)
+    #     # pred_bb_hloop, pred_box_hloop = self.predict_bounidng_box(pred_on=hloop_on,
+    #     #                                                           pred_loc_x=yp['hloop_location_x'],
+    #     #                                                           pred_loc_y=yp['hloop_location_y'],
+    #     #                                                           pred_sm_siz_x=yp['hloop_sm_size'], pred_sm_siz_y=None,
+    #     #                                                           pred_sl_siz_x=yp['hloop_sl_size'], pred_sl_siz_y=None,
+    #     #                                                           thres=threshold, topk=topk, perc_cutoff=perc_cutoff)
+    #     # pred_bb_hloop = self.cleanup_hloop(pred_bb_hloop, len(seq))
+    #     return yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop, pred_box_stem, pred_box_iloop, pred_box_hloop
 
-        yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop, pred_box_stem, pred_box_iloop, pred_box_hloop = self._predict_bb(seq, threshold, topk=topk, perc_cutoff=perc_cutoff, seq2=seq2)
-
+    def _unique_bbs(self, pred_bb_stem, pred_bb_iloop, pred_bb_hloop):
         def uniq_boxes(pred_bb):
             # pred_bb: list
             # group rows correspond to the same bb
@@ -799,6 +852,51 @@ class Predictor(object):
             uniq_hloop = uniq_boxes(pred_bb_hloop)
         else:
             uniq_hloop = None
+        return uniq_stem, uniq_iloop, uniq_hloop
+
+    def predict_bb(self, seq, threshold, topk=1, perc_cutoff=0, seq2=None, mask=None):
+
+        # yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop, pred_box_stem, pred_box_iloop, pred_box_hloop = self._predict_bb(seq, threshold, topk=topk, perc_cutoff=perc_cutoff, seq2=seq2, mask=mask)
+
+        """topk and perc_cutoff:
+                - only topk is specified (perc_cutoff=0): use topk predicted bb
+                - only perc_cutoff is specified (topk=0): use predicted bbs whose joint probability is within perc_cutoff * p(top_hit)
+                - both topk and perc_cutoff are specified: use predicted bbs whose joint probability is within perc_cutoff * p(top_hit) AND
+                is within topk
+                """
+        assert topk >= 0  # 0 for unspecified
+        assert 0 <= perc_cutoff <= 1  # 0 for unspecified
+        # if seq2 specified, predict bb for RNA-RNA
+        if seq2:
+            de = SeqPairEncoder(seq, seq2)
+        else:
+            de = DataEncoder(seq)
+        yp = self.model(torch.tensor(de.x_torch))
+        yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop, pred_box_stem, pred_box_iloop, pred_box_hloop = self._nn_pred_to_bb(
+            seq, yp, threshold, topk, perc_cutoff, mask)
+
+        uniq_stem, uniq_iloop, uniq_hloop = self._unique_bbs(pred_bb_stem, pred_bb_iloop, pred_bb_hloop)
+        # def uniq_boxes(pred_bb):
+        #     # pred_bb: list
+        #     # group rows correspond to the same bb
+        #     # note that each row has only one of the values: prob_sm/ prob_sl
+        #     # we would like to summerize each into a list, so dropping the NaN rows (for each independently)
+        #     df = pd.DataFrame(pred_bb)
+        #     data = df.groupby(by=['bb_x', 'bb_y', 'siz_x', 'siz_y'], as_index=False).agg(lambda x:  x.dropna().tolist()).to_dict('records')
+        #     return data
+        #
+        # if len(pred_bb_stem) > 0:
+        #     uniq_stem = uniq_boxes(pred_bb_stem)
+        # else:
+        #     uniq_stem = None
+        # if len(pred_bb_iloop) > 0:
+        #     uniq_iloop = uniq_boxes(pred_bb_iloop)
+        # else:
+        #     uniq_iloop = None
+        # if len(pred_bb_hloop) > 0:
+        #     uniq_hloop = uniq_boxes(pred_bb_hloop)
+        # else:
+        #     uniq_hloop = None
 
         return uniq_stem, uniq_iloop, uniq_hloop
 
