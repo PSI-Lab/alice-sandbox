@@ -881,38 +881,41 @@ class Predictor(object):
         #     # print(seq_1)
         #     # print(seq_2)
 
-        # deal with out-of-bound index
-        # we'll pad accordingly, to make sure there's enough context on all sides!
-        if ext_patch_row_start < 0:
-            n_pad_row_start = abs(ext_patch_row_start)
-            seq_row_start = 0
-        else:
-            n_pad_row_start = 0
-            seq_row_start = ext_patch_row_start
-        if ext_patch_row_end > len(seq):
-            n_pad_row_end = ext_patch_row_end - len(seq)
-            seq_row_end = len(seq)
-        else:
-            n_pad_row_end = 0
-            seq_row_end = ext_patch_row_end
-            
-        if ext_patch_col_start < 0:
-            n_pad_col_start = abs(ext_patch_col_start)
-            seq_col_start = 0
-        else:
-            n_pad_col_start = 0
-            seq_col_start = ext_patch_col_start
-        if ext_patch_col_end > len(seq):
-            n_pad_col_end = ext_patch_col_end - len(seq)
-            seq_col_end = len(seq)
-        else:
-            n_pad_col_end = 0
-            seq_col_end = ext_patch_col_end
+        seq_1 = seq[ext_patch_row_start:ext_patch_row_end]
+        seq_2 = seq[ext_patch_col_start:ext_patch_col_end]
 
-        seq_1 = 'N' * n_pad_row_start + seq[seq_row_start:seq_row_end] + 'N' * n_pad_row_end
-        seq_2 = 'N' * n_pad_col_start + seq[seq_col_start:seq_col_end] + 'N' * n_pad_col_end
-        print(seq_1)
-        print(seq_2)
+        # # deal with out-of-bound index
+        # # we'll pad accordingly, to make sure there's enough context on all sides!
+        # if ext_patch_row_start < 0:
+        #     n_pad_row_start = abs(ext_patch_row_start)
+        #     seq_row_start = 0
+        # else:
+        #     n_pad_row_start = 0
+        #     seq_row_start = ext_patch_row_start
+        # if ext_patch_row_end > len(seq):
+        #     n_pad_row_end = ext_patch_row_end - len(seq)
+        #     seq_row_end = len(seq)
+        # else:
+        #     n_pad_row_end = 0
+        #     seq_row_end = ext_patch_row_end
+        #
+        # if ext_patch_col_start < 0:
+        #     n_pad_col_start = abs(ext_patch_col_start)
+        #     seq_col_start = 0
+        # else:
+        #     n_pad_col_start = 0
+        #     seq_col_start = ext_patch_col_start
+        # if ext_patch_col_end > len(seq):
+        #     n_pad_col_end = ext_patch_col_end - len(seq)
+        #     seq_col_end = len(seq)
+        # else:
+        #     n_pad_col_end = 0
+        #     seq_col_end = ext_patch_col_end
+        #
+        # seq_1 = 'N' * n_pad_row_start + seq[seq_row_start:seq_row_end] + 'N' * n_pad_row_end
+        # seq_2 = 'N' * n_pad_col_start + seq[seq_col_start:seq_col_end] + 'N' * n_pad_col_end
+        # print(seq_1)
+        # print(seq_2)
 
         # index for picking output
         output_row_start = patch_row_start - ext_patch_row_start
@@ -967,30 +970,30 @@ class Predictor(object):
                 else:
                     patch_col_end = patch_col_start + patch_size
                 # this is what we feed into the NN, with enough context for conv layers
-                # note the predicted bb location is w.r.t. to this and we'll need to translate accordingly
-                # we keep negative and out-of-bound index, and leave those for self._predict_patch to resolve
-                ext_patch_row_start = patch_row_start - trim_size
-                ext_patch_col_start = patch_col_start - trim_size
-                ext_patch_row_end = patch_row_start + patch_size + trim_size
-                ext_patch_col_end = patch_col_start + patch_size + trim_size
 
-                # if patch_row_start - trim_size < 0:
-                #     ext_patch_row_start = 0
-                # else:
-                #     ext_patch_row_start = patch_row_start - trim_size
-                # if patch_col_start - trim_size < 0:
-                #     ext_patch_col_start = 0
-                # else:
-                #     ext_patch_col_start = patch_col_start - trim_size
-                # # size (make sure to not go beyond the whole seq)
-                # if patch_row_start + patch_size + trim_size > seq_len:
-                #     ext_patch_row_end = seq_len
-                # else:
-                #     ext_patch_row_end = patch_row_start + patch_size + trim_size
-                # if patch_col_start + patch_size + trim_size > seq_len:
-                #     ext_patch_col_end = seq_len
-                # else:
-                #     ext_patch_col_end = patch_col_start + patch_size + trim_size
+                # # we keep negative and out-of-bound index, and leave those for self._predict_patch to resolve
+                # ext_patch_row_start = patch_row_start - trim_size
+                # ext_patch_col_start = patch_col_start - trim_size
+                # ext_patch_row_end = patch_row_start + patch_size + trim_size
+                # ext_patch_col_end = patch_col_start + patch_size + trim_size
+
+                if patch_row_start - trim_size < 0:
+                    ext_patch_row_start = 0
+                else:
+                    ext_patch_row_start = patch_row_start - trim_size
+                if patch_col_start - trim_size < 0:
+                    ext_patch_col_start = 0
+                else:
+                    ext_patch_col_start = patch_col_start - trim_size
+                # size (make sure to not go beyond the whole seq)
+                if patch_row_start + patch_size + trim_size > seq_len:
+                    ext_patch_row_end = seq_len
+                else:
+                    ext_patch_row_end = patch_row_start + patch_size + trim_size
+                if patch_col_start + patch_size + trim_size > seq_len:
+                    ext_patch_col_end = seq_len
+                else:
+                    ext_patch_col_end = patch_col_start + patch_size + trim_size
 
                 # debug FIXME
                 print("Input region: {}-{}, {}-{}".format(ext_patch_row_start, ext_patch_row_end, ext_patch_col_start,
