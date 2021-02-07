@@ -704,6 +704,7 @@ class Predictor(object):
         # TODO assert on input shape
 
         # hard-mask
+        # note that we're also supporting case where pred_on is not square matrix (i.e. two input seqs are of different length)
         seq_len = pred_on.shape[1]
         m = _make_mask(seq_len)
         # apply mask (for pred, only apply to pred_on since our processing starts from that array)

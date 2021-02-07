@@ -73,6 +73,66 @@ testing:
 python model_utils/run_stage_1.py --data "`dcl path 903rfx`" --num 0 --threshold 0.01 --topk 1 --perc_cutoff 0 --patch_size 100 --model v1.0 --out_file data/rfam_t0p01_k1.pkl.gz
 ```
 
+
+### (move to this week) run on s_processed
+
+
+```
+python model_utils/run_stage_1.py --data "`dcl path a16nRG`" --num 0 --threshold 0.01 --topk 1 --perc_cutoff 0 --patch_size 100 --model v1.0 --out_file data/s_processed_t0p01_k1.pkl.gz
+```
+
+### (move to this week) run on bpRNA?
+
+```
+python model_utils/run_stage_1.py --data "`dcl path DmNgdP`" --num 0 --threshold 0.01 --topk 1 --perc_cutoff 0 --patch_size 200 --model v1.0 --out_file data/bprna_t0p01_k1.pkl.gz
+```
+
+
+### (move to this week) instruction for predicting on long seq
+
+See [sanity_check.ipynb](sanity_check.ipynb) for sanity check on toy examples.
+
+two methods:
+
+array method (implemented as part of predictor class):
+
+- to be implemented: only half of the patches needs to be evaluated! (upper triangular)
+
+
+
+```
+import model_utils.utils_model as us1
+predictor_s1 = us1.Predictor('v1.0')
+
+seq = 'ACGATGACGATAGACGCGTATTAGACGAGACGGACGTAGACGACGACAGCGATGACGATGACGATAGACGACGACAGCGA'
+
+# non-split (original interface)
+stem_1, iloop_1, hloop_1 = predictor_s1.predict_bb(seq, threshold=0.1, topk=1, perc_cutoff=0)
+
+# long seq interface
+stem_2, iloop_2, hloop_2 = predictor_s1.predict_bb_split(seq, threshold=0.1, topk=1, perc_cutoff=0,
+                                                         patch_size=100)
+
+# above should yield exactly same result
+```
+
+bounding box method (implemented as a separate wrapper):
+
+For bounding box method, for each patch, there are a few considerations:
+
+- only half of the patches needs to be evaluated! (upper triangular)
+
+- In the typical inference workflow of predicting on the full sequence, we apply hard mask, i.e. setting all lower triangular to 0's.
+ When predicting on patches, most of them don't need hard-masking (since they will be 100% within upper triangular when translated back to the original coordinate).
+ The only patches that needs hard masking are those: when translated back to original coordinate, overlapping the diagonal line.
+ Also their hard mask won't be simply a lower-triangular-0, it'll depend on the way they overlap the diagonal line.
+
+For implementation, we'll need to update the internal interface to optionally accept a user-set hard mask.
+To be implemented in the future.
+
+
+
+
 ### S1 inference on long sequence - bounding box method
 
 This rather complicated procedure (as opposed to "array method") is better for longer sequences,
@@ -147,7 +207,7 @@ s2 inference: maintain max size stack? hard since recursion depth is unknown
 
 `ZQi8RT`: synthetic? with prediction?
 
-bpRNA?
+`DmNgdP`: bpRNA?
 
 Sources:
 
