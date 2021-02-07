@@ -97,6 +97,9 @@ two methods:
 array method (implemented as part of predictor class):
 
 - to be implemented: only half of the patches needs to be evaluated! (upper triangular)
+    For each patch, check the 'output coordinate', if it's top right corner belongs to the lower triangular matrix,
+    the whole patch is within the lower triangular matrix,
+    then we can safely skip that patch.
 
 
 

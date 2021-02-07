@@ -906,6 +906,12 @@ class Predictor(object):
                                                           ext_patch_col_end))
                 print("Output region: {}-{}, {}-{}".format(patch_row_start, patch_row_end, patch_col_start,
                                                            patch_col_end))
+                # check top right corner of output region
+                # if it's in lower triangular matrix, that means the whole patch is within lower triangular matrix
+                # then we can safely skip predicting on this patch
+                if patch_row_start > patch_col_end:
+                    print("Patch fully contained in lower triangle matrix, skip.")
+                    continue
 
                 # get prediction for the patch
                 # returns dict (already converted to np) (selected region)
