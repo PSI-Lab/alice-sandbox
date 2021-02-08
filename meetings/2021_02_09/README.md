@@ -76,12 +76,26 @@ running
 
 ## S1 prediction
 
+### synthetic (for comparison)
+
+Based on 1000 samples.
+
+![plot/synthetic_s1_pred_num_bbs.png](plot/synthetic_s1_pred_num_bbs.png)
+
 ### Rfam151
+
+![plot/rfam_s1_pred_num_bbs.png](plot/rfam_s1_pred_num_bbs.png)
+
 
 Huge number of bounding box proposals
 
 
+
+
+
 ### s_processed
+
+![plot/s_processed_s1_pred_num_bbs.png](plot/s_processed_s1_pred_num_bbs.png)
 
 
 ### bpRNA
