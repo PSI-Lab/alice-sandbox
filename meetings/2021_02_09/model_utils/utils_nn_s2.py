@@ -344,6 +344,30 @@ def summarize_df(df, m_factor=1, hloop=False):
     return df
 
 
+def filter_out_of_range_bb(df, seq_len):
+    # discard bounding boxes that are out of sequence range
+    df_new = []
+    for _, row in df.iterrows():
+        bb_x = row['bb_x']
+        bb_y = row['bb_y']
+        siz_x = row['siz_x']
+        siz_y = row['siz_y']
+
+        # get coordinate of the corners
+        x_start = bb_x
+        x_end = x_start + siz_x - 1
+        y_start = bb_y - siz_y + 1
+        y_end = bb_y
+
+        if not ((0 <= x_start < seq_len) and (0 <= x_end < seq_len) and (0 <= y_start < seq_len) and (0 <= y_end < seq_len)):
+            print("Discard out-of-range bb for seq_len {}: tr {}-{}, size {}, {}".format(seq_len, bb_x, bb_y, siz_x, siz_y))
+            continue
+        else:
+            df_new.append(row)
+    df_new = pd.DataFrame(df_new)
+    return df_new
+
+
 def predict_wrapper(bb_stem, bb_iloop, bb_hloop, discard_ns_stem, min_hloop_size, seq, m_factor, predictor):  # TODO add terminate condition
     """
     preprocess s1 output: bb_stem, bb_iloop, bb_hloop = predictor.predict_bb(seq, threshold, topk)
@@ -352,6 +376,11 @@ def predict_wrapper(bb_stem, bb_iloop, bb_hloop, discard_ns_stem, min_hloop_size
     df_stem = summarize_df(pd.DataFrame(bb_stem), m_factor)
     df_iloop = summarize_df(pd.DataFrame(bb_iloop), m_factor)
     df_hloop = summarize_df(pd.DataFrame(bb_hloop), m_factor=m_factor, hloop=True)
+
+    # discard bbs that are "out-of-bound"
+    df_stem = filter_out_of_range_bb(df_stem, len(seq))
+    df_iloop = filter_out_of_range_bb(df_iloop, len(seq))
+    df_hloop = filter_out_of_range_bb(df_hloop, len(seq))
 
     if discard_ns_stem:
         n_before = len(df_stem)
