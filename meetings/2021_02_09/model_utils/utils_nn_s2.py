@@ -3,6 +3,7 @@ Inference utils for S2, using self attn model and constraint-aware greedy sampli
 """
 import numpy as np
 import pandas as pd
+from itertools import cycle
 import dgutils.pandas as dgp
 # from utils_s2 import Predictor
 # from util_global_struct import add_bb_bottom_left, compatible_counts, filter_non_standard_stem, validate_global_struct, LocalStructureBb, OneStepChain
@@ -527,4 +528,21 @@ def greedy_sample(df_stem, df_iloop, df_hloop, predictor):
             remaining.remove(id_bb)
     
     return picked, df_tmp
-    
+
+
+def stem2db_str(df_stem, seq_len):
+    bracket_pairs = cycle([('(', ')'), ('[', ']'), ('{', '}')])
+
+    db_str = ['.'] * seq_len
+    for _, row in df_stem.iterrows():
+        bb_x = int(row['bb_x'])
+        bb_y = int(row['bb_y'])
+        siz = int(row['siz_x'])
+        siz_y = int(row['siz_y'])
+        assert siz == siz_y
+        bracket_pair = next(bracket_pairs)  # py3
+        for i in range(siz):
+            db_str[bb_x+i] = bracket_pair[0]
+            db_str[bb_y-i] = bracket_pair[1]
+    return ''.join(db_str)
+
