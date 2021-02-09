@@ -64,6 +64,10 @@ def compatible_counts(df1, df2, col1, col2, out_name):
     # this is equivalent to:
     # for each row of df1, find how many rows there are in df2 that's compatible
 
+    # if df1 is empty, just return
+    if len(df1) == 0:
+        return df1
+
     if isinstance(col1, str):
         col1 = [col1]
     if isinstance(col2, str):
@@ -417,7 +421,9 @@ def greedy_sample(df_stem, df_iloop, df_hloop, predictor):
     # how many compatible inner stems (stem.top_right == iloop.bottom_left)
     df_iloop_cleanup = compatible_counts(df_iloop_cleanup, df_stem, col1=['bl_x', 'bl_y'], col2=['bb_x', 'bb_y'], out_name='num_compatible_stem_inner')
     # drop those rows without compatible stems on both ends
-    df_iloop_cleanup = df_iloop_cleanup[(df_iloop_cleanup['num_compatible_stem_inner'] > 0) & (df_iloop_cleanup['num_compatible_stem_outer'] > 0)]
+    # do nothing if it's empty
+    if len(df_iloop_cleanup) > 0:
+        df_iloop_cleanup = df_iloop_cleanup[(df_iloop_cleanup['num_compatible_stem_inner'] > 0) & (df_iloop_cleanup['num_compatible_stem_outer'] > 0)]
     
     # for each hloop, check:
     # how many compatible outer stems (stem.bottom_left == iloop.top_right)
@@ -426,7 +432,9 @@ def greedy_sample(df_stem, df_iloop, df_hloop, predictor):
     # drop those rows without compatible stem
     df_hloop_cleanup = df_hloop_cleanup[df_hloop_cleanup['num_compatible_stem_outer'] > 0]
     # drop those not symmetric & across diagonal
-    df_hloop_cleanup = df_hloop_cleanup[(df_hloop_cleanup['bb_x'] == df_hloop_cleanup['bl_y']) & (
+    # do nothing if it's empty
+    if len(df_hloop_cleanup) > 0:
+        df_hloop_cleanup = df_hloop_cleanup[(df_hloop_cleanup['bb_x'] == df_hloop_cleanup['bl_y']) & (
             df_hloop_cleanup['bb_y'] == df_hloop_cleanup['bl_x']) & (
                                                 df_hloop_cleanup['siz_x'] == df_hloop_cleanup['siz_y'])]
     
