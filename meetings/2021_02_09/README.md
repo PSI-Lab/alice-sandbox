@@ -51,7 +51,7 @@ To be implemented in the future.
 
 ### Running on datasets
 
-TODO re-generate! using threshold=0.1
+re-generated using threshold=0.1
 
 run on rfam
 
@@ -96,7 +96,7 @@ python model_utils/run_stage_1.py --data "`dcl path 6PvUty`" --num 0 --threshold
 ```
 
 
-## S1 prediction
+## S1+S2 prediction
 
 <!--### synthetic (for comparison)-->
 
@@ -120,9 +120,23 @@ Prediction on examples of different lengths (& s2 inference run time):
 https://docs.google.com/presentation/d/1Uzpv7-p8laSt50YyK_0mOj8SF3NF-chBhZBpEey07eI/edit#slide=id.gbb94988b7d_0_36
 
 
-TODO eval metric?
+Greedy sampling using S2 prediction:
 
-TODO finetune? (how? bb sensitivity could be low)
+![plot/rfam_s2_eval_1.png](plot/rfam_s2_eval_1.png)
+
+![plot/rfam_s2_eval_2.png](plot/rfam_s2_eval_2.png)
+
+Above is pixel-level metric, not so well as expected (see above slides).
+
+
+## Fine-tune S2
+
+waiting for bpRNA S1 inference run (using long sequence pipeline) to finish.
+
+
+<!--TODO eval metric?-->
+
+<!--TODO finetune? (how? bb sensitivity could be low)-->
 
 
 <!--### s_processed-->
@@ -131,11 +145,11 @@ TODO finetune? (how? bb sensitivity could be low)
 
 <!--The 3 dataset show very similar trend.-->
 
-### bpRNA
+<!--### bpRNA-->
 
-Run S2 predicting? too many bbs (rfam)? pruning? bpRNA?
+<!--Run S2 predicting? too many bbs (rfam)? pruning? bpRNA?-->
 
-check result on workstation, why is it same size as s_processed?
+<!--check result on workstation, why is it same size as s_processed?-->
 
 
 
