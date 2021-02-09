@@ -51,56 +51,94 @@ To be implemented in the future.
 
 ### Running on datasets
 
+TODO re-generate! using threshold=0.1
+
 run on rfam
 
-```
-python model_utils/run_stage_1.py --data "`dcl path 903rfx`" --num 0 --threshold 0.01 --topk 1 --perc_cutoff 0 --patch_size 100 --model v1.0 --out_file data/rfam_t0p01_k1.pkl.gz
-```
-
-
-run on s_processed
+<!--```-->
+<!--python model_utils/run_stage_1.py --data "`dcl path 903rfx`" --num 0 --threshold 0.01 --topk 1 --perc_cutoff 0 --patch_size 100 --model v1.0 --out_file data/rfam_t0p01_k1.pkl.gz-->
+<!--```-->
 
 
 ```
-python model_utils/run_stage_1.py --data "`dcl path a16nRG`" --num 0 --threshold 0.01 --topk 1 --perc_cutoff 0 --patch_size 100 --model v1.0 --out_file data/s_processed_t0p01_k1.pkl.gz
+python model_utils/run_stage_1.py --data "`dcl path 903rfx`" --num 0 --threshold 0.1 --topk 1 --perc_cutoff 0 --patch_size 150 --model v1.0 --out_file data/rfam_t0p1_k1.pkl.gz
 ```
+
+
 
 run on bpRNA?
 
 ```
-python model_utils/run_stage_1.py --data "`dcl path DmNgdP`" --num 0 --threshold 0.01 --topk 1 --perc_cutoff 0 --patch_size 200 --model v1.0 --out_file data/bprna_t0p01_k1.pkl.gz
+python model_utils/run_stage_1.py --data "`dcl path DmNgdP`" --num 0 --threshold 0.1 --topk 1 --perc_cutoff 0 --patch_size 150 --model v1.0 --out_file data/bprna_t0p1_k1.pkl.gz
 ```
 
 running
 
 
+run on s_processed
+
+
+<!--```-->
+<!--python model_utils/run_stage_1.py --data "`dcl path a16nRG`" --num 0 --threshold 0.01 --topk 1 --perc_cutoff 0 --patch_size 100 --model v1.0 --out_file data/s_processed_t0p01_k1.pkl.gz-->
+<!--```-->
+
+```
+python model_utils/run_stage_1.py --data "`dcl path a16nRG`" --num 0 --threshold 0.1 --topk 1 --perc_cutoff 0 --patch_size 150 --model v1.0 --out_file data/s_processed_t0p1_k1.pkl.gz
+```
+
+
+
+
+rnastralign
+
+```
+python model_utils/run_stage_1.py --data "`dcl path 6PvUty`" --num 0 --threshold 0.1 --topk 1 --perc_cutoff 0 --patch_size 150 --model v1.0 --out_file data/rnastralign_t0p1_k1.pkl.gz
+```
+
+
 ## S1 prediction
 
-### synthetic (for comparison)
+<!--### synthetic (for comparison)-->
 
-Based on 1000 samples.
+<!--Based on 1000 samples.-->
 
-![plot/synthetic_s1_pred_num_bbs.png](plot/synthetic_s1_pred_num_bbs.png)
+<!--![plot/synthetic_s1_pred_num_bbs.png](plot/synthetic_s1_pred_num_bbs.png)-->
+
+<!--(this and the following num_bbs v.s. len plots produced by [plot_num_bbs.ipynb](plot_num_bbs.ipynb))-->
 
 ### Rfam151
 
 ![plot/rfam_s1_pred_num_bbs.png](plot/rfam_s1_pred_num_bbs.png)
 
 
-Huge number of bounding box proposals
+S2 model can run on a large number of input bounding boxes without any issues.
+produced by [plot_num_bbs.ipynb](plot_num_bbs.ipynb)
 
 
+Prediction on examples of different lengths (& s2 inference run time):
+
+https://docs.google.com/presentation/d/1Uzpv7-p8laSt50YyK_0mOj8SF3NF-chBhZBpEey07eI/edit#slide=id.gbb94988b7d_0_36
 
 
+TODO eval metric?
 
-### s_processed
+TODO finetune? (how? bb sensitivity could be low)
 
-![plot/s_processed_s1_pred_num_bbs.png](plot/s_processed_s1_pred_num_bbs.png)
 
+<!--### s_processed-->
+
+<!--![plot/s_processed_s1_pred_num_bbs.png](plot/s_processed_s1_pred_num_bbs.png)-->
+
+<!--The 3 dataset show very similar trend.-->
 
 ### bpRNA
 
 Run S2 predicting? too many bbs (rfam)? pruning? bpRNA?
+
+check result on workstation, why is it same size as s_processed?
+
+
+
 
 ## S1 variational inference
 
