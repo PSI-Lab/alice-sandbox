@@ -60,18 +60,19 @@ todo
 
 ### bpRNA?
 
-todo
 
+Sampled 100 examples for visualization.
 
-## Fine-tune S2
+Plots: https://docs.google.com/presentation/d/1Jkh0eplqOPGmqvcjoEtk0GV8hKzf94hNMuIp1XPeEqM/edit#slide=id.gbd3dfc4e94_0_6
 
-waiting for bpRNA S1 inference run (using long sequence pipeline) to finish.
+Produced by [s2_eval_bprna.ipynb](s2_eval_bprna.ipynb)
 
+Looks like 'identical bounding box' sensitivity is too low for us to fine tune a S2 model,
+since we won't be able to construct the training dataset.
 
-<!--TODO eval metric?-->
-
-<!--TODO finetune? (how? bb sensitivity could be low)-->
-
+todo: remove examples that don't satisfy hard constraints?
+(triple pairing ones should have been already removed since we need to find bounding box,
+what about non standard stem base pairing? check pre-processing script)
 
 
 
