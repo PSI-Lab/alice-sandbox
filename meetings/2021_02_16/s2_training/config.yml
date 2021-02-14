@@ -1,0 +1,28 @@
+# model architecture
+in_size: 11
+n_dim: 100
+n_attn_layer: 5
+n_heads: 5
+n_hid: 20
+lr: 0.0001
+epoch: 50
+
+# data loader
+n_length_groups: 10  # split dataset into n groups by length, to make batch padding more efficient
+batch_size: 500
+
+
+# data_augmentation  (not used for now)
+bb_augmentation_shift: True
+bb_shift:  # global shift for all bounding boxes, both directions. e.g. bb_x=3, bb_y=5 -> bb_x=4, bb_y=6
+  - -3
+  - -2
+  - -1
+  - 0
+  - 1
+  - 2
+  - 3
+idx_bb_x: 3  # index of bb_x (x location) in the encoded feature vector
+idx_bb_y: 4  # index of bb_y (y location) in the encoded feature vector
+
+
