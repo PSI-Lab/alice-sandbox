@@ -75,6 +75,14 @@ todo: remove examples that don't satisfy hard constraints?
 what about non standard stem base pairing? check pre-processing script)
 
 
+## S1 training
+
+bpRNA
+
+```
+CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net_pixel_bb_all_targets.py --data DmNgdP --result result/with_scalar_size --num_filters 32 32 64 64 64 128 128 --filter_width 9 9 9 9 9 9 9 --epoch 50 --mask 0.1 --batch_size 40 --max_length 200 --cpu 12
+```
+
 
 ## S1 variational inference
 
