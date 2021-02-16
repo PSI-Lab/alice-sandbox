@@ -79,14 +79,34 @@ what about non standard stem base pairing? check pre-processing script)
 
 bpRNA
 
+in [s1_training/](s1_training/):
+
 ```
-CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net_pixel_bb_all_targets.py --data DmNgdP --result result/with_scalar_size --num_filters 32 32 64 64 64 128 128 --filter_width 9 9 9 9 9 9 9 --epoch 50 --mask 0.1 --batch_size 40 --max_length 200 --cpu 12
+CUDA_VISIBLE_DEVICES=0 python train_simple_conv_net_pixel_bb_all_targets.py --data DmNgdP --result result/with_scalar_size --num_filters 32 32 64 64 64 128 128 --filter_width 9 9 9 9 9 9 9 --epoch 50 --mask 0.1 --batch_size 20 --max_length 200 --cpu 8
 ```
 
+running
 
 ## S1 variational inference
 
 local: a distribution of bounding boxes, conditional on a latent variable
+
+### bpRNA
+
+in [s1_training/](s1_training/):
+
+```
+CUDA_VISIBLE_DEVICES=1 python train_variational_pixel_bb.py --data DmNgdP --result result/var_1 --num_filters 32 32 64 64 64 128 128 --filter_width 9 9 9 9 9 9 9 --latent_dim 20 --epoch 50 --mask 0.1 --batch_size 20 --max_length 200 --cpu 8
+```
+
+
+### synthetic
+
+```
+CUDA_VISIBLE_DEVICES=1 python train_variational_pixel_bb.py --data xs5Soq --result result/var_2 --num_filters 32 32 64 64 64 128 128 --filter_width 9 9 9 9 9 9 9 --latent_dim 20 --epoch 50 --mask 0.1 --batch_size 20 --max_length 200 --cpu 8
+```
+
+small dataset for debug? todo
 
 
 ## S2 inference
