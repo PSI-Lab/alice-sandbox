@@ -1119,7 +1119,7 @@ def main(path_data, num_filters, filter_width, dropout, maskw, latent_dim, n_epo
             yp, mu, logvar = model(x)
 
             loss_1 = masked_loss(yp, y, m, maskw)  # order: pred, target, mask, mask_weight
-            loss_2 = kl_loss(mu, logvar, m)
+            loss_2 = kl_loss(mu, logvar, m['stem_on'])  # w.o.l.g. use one of the hard masks
             loss = loss_1 + loss_2
             # running_loss_tr.append(loss.detach().cpu().numpy())
 
@@ -1182,8 +1182,8 @@ def main(path_data, num_filters, filter_width, dropout, maskw, latent_dim, n_epo
             for x, y, m, md in data_loader_va:
                 x, y, m = to_device(x, y, m, device)
                 yp, mu, logvar = model(x)
-                # loss = masked_loss(yp, y, m, maskw)
-                loss_2 = kl_loss(mu, logvar, m)
+                loss_1 = masked_loss(yp, y, m, maskw)
+                loss_2 = kl_loss(mu, logvar, m['stem_on'])  # w.o.l.g. use one of the hard masks
                 loss = loss_1 + loss_2
                 # running_loss_va.append(loss.detach().cpu().numpy())
                 running_loss_va.append(loss.item())
