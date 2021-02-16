@@ -412,7 +412,7 @@ class LatentVarModel(nn.Module):
             nn.Conv2d(20, 1, kernel_size=1),
         )
 
-    def encoder(self, x):
+    def encode(self, x):
         x = self.cnn_layers(x)
         x = self.fc(x)
         return self.latent_mean(x), self.latent_logvar(x)
