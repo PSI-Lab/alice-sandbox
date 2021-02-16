@@ -772,6 +772,7 @@ def kl_loss(mu, logvar, m):
     n_valid_output[n_valid_output == 0] = 1
     loss_spatial_mean = kl_spatial_sum / n_valid_output
     loss_batch_mean = torch.mean(loss_spatial_mean, dim=0)
+    logging.info("kl loss: {}".format(loss_batch_mean))
     return loss_batch_mean
 
 
@@ -1122,7 +1123,7 @@ def main(path_data, num_filters, filter_width, dropout, maskw, latent_dim, n_epo
             loss_2 = kl_loss(mu, logvar, m['stem_on'])  # w.o.l.g. use one of the hard masks
             loss = loss_1 + loss_2
             # running_loss_tr.append(loss.detach().cpu().numpy())
-
+            print(loss)  # FIXME debug
             running_loss_tr.append(loss.item())
 
             # TODO return val
