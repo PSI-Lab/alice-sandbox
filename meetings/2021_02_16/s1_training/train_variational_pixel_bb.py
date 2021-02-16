@@ -285,19 +285,19 @@ class LatentVarModel(nn.Module):
 
         # stem
         self.out_stem_on = nn.Sequential(
-            nn.Conv2d(50, 20, kernel_size=1),
+            nn.Conv2d(latent_dim, 20, kernel_size=1),
             nn.ReLU(),
             nn.Conv2d(20, 1, kernel_size=1),
             nn.Sigmoid(),
         )
         self.out_stem_loc_x = nn.Sequential(
-            nn.Conv2d(50, 20, kernel_size=1),
+            nn.Conv2d(latent_dim, 20, kernel_size=1),
             nn.ReLU(),
             nn.Conv2d(20, 12, kernel_size=1),
             nn.LogSoftmax(dim=1),
         )
         self.out_stem_loc_y = nn.Sequential(
-            nn.Conv2d(50, 20, kernel_size=1),
+            nn.Conv2d(latent_dim, 20, kernel_size=1),
             nn.ReLU(),
             nn.Conv2d(20, 12, kernel_size=1),
             nn.LogSoftmax(dim=1),
@@ -309,7 +309,7 @@ class LatentVarModel(nn.Module):
         #     nn.LogSoftmax(dim=1),
         # )
         self.hid_stem_siz = nn.Sequential(
-            nn.Conv2d(50, 20, kernel_size=1),
+            nn.Conv2d(latent_dim, 20, kernel_size=1),
             nn.ReLU(),
         )
         self.out_stem_sm_siz = nn.Sequential(
@@ -322,19 +322,19 @@ class LatentVarModel(nn.Module):
         
         # iloop
         self.out_iloop_on = nn.Sequential(
-            nn.Conv2d(50, 20, kernel_size=1),
+            nn.Conv2d(latent_dim, 20, kernel_size=1),
             nn.ReLU(),
             nn.Conv2d(20, 1, kernel_size=1),
             nn.Sigmoid(),
         )
         self.out_iloop_loc_x = nn.Sequential(
-            nn.Conv2d(50, 20, kernel_size=1),
+            nn.Conv2d(latent_dim, 20, kernel_size=1),
             nn.ReLU(),
             nn.Conv2d(20, 12, kernel_size=1),
             nn.LogSoftmax(dim=1),
         )
         self.out_iloop_loc_y = nn.Sequential(
-            nn.Conv2d(50, 20, kernel_size=1),
+            nn.Conv2d(latent_dim, 20, kernel_size=1),
             nn.ReLU(),
             nn.Conv2d(20, 12, kernel_size=1),
             nn.LogSoftmax(dim=1),
@@ -346,7 +346,7 @@ class LatentVarModel(nn.Module):
         #     nn.LogSoftmax(dim=1),
         # )
         self.hid_iloop_siz_x = nn.Sequential(
-            nn.Conv2d(50, 20, kernel_size=1),
+            nn.Conv2d(latent_dim, 20, kernel_size=1),
             nn.ReLU(),
         )
         self.out_iloop_sm_siz_x = nn.Sequential(
@@ -364,7 +364,7 @@ class LatentVarModel(nn.Module):
         #     nn.LogSoftmax(dim=1),
         # )
         self.hid_iloop_siz_y = nn.Sequential(
-            nn.Conv2d(50, 20, kernel_size=1),
+            nn.Conv2d(latent_dim, 20, kernel_size=1),
             nn.ReLU(),
         )
         self.out_iloop_sm_siz_y = nn.Sequential(
@@ -377,19 +377,19 @@ class LatentVarModel(nn.Module):
         
         # hloop
         self.out_hloop_on = nn.Sequential(
-            nn.Conv2d(50, 20, kernel_size=1),
+            nn.Conv2d(latent_dim, 20, kernel_size=1),
             nn.ReLU(),
             nn.Conv2d(20, 1, kernel_size=1),
             nn.Sigmoid(),
         )
         self.out_hloop_loc_x = nn.Sequential(
-            nn.Conv2d(50, 20, kernel_size=1),
+            nn.Conv2d(latent_dim, 20, kernel_size=1),
             nn.ReLU(),
             nn.Conv2d(20, 12, kernel_size=1),
             nn.LogSoftmax(dim=1),
         )
         self.out_hloop_loc_y = nn.Sequential(
-            nn.Conv2d(50, 20, kernel_size=1),
+            nn.Conv2d(latent_dim, 20, kernel_size=1),
             nn.ReLU(),
             nn.Conv2d(20, 12, kernel_size=1),
             nn.LogSoftmax(dim=1),
@@ -401,7 +401,7 @@ class LatentVarModel(nn.Module):
         #     nn.LogSoftmax(dim=1),
         # )
         self.hid_hloop_siz = nn.Sequential(
-            nn.Conv2d(50, 20, kernel_size=1),
+            nn.Conv2d(latent_dim, 20, kernel_size=1),
             nn.ReLU(),
         )
         self.out_hloop_sm_siz = nn.Sequential(
