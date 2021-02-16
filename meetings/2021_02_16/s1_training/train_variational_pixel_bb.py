@@ -254,9 +254,9 @@ class PadCollate2D:
 
 
 
-class SimpleConvNet(nn.Module):
+class LatentVarModel(nn.Module):
     def __init__(self, num_filters, filter_width, latent_dim, dropout):
-        super(SimpleConvNet, self).__init__()
+        super(LatentVarModel, self).__init__()
 
         num_filters = [8] + num_filters
         filter_width = [None] + filter_width
@@ -1007,7 +1007,7 @@ def compute_metrics(x, y, m):
     return evalm
 
 
-def main(path_data, num_filters, filter_width, dropout, maskw, n_epoch, batch_size, max_length, out_dir, n_cpu):
+def main(path_data, num_filters, filter_width, dropout, maskw, latent_dim, n_epoch, batch_size, max_length, out_dir, n_cpu):
     logging.info("Loading dataset: {}".format(path_data))
     dc_client = dc.Client()
     df = []
@@ -1037,7 +1037,7 @@ def main(path_data, num_filters, filter_width, dropout, maskw, n_epoch, batch_si
     logging.info("After: {}".format(len(df)))
     df.drop(columns=['is_seq_valid'], inplace=True)
 
-    model = SimpleConvNet(num_filters, filter_width, dropout)
+    model = LatentVarModel(num_filters, filter_width, latent_dim, dropout)
     print(model)
 
     # device
@@ -1232,6 +1232,7 @@ if __name__ == "__main__":
     parser.add_argument('--filter_width', nargs='*', type=int, help='Filter width for each layer.')
     parser.add_argument('--dropout', type=float, default=0.0, help='Dropout probability')
     parser.add_argument('--mask', type=float, default=0.0, help='Mask weight. Setting to 0 is equivalent to hard mask.')
+    parser.add_argument('--latent_dim', type=int, help='Number of latent variables')
     parser.add_argument('--epoch', type=int, help='Number of epochs')
     parser.add_argument('--batch_size', type=int, help='Mini batch size')
     parser.add_argument('--max_length', type=int, default=0,
@@ -1248,5 +1249,5 @@ if __name__ == "__main__":
     # training
     assert 0 <= args.dropout <= 1
     assert 0 <= args.mask <= 1
-    main(args.data, args.num_filters, args.filter_width, args.dropout, args.mask, args.epoch, args.batch_size, args.max_length, args.result,
+    main(args.data, args.num_filters, args.filter_width, args.dropout, args.mask, args.latent_dim, args.epoch, args.batch_size, args.max_length, args.result,
          args.cpu)
