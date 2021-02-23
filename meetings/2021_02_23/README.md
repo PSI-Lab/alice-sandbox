@@ -19,13 +19,25 @@ Gaussian closed form KLD: page 6 https://jamboard.google.com/d/1EEPdX0WBT-af9Fpj
 
 MNIST toy dataset
 
-x -> 50% ground truth label, 50% ground truth label + 1 mod 10
+x -> 50% ground truth label, 50% ground truth label + 1 mod 10.
+To construct the dataset, we make two copies of each example in minibatch,
+one with original ground truth label, the other with ground truth label + 1 mod 10,
+and pass in both in the same batch.
 
 model architecture, training: page 7 of https://jamboard.google.com/d/1EEPdX0WBT-af9FpjLmuF38E0D40D_85l_tsJMUHaLC8/viewer?f=6
 
 
 
 Result: https://docs.google.com/presentation/d/1eVUYtTeyt76zrLD3fQdQ_tQ3b0ExvXFrfh4fEo_ygVY/edit#slide=id.p
+
+Observations:
+
+- Model is learning to predict the correct stochatstic output, although far from being perfect.
+
+- We rarely see 50/50 predicted distribution (which is how we've constructed the training).
+
+- Most of the examples have predictions peaked at one of the two target labels, as can be seen
+from the entropy histogram (for which a perfect predictor would peak at 0.69).
 
 
 To reproduce the above, see [cvae_mnist.ipynb](cvae_mnist.ipynb)
