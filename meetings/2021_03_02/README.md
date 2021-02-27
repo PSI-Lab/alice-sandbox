@@ -44,7 +44,56 @@ Can we think of a better toy problem?
 
 ### Image segmentation
 
-Paper: ﻿A Probabilistic U-Net for Segmentation of Ambiguous Images
+
+####﻿Learning Structured Output Representation using Deep Conditional Generative Models
+
+- Two approaches:
+
+    - x->z -> y, here we assume the prior on z depends on x pθ(z|x)
+
+    - x, z -> y, here we assume the prior is independent of x pθ(z)
+
+
+- multiple sub networks:
+
+    - recognition network: ﻿qφ(z|x, y)
+
+    - (conditional) prior network: ﻿pθ(z|x)
+
+    - generation network: ﻿pθ(y|x, z)
+
+- "recurrent" connection of initial guess﻿ˆy to the prior network
+
+- evaluation:
+
+    - set z to E\[z|x\]
+
+    - evaluate of conditonal likelihood of y given x, by sampling z using the prior network,
+    and compute MC estimate of p(y|x)
+
+    - similar to above, but using importance sampling from qφ(z|x, y)
+
+
+- proposed method to close gap between recognition network and prior network:
+﻿setting the recognition network the same as the prior network, ﻿i.e., qφ(z|x, y) = pθ(z|x).
+By doing so we get rid of the KL divergence in the objective.
+Author call this:﻿Gaussian stochastic neural network (GSNN).
+Overall objective is weighted sum of this and the original objective.
+
+
+![plot/cvae_paper_s1.png](plot/cvae_paper_s1.png)
+
+- Model architeture:
+
+    - recognition network input: original image + ground truth y
+
+    - prior network input: original image + predicted y from baseline CNN
+
+    - final output is summation of generation network and baseline CNN
+
+
+
+####﻿A Probabilistic U-Net for Segmentation of Ambiguous Images
 
 
 
