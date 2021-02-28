@@ -37,10 +37,6 @@ Train Epoch: 3 [58000/60000 (97%)]	Loss: 2363.539551 = 2045.863770 + 317.675720
 ```
 
 
-### MNIST conditioned on image
-
-Can we think of a better toy problem?
-
 
 ### Image segmentation
 
@@ -95,9 +91,64 @@ Overall objective is weighted sum of this and the original objective.
 
 ####﻿A Probabilistic U-Net for Segmentation of Ambiguous Images
 
+![plot/unet_cvae_paper_1.png](plot/unet_cvae_paper_1.png)
+
+- loss is a weighted combination of:
+
+    - KL divergence between probabilities parameterized by prior (condition on x)
+    and posterior (condition on x and ground truth y) network
+
+    - likelihood of y|x generated from z sampled from posterior network
+
+
+### MNIST conditioned on image
+
+
+#### Add CNN before conditioning
+
+One layer CNN before combining x with y or z.
+
+https://docs.google.com/presentation/d/1XXCik3yw_ww_2h8rPjfEhzn4x4VhH3Oimv5d6HM2BYM/edit#slide=id.gc11059b81d_0_0
+
+
+#### Add prior network
+
+- In addition to posterior network: x, y -> z's parameter,
+add prior network that maps x to z's parameter
+
+- Minimize KL between posterior and the parameterized prior (as opposed to the fixed N(0,1) prior)
+
+- KL divergence between prior and posterior, when both are parameterized:
+https://jamboard.google.com/d/1h3RJg4gkF48me63UrBfoUMALqjxkw3bqtcPAVszGc4M/viewer?f=0
+
+- At test time, use prior network to sample z
+
+
+tie weights?
+
+Can we think of a better toy problem?
+
+
+
 
 
 ## CVAE adopted to bounding box prediction
+
+- use both prior and posterior network
+
+### Generate dataset
+
+
+Generate multiple y's for the same x by sampling RNAfold suboptimal structure: `RNAsubopt`.
+For now we're using the `-p` option: randomly draw structures according to their probability in the Boltzmann ensemble.
+There is another (mutually exclusive) option `-e` for generating all structures within a delta free energy threshold.
+
+```
+mkdir data/
+cd s1_vae_data_gen/
+python make_data.py --minlen 10 --maxlen 100 --num_seq 1000 --num_sample 10 --out ../data/synthetic_bb_dist.len10_100.num1000.sample10.pkl.gz
+```
+
 
 
 

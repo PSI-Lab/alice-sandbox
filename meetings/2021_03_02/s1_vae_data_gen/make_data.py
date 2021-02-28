@@ -31,13 +31,13 @@ def main(minlen=10, maxlen=100, num_seqs=100, num_sample=10, outfile=None):
         one_idxs = sample_structures(seq, num_sample)
 
         # find bounding boxes for each structure
-        for one_idx in one_idxs:
+        for one_idx in one_idxs: # right now we use -p option so there can be duplicates
             bounding_boxes = add_target(seq, one_idx)
 
-        data.append({'seq_id': i,
-                     'seq': seq,
-                     'one_idx': one_idx,
-                     'bounding_boxes': bounding_boxes})
+            data.append({'seq_id': i,
+                         'seq': seq,
+                         'one_idx': one_idx,
+                         'bounding_boxes': bounding_boxes})
     df = pd.DataFrame(data)
     df.to_pickle(outfile, compression='gzip')
 
