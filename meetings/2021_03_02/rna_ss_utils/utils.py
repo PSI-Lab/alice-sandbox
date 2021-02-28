@@ -5,6 +5,8 @@ import tempfile
 import os
 import re
 import shutil
+# from StringIO import StringIO
+from io import StringIO  # py3
 from subprocess import PIPE, Popen, STDOUT
 import pandas as pd
 import numpy as np
@@ -140,6 +142,58 @@ def get_pair_prob_matrix(seq):
         vals[p1, p2] = float(sqrt_prob) ** 2
         vals[p2, p1] = float(sqrt_prob) ** 2
     return vals
+
+
+def sample_structures(seq, n_samples):
+    p = Popen(['RNAsubopt',  '-p', str(n_samples)], stdin=PIPE,
+              stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    stdout, stderr = p.communicate(input=seq)
+    rc = p.returncode
+    if rc != 0:
+        msg = 'RNAeval returned error code %d\nstdout:\n%s\nstderr:\n%s\n' % (
+            rc, stdout, stderr)
+        raise Exception(msg)
+    # parse output
+    lines = stdout.splitlines()
+    assert len(lines) == n_samples + 1
+    lines = lines[1:]
+    # convert to idx array
+    all_vals = []
+    for s in lines:
+        assert len(s) == len(seq)
+        # convert to ct file (add a fake energy, otherwise b2ct won't run)
+        input_str = '>seq\n{}\n{} (-0.0)'.format(seq, s)
+        p = Popen(['b2ct'], stdin=PIPE,
+                  stdout=PIPE, stderr=PIPE, universal_newlines=True)
+        stdout, stderr = p.communicate(input=input_str)
+        rc = p.returncode
+        if rc != 0:
+            msg = 'b2ct returned error code %d\nstdout:\n%s\nstderr:\n%s\n' % (
+                rc, stdout, stderr)
+            raise Exception(msg)
+        # load data
+        # print(stdout)
+        df = pd.read_csv(StringIO(stdout), skiprows=1, header=None,
+                         names=['i1', 'base', 'idx_i', 'i2', 'idx_j', 'i3'],
+                         delim_whitespace=True)
+        # df = pd.read_csv(StringIO(stdout), skiprows=1, header=None,
+        #                  names=['i1', 'base', 'idx_i', 'i2', 'idx_j', 'i3'],
+        #                  sep=r"\s*")
+        assert ''.join(df['base'].tolist()) == seq, ''.join(df['base'].tolist())
+        # matrix
+        vals = np.zeros((len(seq), len(seq)))
+        for _, row in df.iterrows():
+            idx_i = row['idx_i']
+            idx_j = row['idx_j'] - 1
+            if idx_j != -1:
+                vals[idx_i, idx_j] = 1
+                vals[idx_j, idx_i] = 1
+        # process into one-index
+        # set lower triangular to 0
+        vals[np.tril_indices(vals.shape[0])] = 0
+        pred_idx = np.where(vals == 1)
+        all_vals.append(pred_idx)
+    return all_vals
 
 
 def arr2db(arr, verbose=False):
