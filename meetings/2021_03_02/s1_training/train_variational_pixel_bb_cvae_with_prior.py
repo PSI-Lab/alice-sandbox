@@ -1047,6 +1047,7 @@ def main(path_data, num_filters, filter_width, dropout, maskw, latent_dim, n_epo
 
     # device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    logging.info("Device: {}".format(device))
 
     model = model.to(device)
 
