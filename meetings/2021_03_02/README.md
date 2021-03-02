@@ -195,15 +195,15 @@ cd s1_training/
 CUDA_VISIBLE_DEVICES=1 python train_variational_pixel_bb_cvae_with_prior.py --data ../data/synthetic_bb_dist.len10_100.num1000.sample10.pkl.gz --result result/run_1 --num_filters 32 32 64 64 64 128 128 --filter_width 9 9 9 9 9 9 9 --latent_dim 20 --epoch 50 --mask 0.1 --batch_size 20 --max_length 200 --cpu 4
 ```
 
-plot training:
+<!--plot training:-->
 
-```
-# in root dir:
-python model_utils/plot_training.py --in_log s1_training/result/run_1/run.log --out_plot s1_training/result/run_1/plot_training.html
-```
+<!--```-->
+<!--# in root dir:-->
+<!--python model_utils/plot_training.py --in_log s1_training/result/run_1/run.log --out_plot s1_training/result/run_1/plot_training.html-->
+<!--```-->
 
 
-![plot/s1_cvae_run_1.png](plot/s1_cvae_run_1.png)
+<!--![plot/s1_cvae_run_1.png](plot/s1_cvae_run_1.png)-->
 
 
 
@@ -216,17 +216,24 @@ cd s1_training/
 CUDA_VISIBLE_DEVICES=1 python train_variational_pixel_bb_cvae_with_prior.py --data ../data/synthetic_bb_dist.len10_100.num1000.sample10.pkl.gz --result result/run_2 --num_filters 32 32 64 64 64 128 128 --filter_width 9 9 9 9 9 9 9 --latent_dim 20 --epoch 50 --mask 1 --batch_size 20 --max_length 200 --cpu 4
 ```
 
-plot training:
+<!--plot training:-->
 
-```
-# in root dir:
-python model_utils/plot_training.py --in_log s1_training/result/run_2/run.log --out_plot s1_training/result/run_2/plot_training.html
-```
+<!--```-->
+<!--# in root dir:-->
+<!--python model_utils/plot_training.py --in_log s1_training/result/run_2/run.log --out_plot s1_training/result/run_2/plot_training.html-->
+<!--```-->
 
-![plot/s1_cvae_run_2.png](plot/s1_cvae_run_2.png)
+<!--![plot/s1_cvae_run_2.png](plot/s1_cvae_run_2.png)-->
 
+
+Thoughts: current implementation: each pixel has its own mu and log_var.
+
+TODO plot KLD   as
 
 ### Inference
+
+<!--Use run_2, last epoch,-->
+
 
 ### TODOs
 
