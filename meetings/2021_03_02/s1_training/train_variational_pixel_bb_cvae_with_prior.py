@@ -464,9 +464,12 @@ class LatentVarModel(nn.Module):
         # concat along channel dimension
         return torch.cat(ys, 1)
 
+    def process_x(self, x):
+        return self.cnn_layers(x)
+
     def encode(self, x, y):
         # shape: batch x channel x h x w
-        x = self.cnn_layers(x)
+        # input x is after CNN
         # encode and flatten y
         y = self._collapse_y(y)
         x = self.fc(torch.cat([x, y], 1))  # concat along channel dim
@@ -543,9 +546,20 @@ class LatentVarModel(nn.Module):
 
     # Defining the forward pass
     def forward(self, x, y):
+        x = self.process_x(x)
+        # posterior
         mu, logvar = self.encode(x, y)
+        # sample z
         z = self.reparameterize(mu, logvar)
-        return self.decode(z), mu, logvar
+        # z has shape batch x latent_dim
+        # expand it (repeat) to batch x latent_dim x h x w
+        # and concat with x
+        assert z.shape[0] == x.shape[0]  # batch dim
+        z = z.unsqueeze(-1).unsqueeze(-1)
+        z = z.expand(-1, -1, x.shape[2], x.shape[3])   # memory-efficient
+        xz = torch.cat([x, z], dim=1)
+        # decoder
+        return self.decode(xz), mu, logvar
 
 
 # TODO move to class level
