@@ -314,19 +314,19 @@ class LatentVarModel(nn.Module):
 
         # stem
         self.out_stem_on = nn.Sequential(
-            nn.Conv2d(latent_dim, 20, kernel_size=1),
+            nn.Conv2d(num_filters[-1] + latent_dim, 20, kernel_size=1),
             nn.ReLU(),
             nn.Conv2d(20, 1, kernel_size=1),
             nn.Sigmoid(),
         )
         self.out_stem_loc_x = nn.Sequential(
-            nn.Conv2d(latent_dim, 20, kernel_size=1),
+            nn.Conv2d(num_filters[-1] + latent_dim, 20, kernel_size=1),
             nn.ReLU(),
             nn.Conv2d(20, 12, kernel_size=1),
             nn.LogSoftmax(dim=1),
         )
         self.out_stem_loc_y = nn.Sequential(
-            nn.Conv2d(latent_dim, 20, kernel_size=1),
+            nn.Conv2d(num_filters[-1] + latent_dim, 20, kernel_size=1),
             nn.ReLU(),
             nn.Conv2d(20, 12, kernel_size=1),
             nn.LogSoftmax(dim=1),
@@ -338,7 +338,7 @@ class LatentVarModel(nn.Module):
         #     nn.LogSoftmax(dim=1),
         # )
         self.hid_stem_siz = nn.Sequential(
-            nn.Conv2d(latent_dim, 20, kernel_size=1),
+            nn.Conv2d(num_filters[-1] + latent_dim, 20, kernel_size=1),
             nn.ReLU(),
         )
         self.out_stem_sm_siz = nn.Sequential(
@@ -351,19 +351,19 @@ class LatentVarModel(nn.Module):
         
         # iloop
         self.out_iloop_on = nn.Sequential(
-            nn.Conv2d(latent_dim, 20, kernel_size=1),
+            nn.Conv2d(num_filters[-1] + latent_dim, 20, kernel_size=1),
             nn.ReLU(),
             nn.Conv2d(20, 1, kernel_size=1),
             nn.Sigmoid(),
         )
         self.out_iloop_loc_x = nn.Sequential(
-            nn.Conv2d(latent_dim, 20, kernel_size=1),
+            nn.Conv2d(num_filters[-1] + latent_dim, 20, kernel_size=1),
             nn.ReLU(),
             nn.Conv2d(20, 12, kernel_size=1),
             nn.LogSoftmax(dim=1),
         )
         self.out_iloop_loc_y = nn.Sequential(
-            nn.Conv2d(latent_dim, 20, kernel_size=1),
+            nn.Conv2d(num_filters[-1] + latent_dim, 20, kernel_size=1),
             nn.ReLU(),
             nn.Conv2d(20, 12, kernel_size=1),
             nn.LogSoftmax(dim=1),
@@ -375,7 +375,7 @@ class LatentVarModel(nn.Module):
         #     nn.LogSoftmax(dim=1),
         # )
         self.hid_iloop_siz_x = nn.Sequential(
-            nn.Conv2d(latent_dim, 20, kernel_size=1),
+            nn.Conv2d(num_filters[-1] + latent_dim, 20, kernel_size=1),
             nn.ReLU(),
         )
         self.out_iloop_sm_siz_x = nn.Sequential(
@@ -393,7 +393,7 @@ class LatentVarModel(nn.Module):
         #     nn.LogSoftmax(dim=1),
         # )
         self.hid_iloop_siz_y = nn.Sequential(
-            nn.Conv2d(latent_dim, 20, kernel_size=1),
+            nn.Conv2d(num_filters[-1] + latent_dim, 20, kernel_size=1),
             nn.ReLU(),
         )
         self.out_iloop_sm_siz_y = nn.Sequential(
@@ -406,19 +406,19 @@ class LatentVarModel(nn.Module):
         
         # hloop
         self.out_hloop_on = nn.Sequential(
-            nn.Conv2d(latent_dim, 20, kernel_size=1),
+            nn.Conv2d(num_filters[-1] + latent_dim, 20, kernel_size=1),
             nn.ReLU(),
             nn.Conv2d(20, 1, kernel_size=1),
             nn.Sigmoid(),
         )
         self.out_hloop_loc_x = nn.Sequential(
-            nn.Conv2d(latent_dim, 20, kernel_size=1),
+            nn.Conv2d(num_filters[-1] + latent_dim, 20, kernel_size=1),
             nn.ReLU(),
             nn.Conv2d(20, 12, kernel_size=1),
             nn.LogSoftmax(dim=1),
         )
         self.out_hloop_loc_y = nn.Sequential(
-            nn.Conv2d(latent_dim, 20, kernel_size=1),
+            nn.Conv2d(num_filters[-1] + latent_dim, 20, kernel_size=1),
             nn.ReLU(),
             nn.Conv2d(20, 12, kernel_size=1),
             nn.LogSoftmax(dim=1),
@@ -430,7 +430,7 @@ class LatentVarModel(nn.Module):
         #     nn.LogSoftmax(dim=1),
         # )
         self.hid_hloop_siz = nn.Sequential(
-            nn.Conv2d(latent_dim, 20, kernel_size=1),
+            nn.Conv2d(num_filters[-1] + latent_dim, 20, kernel_size=1),
             nn.ReLU(),
         )
         self.out_hloop_sm_siz = nn.Sequential(
@@ -551,12 +551,11 @@ class LatentVarModel(nn.Module):
         mu, logvar = self.encode(x, y)
         # sample z
         z = self.reparameterize(mu, logvar)
-        # z has shape batch x latent_dim
-        # expand it (repeat) to batch x latent_dim x h x w
-        # and concat with x
+        # z has shape batch x latent_dim x h x w  TODO right now each pixel has different z's...hmmm
+        # concat with x
         assert z.shape[0] == x.shape[0]  # batch dim
-        z = z.unsqueeze(-1).unsqueeze(-1)
-        z = z.expand(-1, -1, x.shape[2], x.shape[3])   # memory-efficient
+        assert z.shape[2] == x.shape[2]
+        assert z.shape[3] == x.shape[3]
         xz = torch.cat([x, z], dim=1)
         # decoder
         return self.decode(xz), mu, logvar
