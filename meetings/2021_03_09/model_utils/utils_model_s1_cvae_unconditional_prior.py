@@ -525,6 +525,9 @@ class Predictor(object):
         if dropout is None:
             dropout = 0.0
 
+        # needed for sampling z
+        self.latent_dim = latent_dim
+
         # for computing trim_size
         self.filter_width = filter_width
 
@@ -1019,7 +1022,7 @@ class Predictor(object):
         return uniq_stem, uniq_iloop, uniq_hloop
 
 
-    def predict_bb(self, seq, threshold, topk=1, perc_cutoff=0, seq2=None, mask=None):
+    def predict_bb(self, seq, threshold, topk=1, perc_cutoff=0, seq2=None, mask=None, latent_var=None):
 
         # yp, pred_bb_stem, pred_bb_iloop, pred_bb_hloop, pred_box_stem, pred_box_iloop, pred_box_hloop = self._predict_bb(seq, threshold, topk=topk, perc_cutoff=perc_cutoff, seq2=seq2, mask=mask)
 
@@ -1036,7 +1039,31 @@ class Predictor(object):
             de = SeqPairEncoder(seq, seq2)
         else:
             de = DataEncoder(seq)
-        yp = self.model(torch.tensor(de.x_torch))
+
+        # pass encoded sequence through CNN
+        x = torch.tensor(de.x_torch)
+        x_cnn = self.model.process_x(x)
+
+        # if latent variable is not specified, sample it from fixed prior
+        if latent_var is None:
+            z = self.model.reparameterize(torch.zeros(1, self.latent_dim, x.shape[2], x.shape[3]),
+                                                     torch.zeros(1, self.latent_dim, x.shape[2], x.shape[3]))
+        # otherwise make sure the shape is correct
+        else:
+            assert z.shape[0] == 1
+            assert z.shape[1] == self.latent_dim
+            assert z.shape[2] == x.shape[2]
+            assert z.shape[3] == x.shape[3]
+
+        # run decoder
+        xz = torch.cat([x_cnn, z], dim=1)
+        yp = self.model.decode(xz)
+        # yp = self.model(torch.tensor(de.x_torch))
+
+        # TODO make new interface to sample N times (CNN only need to be run once <- faster)
+
+
+
         # single example, remove batch dimension
         yp = {k: v.detach().cpu().numpy()[0, :, :, :] for k, v in yp.items()}
 
