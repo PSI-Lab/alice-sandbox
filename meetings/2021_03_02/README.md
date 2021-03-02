@@ -1,8 +1,6 @@
 
 
-## CVAE examples
-
-### MNIST conditioned on class label
+## CVAE: MNIST conditioned on class label
 
 Sanity check it works
 
@@ -38,10 +36,10 @@ Train Epoch: 3 [58000/60000 (97%)]	Loss: 2363.539551 = 2045.863770 + 317.675720
 
 
 
-### Image segmentation
+## Image segmentation papers
 
 
-####﻿Learning Structured Output Representation using Deep Conditional Generative Models
+###﻿Learning Structured Output Representation using Deep Conditional Generative Models
 
 - Two approaches:
 
@@ -89,7 +87,7 @@ Overall objective is weighted sum of this and the original objective.
 
 
 
-####﻿A Probabilistic U-Net for Segmentation of Ambiguous Images
+###﻿A Probabilistic U-Net for Segmentation of Ambiguous Images
 
 ![plot/unet_cvae_paper_1.png](plot/unet_cvae_paper_1.png)
 
@@ -101,7 +99,7 @@ Overall objective is weighted sum of this and the original objective.
     - likelihood of y|x generated from z sampled from posterior network
 
 
-### MNIST conditioned on image
+## CVAE: MNIST conditioned on image
 
 
 #### Add CNN before conditioning
@@ -134,7 +132,7 @@ Can we think of a better toy problem?
 
 ## CVAE adopted to bounding box prediction
 
-- use both prior and posterior network
+
 
 ### Generate dataset
 
@@ -150,5 +148,122 @@ python make_data.py --minlen 10 --maxlen 100 --num_seq 1000 --num_sample 10 --ou
 ```
 
 
+### Model training: CVAE
 
 
+
+- CNN run on 1D input (from outer concat of seq)
+
+- VAE run on each pixel independently (i.e. per-channel NN, or 1x1 conv)
+
+- VAE:
+
+    - input x: feature map of each pixel (denoted as a in the jamboard below),
+
+
+    - output y: per-pixel bounding box outputs: for each bb type, on/off probability, location and size (softmax/scalar)
+
+
+
+### Model training: prior independent of x
+
+
+- only posterior network ("encoder")
+
+- prior is assumed to be N(0, 1)
+
+- decoder input: x and z, where z is sampled from posterior network (training time) or default prior
+
+
+https://jamboard.google.com/d/1h3RJg4gkF48me63UrBfoUMALqjxkw3bqtcPAVszGc4M/viewer?f=1
+
+
+debug:
+
+```
+cd s1_training/
+CUDA_VISIBLE_DEVICES=1 python train_variational_pixel_bb_cvae_with_prior.py --data ../data/synthetic_bb_dist.len10_100.num1000.sample10.pkl.gz --result result/debug --num_filters 16 16 --filter_width 9 9 --latent_dim 20 --epoch 2 --mask 0.1 --batch_size 20 --max_length 200 --cpu 0
+```
+
+
+#### Run 1
+
+GPU (soft masking disabled):
+
+```
+cd s1_training/
+CUDA_VISIBLE_DEVICES=1 python train_variational_pixel_bb_cvae_with_prior.py --data ../data/synthetic_bb_dist.len10_100.num1000.sample10.pkl.gz --result result/run_1 --num_filters 32 32 64 64 64 128 128 --filter_width 9 9 9 9 9 9 9 --latent_dim 20 --epoch 50 --mask 0.1 --batch_size 20 --max_length 200 --cpu 4
+```
+
+plot training:
+
+```
+# in root dir:
+python model_utils/plot_training.py --in_log s1_training/result/run_1/run.log --out_plot s1_training/result/run_1/plot_training.html
+```
+
+
+![plot/s1_cvae_run_1.png](plot/s1_cvae_run_1.png)
+
+
+
+#### Run 2
+
+turn off soft masking (i.e. apply equal loss weighting everywhere) by setting mask=1.0:
+
+```
+cd s1_training/
+CUDA_VISIBLE_DEVICES=1 python train_variational_pixel_bb_cvae_with_prior.py --data ../data/synthetic_bb_dist.len10_100.num1000.sample10.pkl.gz --result result/run_2 --num_filters 32 32 64 64 64 128 128 --filter_width 9 9 9 9 9 9 9 --latent_dim 20 --epoch 50 --mask 1 --batch_size 20 --max_length 200 --cpu 4
+```
+
+plot training:
+
+```
+# in root dir:
+python model_utils/plot_training.py --in_log s1_training/result/run_2/run.log --out_plot s1_training/result/run_2/plot_training.html
+```
+
+![plot/s1_cvae_run_2.png](plot/s1_cvae_run_2.png)
+
+
+### Inference
+
+### TODOs
+
+
+sanity check prediction
+
+
+check performance (sanity check) (how to evaluate?)
+
+
+more latent dimensions?
+
+
+More data points (above is 1000 x 10), e.g. 10000 x 10?
+
+
+
+new inference pipeline v2
+
+
+TODO
+
+
+### Model training: Prior depend on x
+
+- use both prior and posterior network
+
+    - prior network input: x
+
+    - posterior network ("encoder") input: x and y
+
+
+- decoder input: x and z, where z is sampled from posterior network (training time) or prior network (test time)
+
+WIP
+
+
+TODO implement prior network
+
+TODO inference pipeline v3 (same code as v2 with different options?)
