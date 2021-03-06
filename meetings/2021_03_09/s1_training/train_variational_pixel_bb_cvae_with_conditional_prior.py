@@ -1152,6 +1152,7 @@ def main(path_data, num_filters, filter_width, dropout, maskw, latent_dim, n_epo
             loss_1 = masked_loss(yp, y, m, maskw)  # order: pred, target, mask, mask_weight
             loss_2 = kl_loss(mu_q, logvar_q, mu_p, logvar_p, m['stem_on'])  # w.o.l.g. use one of the hard masks
             loss = loss_1 + loss_2
+            running_loss_tr.append(loss.item())
             # TODO return val
             evalm_tr.merge(compute_metrics(y, yp, m))
             logging.info("Epoch {} Training loss (posterior): {} ({} + {})".format(epoch, loss, loss_1, loss_2))
