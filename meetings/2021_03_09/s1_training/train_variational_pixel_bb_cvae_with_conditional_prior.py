@@ -1151,26 +1151,21 @@ def main(path_data, num_filters, filter_width, dropout, maskw, latent_dim, n_epo
 
             loss_1 = masked_loss(yp, y, m, maskw)  # order: pred, target, mask, mask_weight
             loss_2 = kl_loss(mu_q, logvar_q, mu_p, logvar_p, m['stem_on'])  # w.o.l.g. use one of the hard masks
+            loss = loss_1 + loss_2
+            # TODO return val
+            evalm_tr.merge(compute_metrics(y, yp, m))
+            logging.info("Epoch {} Training loss (posterior): {} ({} + {})".format(epoch, loss, loss_1, loss_2))
+            model.zero_grad()
+            loss.backward()
+            optimizer.step()
 
 
             # add in prior-based loss (TODO weight ths loss?)
             yp, mu_p, logvar_p = model.inference(x)
             loss_3 = masked_loss(yp, y, m, maskw)
-
-            loss = loss_1 + loss_2 + loss_3
-            # running_loss_tr.append(loss.detach().cpu().numpy())
-            running_loss_tr.append(loss.item())
-
-            # TODO return val
             evalm_tr.merge(compute_metrics(y, yp, m))
-
-
-            # running_auroc_tr.extend(_r)
-            # running_auprc_tr.extend(_p)
-            logging.info("Epoch {} Training loss: {} ({} + {} + {})".format(epoch, loss, loss_1, loss_2, loss_3))
-
+            logging.info("Epoch {} Training loss (prior): {}".format(epoch, loss_3))
             model.zero_grad()
-
             loss.backward()
             optimizer.step()
         
