@@ -1151,7 +1151,13 @@ def main(path_data, num_filters, filter_width, dropout, maskw, latent_dim, n_epo
 
             loss_1 = masked_loss(yp, y, m, maskw)  # order: pred, target, mask, mask_weight
             loss_2 = kl_loss(mu_q, logvar_q, mu_p, logvar_p, m['stem_on'])  # w.o.l.g. use one of the hard masks
-            loss = loss_1 + loss_2
+
+
+            # add in prior-based loss (TODO weight ths loss?)
+            yp, mu_p, logvar_p = model.inference(x)
+            loss_3 = masked_loss(yp, y, m, maskw)
+
+            loss = loss_1 + loss_2 + loss_3
             # running_loss_tr.append(loss.detach().cpu().numpy())
             running_loss_tr.append(loss.item())
 
@@ -1161,7 +1167,7 @@ def main(path_data, num_filters, filter_width, dropout, maskw, latent_dim, n_epo
 
             # running_auroc_tr.extend(_r)
             # running_auprc_tr.extend(_p)
-            logging.info("Epoch {} Training loss: {} ({} + {})".format(epoch, loss, loss_1, loss_2))
+            logging.info("Epoch {} Training loss: {} ({} + {} + {})".format(epoch, loss, loss_1, loss_2, loss_3))
 
             model.zero_grad()
 
@@ -1208,7 +1214,7 @@ def main(path_data, num_filters, filter_width, dropout, maskw, latent_dim, n_epo
             running_loss_va = []
             running_auroc_va = []
             running_auprc_va = []
-            evalm_tr = EvalMetric()  # TODO re-using the training one?
+            evalm_tr = EvalMetric()
             for x, y, m, md in data_loader_va:
                 x, y, m = to_device(x, y, m, device)
                 # yp, mu, logvar = model(x)
@@ -1237,7 +1243,7 @@ def main(path_data, num_filters, filter_width, dropout, maskw, latent_dim, n_epo
             running_loss_va = []
             running_auroc_va = []
             running_auprc_va = []
-            evalm_tr = EvalMetric()  # TODO re-using the training one?
+            evalm_tr = EvalMetric()
             for x, y, m, md in data_loader_va:
                 x, y, m = to_device(x, y, m, device)
                 # yp, mu, logvar = model(x)
