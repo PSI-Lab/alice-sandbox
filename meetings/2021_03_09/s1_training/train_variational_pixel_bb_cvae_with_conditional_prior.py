@@ -1166,7 +1166,7 @@ def main(path_data, num_filters, filter_width, dropout, maskw, latent_dim, n_epo
             evalm_tr.merge(compute_metrics(y, yp, m))
             logging.info("Epoch {} Training loss (prior): {}".format(epoch, loss_3))
             model.zero_grad()
-            loss.backward()
+            loss_3.backward()
             optimizer.step()
         
         # report metric
