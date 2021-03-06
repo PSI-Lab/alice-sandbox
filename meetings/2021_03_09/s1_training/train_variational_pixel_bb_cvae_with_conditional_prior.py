@@ -572,6 +572,21 @@ class LatentVarModel(nn.Module):
         # decoder
         return self.decode(xz), mu_q, logvar_q, mu_p, logvar_p
 
+    def inference(self, x):  # using prior network
+        x = self.process_x(x)
+        # prior
+        mu_p, logvar_p = self.prior_network(x)
+        # sample z
+        z = self.reparameterize(mu_p, logvar_p)
+        # z has shape batch x latent_dim x h x w  TODO right now each pixel has different z's...hmmm
+        # concat with x
+        assert z.shape[0] == x.shape[0]  # batch dim
+        assert z.shape[2] == x.shape[2]
+        assert z.shape[3] == x.shape[3]
+        xz = torch.cat([x, z], dim=1)
+        # decoder
+        return self.decode(xz), mu_p, logvar_p
+
 
 # TODO move to class level
 loss_b = torch.nn.BCELoss(reduction='none')
@@ -1162,21 +1177,21 @@ def main(path_data, num_filters, filter_width, dropout, maskw, latent_dim, n_epo
         torch.save(model.state_dict(), _model_path)
         logging.info("Model checkpoint saved at: {}".format(_model_path))
 
-        # save the last minibatch prediction
-        df_pred = []
-        num_examples = y[list(y.keys())[0]].shape[0]   # wlog, check batch dimension using first output key
-        for i in range(num_examples):
-            row = {'subset': 'training'}
-            # store metadata
-            row.update(md[i])
-            for k in y.keys():
-                #  batch x channel x H x W
-                _y = y[k][i, :, :, :].detach().cpu().numpy()
-                _yp = yp[k][i, :, :, :].detach().cpu().numpy()
-                row.update({'target_{}'.format(k): _y,
-                            'pred_{}'.format(k): _yp,
-                            })
-            df_pred.append(row)
+        # # save the last minibatch prediction
+        # df_pred = []
+        # num_examples = y[list(y.keys())[0]].shape[0]   # wlog, check batch dimension using first output key
+        # for i in range(num_examples):
+        #     row = {'subset': 'training'}
+        #     # store metadata
+        #     row.update(md[i])
+        #     for k in y.keys():
+        #         #  batch x channel x H x W
+        #         _y = y[k][i, :, :, :].detach().cpu().numpy()
+        #         _yp = yp[k][i, :, :, :].detach().cpu().numpy()
+        #         row.update({'target_{}'.format(k): _y,
+        #                     'pred_{}'.format(k): _yp,
+        #                     })
+        #     df_pred.append(row)
 
         # # report training loss
         # logging.info(
@@ -1193,7 +1208,7 @@ def main(path_data, num_filters, filter_width, dropout, maskw, latent_dim, n_epo
             running_loss_va = []
             running_auroc_va = []
             running_auprc_va = []
-            evalm_tr = EvalMetric()
+            evalm_tr = EvalMetric()  # TODO re-using the training one?
             for x, y, m, md in data_loader_va:
                 x, y, m = to_device(x, y, m, device)
                 # yp, mu, logvar = model(x)
@@ -1203,7 +1218,7 @@ def main(path_data, num_filters, filter_width, dropout, maskw, latent_dim, n_epo
                 loss = loss_1 + loss_2
                 # running_loss_va.append(loss.detach().cpu().numpy())
                 running_loss_va.append(loss.item())
-                logging.info("Epoch {} Validation loss: {} ({} + {})".format(epoch, loss, loss_1, loss_2))
+                logging.info("Epoch {} Validation loss (posterior): {} ({} + {})".format(epoch, loss, loss_1, loss_2))
 
                 evalm_tr.merge(compute_metrics(y, yp, m))
                 # _r, _p = compute_metrics(y, yp, m)
@@ -1218,27 +1233,48 @@ def main(path_data, num_filters, filter_width, dropout, maskw, latent_dim, n_epo
             logging.info(
                 "Epoch {}/{}, validation loss {}".format(epoch, n_epoch, np.mean(np.stack(running_loss_va))))
 
-            # save the last minibatch prediction
-            num_examples = y[list(y.keys())[0]].shape[0]  # wlog, check batch dimension using first output key
-            for i in range(num_examples):
-                row = {'subset': 'validation'}
-                # store metadata
-                row.update(md[i])
-                for k in y.keys():
-                    #  batch x channel x H x W
-                    _y = y[k][i, :, :, :].detach().cpu().numpy()
-                    _yp = yp[k][i, :, :, :].detach().cpu().numpy()
-                    row.update({'target_{}'.format(k): _y,
-                                'pred_{}'.format(k): _yp,
-                                })
-                df_pred.append(row)
+            # report validation loss using z sampled from prior network
+            running_loss_va = []
+            running_auroc_va = []
+            running_auprc_va = []
+            evalm_tr = EvalMetric()  # TODO re-using the training one?
+            for x, y, m, md in data_loader_va:
+                x, y, m = to_device(x, y, m, device)
+                # yp, mu, logvar = model(x)
+                yp, mu_p, logvar_p = model.inference(x, y)
+                loss_1 = masked_loss(yp, y, m, maskw)
+                # loss_2 = kl_loss(mu_q, logvar_q, mu_p, logvar_p, m['stem_on'])  # w.o.l.g. use one of the hard masks
+                # loss = loss_1 + loss_2
+                running_loss_va.append(loss_1.item())
+                logging.info("Epoch {} Validation loss (prior, p(y|x) only): {}".format(epoch, loss_1))
 
-        # end pf epoch
+                evalm_tr.merge(compute_metrics(y, yp, m))
+            logging.info(evalm_tr.aggregate(method=np.nanmean))
+            logging.info(
+                "Epoch {}/{}, validation loss {}".format(epoch, n_epoch, np.mean(np.stack(running_loss_va))))
+
+
+            # # save the last minibatch prediction
+            # num_examples = y[list(y.keys())[0]].shape[0]  # wlog, check batch dimension using first output key
+            # for i in range(num_examples):
+            #     row = {'subset': 'validation'}
+            #     # store metadata
+            #     row.update(md[i])
+            #     for k in y.keys():
+            #         #  batch x channel x H x W
+            #         _y = y[k][i, :, :, :].detach().cpu().numpy()
+            #         _yp = yp[k][i, :, :, :].detach().cpu().numpy()
+            #         row.update({'target_{}'.format(k): _y,
+            #                     'pred_{}'.format(k): _yp,
+            #                     })
+            #     df_pred.append(row)
+
+        # end of epoch
         # export prediction
-        out_file = os.path.join(out_dir, 'pred_ep_{}.pkl.gz'.format(epoch))
-        df_pred = pd.DataFrame(df_pred)
-        df_pred.to_pickle(out_file, compression='gzip')
-        logging.info("Exported prediction (one minibatch) to: {}".format(out_file))
+        # out_file = os.path.join(out_dir, 'pred_ep_{}.pkl.gz'.format(epoch))
+        # df_pred = pd.DataFrame(df_pred)
+        # df_pred.to_pickle(out_file, compression='gzip')
+        # logging.info("Exported prediction (one minibatch) to: {}".format(out_file))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
