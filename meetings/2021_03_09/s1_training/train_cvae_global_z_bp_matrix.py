@@ -501,7 +501,7 @@ def main(path_data, latent_dim, n_epoch, batch_size, max_length, out_dir, n_cpu)
                     continue
                 aucs.append(roc_auc_score(y_true=y_true[idx_example, :], y_score=y_score[idx_example, :]))
             aucs = np.asarray(aucs)
-            print("AUCs: mean {}, median: {}, max {}, min {}".format(np.mean(aucs), np.median(aucs), np.max(aucs), np.min(aucs)))
+            logging.info("AUCs: mean {}, median: {}, max {}, min {}".format(np.mean(aucs), np.median(aucs), np.max(aucs), np.min(aucs)))
 
             # add in prior-based loss (TODO weight ths loss?)
             yp, mu_p, logvar_p = model.inference(x_1d, x_2d)
@@ -554,7 +554,7 @@ def main(path_data, latent_dim, n_epoch, batch_size, max_length, out_dir, n_cpu)
                         continue
                     aucs.append(roc_auc_score(y_true=y_true[idx_example, :], y_score=y_score[idx_example, :]))
                 aucs = np.asarray(aucs)
-                print("AUCs: mean {}, median: {}, max {}, min {}".format(np.mean(aucs), np.median(aucs), np.max(aucs),
+                logging.info("AUCs: mean {}, median: {}, max {}, min {}".format(np.mean(aucs), np.median(aucs), np.max(aucs),
                                                                          np.min(aucs)))
 
             logging.info(
@@ -589,7 +589,7 @@ def main(path_data, latent_dim, n_epoch, batch_size, max_length, out_dir, n_cpu)
                         continue
                     aucs.append(roc_auc_score(y_true=y_true[idx_example, :], y_score=y_score[idx_example, :]))
                 aucs = np.asarray(aucs)
-                print("AUCs: mean {}, median: {}, max {}, min {}".format(np.mean(aucs), np.median(aucs), np.max(aucs),
+                logging.info("AUCs: mean {}, median: {}, max {}, min {}".format(np.mean(aucs), np.median(aucs), np.max(aucs),
                                                                          np.min(aucs)))
 
             logging.info(
