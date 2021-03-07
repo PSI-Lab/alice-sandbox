@@ -492,8 +492,8 @@ def main(path_data, latent_dim, n_epoch, batch_size, max_length, out_dir, n_cpu)
             optimizer.step()
 
             # TODO calculate metric?
-            y_true = y.detach().numpy().reshape(y.shape[0], -1)
-            y_score = yp.detach().numpy().reshape(yp.shape[0], -1)
+            y_true = y.detach().cpu().numpy().reshape(y.shape[0], -1)
+            y_score = yp.detach().cpu().numpy().reshape(yp.shape[0], -1)
             aucs = []
             for idx_example in range(y_true.shape[0]):
                 # skip example if only 1 class
@@ -545,8 +545,8 @@ def main(path_data, latent_dim, n_epoch, batch_size, max_length, out_dir, n_cpu)
                                                                                           loss, loss_1, loss_2))
 
                 # TODO calculate metric?
-                y_true = y.detach().numpy().reshape(y.shape[0], -1)
-                y_score = yp.detach().numpy().reshape(yp.shape[0], -1)
+                y_true = y.detach().cpu().numpy().reshape(y.shape[0], -1)
+                y_score = yp.detach().cpu().numpy().reshape(yp.shape[0], -1)
                 aucs = []
                 for idx_example in range(y_true.shape[0]):
                     # skip example if only 1 class
@@ -580,8 +580,8 @@ def main(path_data, latent_dim, n_epoch, batch_size, max_length, out_dir, n_cpu)
                                                                                          loss_1))
 
                 # TODO calculate metric?
-                y_true = y.detach().numpy().reshape(y.shape[0], -1)
-                y_score = yp.detach().numpy().reshape(yp.shape[0], -1)
+                y_true = y.detach().cpu().numpy().reshape(y.shape[0], -1)
+                y_score = yp.detach().cpu().numpy().reshape(yp.shape[0], -1)
                 aucs = []
                 for idx_example in range(y_true.shape[0]):
                     # skip example if only 1 class
