@@ -554,8 +554,11 @@ def main(path_data, latent_dim, n_epoch, batch_size, max_length, out_dir, n_cpu)
                         continue
                     aucs.append(roc_auc_score(y_true=y_true[idx_example, :], y_score=y_score[idx_example, :]))
                 aucs = np.asarray(aucs)
-                logging.info("AUCs: mean {}, median: {}, max {}, min {}".format(np.mean(aucs), np.median(aucs), np.max(aucs),
+                if len(aucs) > 0:
+                    logging.info("AUCs: mean {}, median: {}, max {}, min {}".format(np.mean(aucs), np.median(aucs), np.max(aucs),
                                                                          np.min(aucs)))
+                else: # handle edge case
+                    logging.info("All examples are of same class")
 
             logging.info(
                 "Epoch {}/{}, validation loss (posterior): {}".format(epoch, n_epoch,
@@ -589,8 +592,11 @@ def main(path_data, latent_dim, n_epoch, batch_size, max_length, out_dir, n_cpu)
                         continue
                     aucs.append(roc_auc_score(y_true=y_true[idx_example, :], y_score=y_score[idx_example, :]))
                 aucs = np.asarray(aucs)
-                logging.info("AUCs: mean {}, median: {}, max {}, min {}".format(np.mean(aucs), np.median(aucs), np.max(aucs),
+                if len(aucs) > 0:
+                    logging.info("AUCs: mean {}, median: {}, max {}, min {}".format(np.mean(aucs), np.median(aucs), np.max(aucs),
                                                                          np.min(aucs)))
+                else: # handle edge case
+                    logging.info("All examples are of same class")
 
             logging.info(
                 "Epoch {}/{}, validation loss (prior, p(y|x) only): {}".format(epoch, n_epoch,
