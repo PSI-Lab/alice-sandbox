@@ -253,7 +253,7 @@ au-ROC not a good metric? see pg. 3 of https://docs.google.com/presentation/d/1A
 
 
 
-### Dataset (shorter seq)
+### Dataset (shorter seq - 10nt)
 
 
 ```
@@ -280,6 +280,35 @@ GPU, same as run 7, more epochs:
 ```
 cd s1_training/
 CUDA_VISIBLE_DEVICES=0 python train_cvae_global_z_bp_matrix.py --data ../data/synthetic_bb_dist.len10.num1000.sample10.pkl.gz --result result/run_10 --latent_dim 50 --epoch 200 --batch_size 100 --max_length 200 --cpu 4
+```
+
+### Dataset (shorter seq - 20nt)
+
+
+```
+mkdir data/
+cd s1_vae_data_gen/
+python make_data.py --minlen 20 --maxlen 20 --num_seq 1000 --num_sample 10 --out ../data/synthetic_bb_dist.len20.num1000.sample10.pkl.gz
+```
+
+a test set:
+
+```
+mkdir data/
+cd s1_vae_data_gen/
+python make_data.py --minlen 20 --maxlen 20 --num_seq 100 --num_sample 10 --out ../data/synthetic_bb_dist.len20.num100.sample10.pkl.gz
+```
+
+### Training
+
+
+"Run 11"
+
+GPU:
+
+```
+cd s1_training/
+CUDA_VISIBLE_DEVICES=0 python train_cvae_global_z_bp_matrix.py --data ../data/synthetic_bb_dist.len20.num1000.sample10.pkl.gz --result result/run_11 --latent_dim 50 --epoch 200 --batch_size 100 --max_length 200 --cpu 4
 ```
 
 
