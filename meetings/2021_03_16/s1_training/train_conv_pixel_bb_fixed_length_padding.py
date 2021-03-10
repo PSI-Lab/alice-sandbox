@@ -324,20 +324,35 @@ class SimpleConvNet(nn.Module):
     def __init__(self, num_filters, filter_width, dropout):
         super(SimpleConvNet, self).__init__()
 
+        # not used for now
+        self.context_left, self.context_right = self.compute_context(filter_width)
+
         num_filters = [8] + num_filters
         filter_width = [None] + filter_width
         cnn_layers = []
         for i, (nf, fw) in enumerate(zip(num_filters[1:], filter_width[1:])):
-            assert fw % 2 == 1  # odd
-            cnn_layers.append(nn.Conv2d(num_filters[i], nf, kernel_size=fw, stride=1, padding=fw//2))
+            # assert fw % 2 == 1  # odd
+            # cnn_layers.append(nn.Conv2d(num_filters[i], nf, kernel_size=fw, stride=1,
+            #                             padding=fw//2, padding_mode='zeros'))
+
+            # explicitly pad in the first layer with enough context
+            if i == 0:
+                cnn_layers.append(nn.Conv2d(num_filters[i], nf, kernel_size=fw, stride=1,
+                                            padding=(self.context_left, self.context_right),
+                                            padding_mode='zeros'))
+            # do not pad in subsequent layers
+            else:
+                cnn_layers.append(nn.Conv2d(num_filters[i], nf, kernel_size=fw, stride=1,
+                                            padding=0))
+
             cnn_layers.append(nn.BatchNorm2d(nf))
-            cnn_layers.append(nn.ReLU(inplace=True))
+            cnn_layers.append(nn.ReLU())
             if dropout > 0:
                 cnn_layers.append(nn.Dropout(dropout))
         self.cnn_layers = nn.Sequential(*cnn_layers)
 
-        # self.fc = nn.Conv2d(num_filters[-1], 5, kernel_size=1)
-        # self.fc = nn.Conv2d(num_filters[-1], 50, kernel_size=1)
+        # TODO re-visit number of filters and architecture
+
         self.fc = nn.Sequential(
             nn.Conv2d(num_filters[-1], 50, kernel_size=1),
             nn.ReLU(),
@@ -473,6 +488,13 @@ class SimpleConvNet(nn.Module):
         self.out_hloop_sl_siz = nn.Sequential(
             nn.Conv2d(20, 1, kernel_size=1),
         )
+
+    @staticmethod
+    def compute_context(filter_width):
+        c = np.sum([x - 1 for x in filter_width])
+        context_left = c // 2
+        context_right = c - context_left
+        return context_left, context_right
 
     # Defining the forward pass
     def forward(self, x):

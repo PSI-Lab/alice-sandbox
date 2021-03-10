@@ -1,0 +1,6 @@
+data/*
+result/*
+tmp*
+*gz
+*pkl*
+*csv
