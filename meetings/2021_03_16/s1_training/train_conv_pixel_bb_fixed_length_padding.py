@@ -757,6 +757,14 @@ class EvalMetric(object):
                 x[k1][k2] = method(x[k1][k2])
         return x
 
+    def agg_and_flattern(self, method=np.nanmean):
+        # aggregate and flattern, useful for exporting to a log csv file
+        # returns pd df of a single row
+        x = self.aggregate(method)
+        y = pd.json_normalize(x)
+        assert len(y) == 1  # should be a pd df with a single row
+        return y
+
 
 def compute_metrics(x, y, m):
     # x, y, m are all dictionaries
@@ -972,6 +980,11 @@ def main(path_data, num_filters, filter_width, dropout, maskw, n_epoch, batch_si
     #                                                                   np.mean(np.stack(auroc_naive_va)),
     #                                                                   np.mean(np.stack(auprc_naive_va))))
 
+    # csv file for logging metrics
+    out_metric_csv = os.path.join(out_dir, 'metrics.csv')
+    METRIC_CSV_CREATED = False
+    METRIC_CSV_COLS = None
+
     for epoch in range(n_epoch):
         running_loss_tr = []
         running_auroc_tr = []
@@ -996,6 +1009,7 @@ def main(path_data, num_filters, filter_width, dropout, maskw, n_epoch, batch_si
             # running_auprc_tr.extend(_p)
             logging.info("Epoch {} Training loss: {}".format(epoch, loss))
 
+
             model.zero_grad()
 
             loss.backward()
@@ -1005,36 +1019,49 @@ def main(path_data, num_filters, filter_width, dropout, maskw, n_epoch, batch_si
         # logging.info(pprint.pformat(evalm_tr.aggregate(method=np.mean), indent=4))
         logging.info(evalm_tr.aggregate(method=np.nanmean))
 
+        # to csv file
+        df_metrics = evalm_tr.agg_and_flattern(method=np.nanmean)
+        df_metrics['tv'] = 'training'
+        df_metrics['epoch'] = epoch
+        if not METRIC_CSV_CREATED:
+            METRIC_CSV_COLS = df_metrics.columns
+            METRIC_CSV_CREATED = True
+            df_metrics.to_csv(out_metric_csv, index=False)
+        else:
+            # keep column order the same
+            df_metrics = df_metrics[METRIC_CSV_COLS]
+            df_metrics.to_csv(out_metric_csv, index=False, header=None, mode="a")
+
         # save model
         _model_path = os.path.join(out_dir, 'model_ckpt_ep_{}.pth'.format(epoch))
         torch.save(model.state_dict(), _model_path)
         logging.info("Model checkpoint saved at: {}".format(_model_path))
 
-        # save the last minibatch prediction
-        df_pred = []
-        num_examples = y[list(y.keys())[0]].shape[0]   # wlog, check batch dimension using first output key
-        for i in range(num_examples):
-            row = {'subset': 'training'}
-            # store metadata
-            row.update(md[i])
-            for k in y.keys():
-                #  batch x channel x H x W
-                _y = y[k][i, :, :, :].detach().cpu().numpy()
-                _yp = yp[k][i, :, :, :].detach().cpu().numpy()
-                row.update({'target_{}'.format(k): _y,
-                            'pred_{}'.format(k): _yp,
-                            })
-            df_pred.append(row)
-
-        # # report training loss
+        # # save the last minibatch prediction
+        # df_pred = []
+        # num_examples = y[list(y.keys())[0]].shape[0]   # wlog, check batch dimension using first output key
+        # for i in range(num_examples):
+        #     row = {'subset': 'training'}
+        #     # store metadata
+        #     row.update(md[i])
+        #     for k in y.keys():
+        #         #  batch x channel x H x W
+        #         _y = y[k][i, :, :, :].detach().cpu().numpy()
+        #         _yp = yp[k][i, :, :, :].detach().cpu().numpy()
+        #         row.update({'target_{}'.format(k): _y,
+        #                     'pred_{}'.format(k): _yp,
+        #                     })
+        #     df_pred.append(row)
+        #
+        # # # report training loss
+        # # logging.info(
+        # #     "Epoch {}/{}, training loss (running) {}, au-ROC {}, au-PRC {}".format(epoch, n_epoch,
+        # #                                                                            np.mean(
+        # #                                                                                np.stack(running_loss_tr)),
+        # #                                                                            np.mean(np.stack(running_auroc_tr)),
+        # #                                                                            np.mean(np.stack(running_auprc_tr))))
         # logging.info(
-        #     "Epoch {}/{}, training loss (running) {}, au-ROC {}, au-PRC {}".format(epoch, n_epoch,
-        #                                                                            np.mean(
-        #                                                                                np.stack(running_loss_tr)),
-        #                                                                            np.mean(np.stack(running_auroc_tr)),
-        #                                                                            np.mean(np.stack(running_auprc_tr))))
-        logging.info(
-            "Epoch {}/{}, training loss (running) {}".format(epoch, n_epoch,np.mean(np.stack(running_loss_tr))))
+        #     "Epoch {}/{}, training loss (running) {}".format(epoch, n_epoch,np.mean(np.stack(running_loss_tr))))
 
         with torch.set_grad_enabled(False):
             # report validation loss
@@ -1060,30 +1087,45 @@ def main(path_data, num_filters, filter_width, dropout, maskw, n_epoch, batch_si
             #                                                                    np.mean(np.stack(running_loss_va)),
             #                                                                    np.mean(np.stack(running_auroc_va)),
             #                                                                    np.mean(np.stack(running_auprc_va))))
+
+            # to csv file
+            df_metrics = evalm_tr.agg_and_flattern(method=np.nanmean)
+            df_metrics['tv'] = 'validation'
+            df_metrics['epoch'] = epoch
+            if not METRIC_CSV_CREATED:
+                METRIC_CSV_COLS = df_metrics.columns
+                METRIC_CSV_CREATED = True
+                df_metrics.to_csv(out_metric_csv, index=False)
+            else:
+                # keep column order the same
+                df_metrics = df_metrics[METRIC_CSV_COLS]
+                df_metrics.to_csv(out_metric_csv, index=False, header=None, mode="a")
+
+
             logging.info(
                 "Epoch {}/{}, validation loss {}".format(epoch, n_epoch, np.mean(np.stack(running_loss_va))))
 
-            # save the last minibatch prediction
-            num_examples = y[list(y.keys())[0]].shape[0]  # wlog, check batch dimension using first output key
-            for i in range(num_examples):
-                row = {'subset': 'validation'}
-                # store metadata
-                row.update(md[i])
-                for k in y.keys():
-                    #  batch x channel x H x W
-                    _y = y[k][i, :, :, :].detach().cpu().numpy()
-                    _yp = yp[k][i, :, :, :].detach().cpu().numpy()
-                    row.update({'target_{}'.format(k): _y,
-                                'pred_{}'.format(k): _yp,
-                                })
-                df_pred.append(row)
-
-        # end pf epoch
-        # export prediction
-        out_file = os.path.join(out_dir, 'pred_ep_{}.pkl.gz'.format(epoch))
-        df_pred = pd.DataFrame(df_pred)
-        df_pred.to_pickle(out_file, compression='gzip')
-        logging.info("Exported prediction (one minibatch) to: {}".format(out_file))
+        #     # save the last minibatch prediction
+        #     num_examples = y[list(y.keys())[0]].shape[0]  # wlog, check batch dimension using first output key
+        #     for i in range(num_examples):
+        #         row = {'subset': 'validation'}
+        #         # store metadata
+        #         row.update(md[i])
+        #         for k in y.keys():
+        #             #  batch x channel x H x W
+        #             _y = y[k][i, :, :, :].detach().cpu().numpy()
+        #             _yp = yp[k][i, :, :, :].detach().cpu().numpy()
+        #             row.update({'target_{}'.format(k): _y,
+        #                         'pred_{}'.format(k): _yp,
+        #                         })
+        #         df_pred.append(row)
+        #
+        # # end pf epoch
+        # # export prediction
+        # out_file = os.path.join(out_dir, 'pred_ep_{}.pkl.gz'.format(epoch))
+        # df_pred = pd.DataFrame(df_pred)
+        # df_pred.to_pickle(out_file, compression='gzip')
+        # logging.info("Exported prediction (one minibatch) to: {}".format(out_file))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
