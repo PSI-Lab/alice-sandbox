@@ -36,7 +36,7 @@ def get_fe_struct(seq):
         msg = 'Returned error code %d\nstdout:\n%s\nstderr:\n%s\n' % (
             rc, cmd1_stdout, stderr)
         raise Exception(msg)
-    print(cmd1_stdout)
+
     # get output in ct format
     p = Popen(cmd2.split(), stdin=open(ss_file, 'r'), stdout=open(ct_file, 'w'), stderr=STDOUT, cwd=temp_dir)
     cmd2_stdout, stderr = p.communicate()
@@ -45,7 +45,6 @@ def get_fe_struct(seq):
         msg = 'Returned error code %d\nstdout:\n%s\nstderr:\n%s\n' % (
             rc, cmd2_stdout, stderr)
         raise Exception(msg)
-    print(cmd2_stdout)
 
     # find MFE probability
     with open(ss_file, 'r') as fp:
@@ -64,7 +63,7 @@ def get_fe_struct(seq):
     assert len(seq) == seq_len
     # load data
     df = pd.read_csv(ct_file, skiprows=1, header=None,
-                     names=['i1', 'base', 'idx_i', 'i2', 'idx_j', 'i3'], sep=r"\s*")  # TDOO consider replace with "delim_whitespace=True"
+                     names=['i1', 'base', 'idx_i', 'i2', 'idx_j', 'i3'], delim_whitespace=True)  # TDOO consider replace with "delim_whitespace=True"
     assert ''.join(df['base'].tolist()) == seq.upper().replace('T', 'U'), "{}\n{}".format(''.join(df['base'].tolist()), seq)
     # # matrix
     # vals = np.zeros((len(seq), len(seq)))

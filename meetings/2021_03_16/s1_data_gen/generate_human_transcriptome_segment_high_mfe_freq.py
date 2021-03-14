@@ -65,9 +65,9 @@ def generate_data(genome, chroms, n_data, seq_len, n_seq_per_gene_max, rand_step
             else:
                 data_all.append(data)
 
-        # debug
-        if len(data_all) % (n_data//10) == 0:
-            print("len(data_all) {}".format(len(data_all)))
+            # debug
+            if len(data_all) % max(1, n_data//100) == 0:
+                print("len(data_all) {}".format(len(data_all)))
 
 
 def main(seq_len, num_seq, threshold_mfe_freq, chromosomes, outfile):

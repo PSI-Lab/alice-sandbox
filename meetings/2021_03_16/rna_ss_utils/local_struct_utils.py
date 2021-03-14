@@ -366,7 +366,7 @@ def make_target_pixel_bb(structure_arr, local_structure_bounding_boxes, local_un
     Most of the time, each pixel can be uniquely assigned to one bounding box.
     In the case of closing pair of a loop, it's assigned to both the stem and the loop.
     In the rare case where the stem is of length 1, and the stem has 2 loops, one on each side,
-    the pixel is assigned to 2 loops.
+    the pixel is assigned to 2 loops. FIXME
     Thus, it can be observed that each pixel can be assigned to:
         - 0 or 1 stem box
         - 0, 1 or 2 internal loop box (we'll ignore the case of 2 internal loop for now since it's rare FIXME)
@@ -526,7 +526,7 @@ def make_target_pixel_bb(structure_arr, local_structure_bounding_boxes, local_un
             tmp_arr[0, -1] = 1
             tmp_arr[-1, 0] = 1
             np.testing.assert_array_equal(local_arr, tmp_arr)
-            # TODO bottom left corner: do not change its value if already set (it's the top right corner of another iloop!)
+            # bottom left corner: do not change its value if already set (it's the top right corner of another iloop!)
             keep_old_val = False
             if target_iloop_on[x0+wx-1, y0] == 1:
                 keep_old_val = True

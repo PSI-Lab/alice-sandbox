@@ -82,31 +82,6 @@ class MyDataSet(Dataset):
         self.len = len(df)
         self.df = df
 
-    # def _make_pair_arr(self, seq, one_idx):
-    #
-    #     def _make_arr(seq, one_idx):
-    #         target = np.zeros((len(seq), len(seq)))
-    #         target[one_idx] = 1
-    #         return target
-    #
-    #     # def _mask(x):
-    #     #     assert len(x.shape) == 2
-    #     #     assert x.shape[0] == x.shape[1]
-    #     #     x[np.tril_indices(x.shape[0])] = -1   # TODO how to mask gradient in pytorch?
-    #     #     return x
-    #
-    #     def _make_mask(x):
-    #         assert len(x.shape) == 2
-    #         assert x.shape[0] == x.shape[1]
-    #         m = np.ones_like(x)
-    #         m[np.tril_indices(x.shape[0])] = 0
-    #         return m
-    #
-    #     pair_matrix = _make_arr(seq, one_idx)
-    #     # pair_matrix = _mask(pair_matrix)
-    #     mask = _make_mask(pair_matrix)
-    #     return pair_matrix, mask
-
     def _encode_seq(self, seq):
         seq = seq.upper().replace('A', '1').replace('C', '2').replace('G', '3').replace('T', '4').replace('U', '4').replace('N', '0')
         x = np.asarray([int(x) for x in list(seq)])
@@ -122,19 +97,6 @@ class MyDataSet(Dataset):
         x1 = np.repeat(x1, l, axis=1)
         x2 = np.repeat(x2, l, axis=0)
         return np.concatenate([x1, x2], axis=2)
-
-    # def __getitem__(self, index):
-    #     seq = self.df.iloc[index]['seq']
-    #     # one_idx = self.df.iloc[index]['one_idx']
-    #     x = self._encode_seq(seq)
-    #     x = self.tile_and_stack(x)
-    #     # _, m = self._make_pair_arr(seq, one_idx)
-    #     m = self.df.iloc[index]['mask']
-    #     # todo tmp
-    #     y = self.df.iloc[index]['target']
-    #     m = np.repeat(m[:, :, np.newaxis], y.shape[2], axis=2)
-    #     # print(x.shape, y.shape, m.shape)
-    #     return torch.from_numpy(x).float(), torch.from_numpy(y).float(), torch.from_numpy(m).float()
 
     def __getitem__(self, index):
         row = self.df.iloc[index]
@@ -234,34 +196,6 @@ def pad_tensor(vec, pad, dim):
 class PadCollate2D:
     def __init__(self):
         pass
-
-    # def pad_collate(self, batch):
-    #     """
-    #     args:
-    #         batch - list of (x, y, m, ...)
-    #
-    #     reutrn:
-    #         xs - x after padding
-    #         ys - y after padding
-    #     """
-    #     # find longest sequence
-    #     max_len = max(map(lambda x: x[0].shape[0], batch))
-    #     # we expect it to be symmetric between dim 0 and 1
-    #     assert max_len == max(map(lambda x: x[0].shape[1], batch))
-    #     # also for y
-    #     assert max_len == max(map(lambda x: x[1].shape[0], batch))
-    #     assert max_len == max(map(lambda x: x[1].shape[1], batch))
-    #     # pad according to max_len
-    #     batch = [(pad_tensor(pad_tensor(x, pad=max_len, dim=0), pad=max_len, dim=1),
-    #               pad_tensor(pad_tensor(y, pad=max_len, dim=0), pad=max_len, dim=1),
-    #               pad_tensor(pad_tensor(m, pad=max_len, dim=0), pad=max_len, dim=1))  # zero pad mask
-    #              for x, y, m in batch]
-    #     # stack all, also make torch compatible shapes: batch x channel x H x W
-    #     xs = torch.stack([x[0].permute(2, 0, 1) for x in batch], dim=0)
-    #     ys = torch.stack([x[1].permute(2, 0, 1) for x in batch], dim=0)
-    #     ms = torch.stack([x[2].permute(2, 0, 1) for x in batch], dim=0)
-    #     return xs, ys, ms
-
 
     def pad_collate(self, batch):
         """
@@ -367,6 +301,8 @@ class SimpleConvNet(nn.Module):
             nn.Conv2d(20, 1, kernel_size=1),
             nn.Sigmoid(),
         )
+
+        # TODO loc share hid?
         self.out_stem_loc_x = nn.Sequential(
             nn.Conv2d(50, 20, kernel_size=1),
             nn.ReLU(),
@@ -379,12 +315,7 @@ class SimpleConvNet(nn.Module):
             nn.Conv2d(20, 12, kernel_size=1),
             nn.LogSoftmax(dim=1),
         )
-        # self.out_stem_siz = nn.Sequential(
-        #     nn.Conv2d(50, 20, kernel_size=1),
-        #     nn.ReLU(),
-        #     nn.Conv2d(20, 11, kernel_size=1),
-        #     nn.LogSoftmax(dim=1),
-        # )
+
         self.hid_stem_siz = nn.Sequential(
             nn.Conv2d(50, 20, kernel_size=1),
             nn.ReLU(),
@@ -416,12 +347,7 @@ class SimpleConvNet(nn.Module):
             nn.Conv2d(20, 12, kernel_size=1),
             nn.LogSoftmax(dim=1),
         )
-        # self.out_iloop_siz_x = nn.Sequential(
-        #     nn.Conv2d(50, 20, kernel_size=1),
-        #     nn.ReLU(),
-        #     nn.Conv2d(20, 11, kernel_size=1),
-        #     nn.LogSoftmax(dim=1),
-        # )
+
         self.hid_iloop_siz_x = nn.Sequential(
             nn.Conv2d(50, 20, kernel_size=1),
             nn.ReLU(),
@@ -434,12 +360,6 @@ class SimpleConvNet(nn.Module):
             nn.Conv2d(20, 1, kernel_size=1),
         )
 
-        # self.out_iloop_siz_y = nn.Sequential(
-        #     nn.Conv2d(50, 20, kernel_size=1),
-        #     nn.ReLU(),
-        #     nn.Conv2d(20, 11, kernel_size=1),
-        #     nn.LogSoftmax(dim=1),
-        # )
         self.hid_iloop_siz_y = nn.Sequential(
             nn.Conv2d(50, 20, kernel_size=1),
             nn.ReLU(),
@@ -471,12 +391,6 @@ class SimpleConvNet(nn.Module):
             nn.Conv2d(20, 12, kernel_size=1),
             nn.LogSoftmax(dim=1),
         )
-        # self.out_hloop_siz = nn.Sequential(
-        #     nn.Conv2d(50, 20, kernel_size=1),
-        #     nn.ReLU(),
-        #     nn.Conv2d(20, 11, kernel_size=1),
-        #     nn.LogSoftmax(dim=1),
-        # )
         self.hid_hloop_siz = nn.Sequential(
             nn.Conv2d(50, 20, kernel_size=1),
             nn.ReLU(),
@@ -568,23 +482,7 @@ class SimpleConvNet(nn.Module):
 # TODO move to class level
 loss_b = torch.nn.BCELoss(reduction='none')
 loss_m = torch.nn.NLLLoss(reduction='none')
-loss_e = torch.nn.MSELoss(reduction='none')
-
-
-# def _masked_loss(x, y, m, loss_func):
-#     print(x.shape)
-#     print(y.shape)
-#     print(m.shape)
-#     print(loss_func)
-#     # batch x channel? x h x w
-#     l = loss_func(x, y)
-#     # TODO any singleton dimensions?
-#     n_valid_output = torch.sum(torch.sum(m, dim=3), dim=2)  # vector of length = batch
-#     loss_spatial_sum = torch.sum(torch.sum(torch.mul(l, m), dim=3), dim=2)
-#     n_valid_output[n_valid_output == 0] = 1
-#     loss_spatial_mean = loss_spatial_sum / n_valid_output
-#     loss_batch_mean = torch.mean(loss_spatial_mean, dim=0)
-#     return torch.mean(loss_batch_mean)
+loss_e = torch.nn.L1Loss(reduction='none')
 
 
 def masked_loss_e(x, y, m):
@@ -622,7 +520,7 @@ def masked_loss_m(x, y, m):
     n_valid_output[n_valid_output == 0] = 1
     loss_spatial_mean = loss_spatial_sum / n_valid_output
     loss_batch_mean = torch.mean(loss_spatial_mean, dim=0)
-    return torch.mean(loss_batch_mean)
+    return torch.mean(loss_batch_mean)  # redundant mean?
 
 
 def masked_loss(x, y, m, maskw):
@@ -743,36 +641,6 @@ def masked_loss(x, y, m, maskw):
            loss_iloop_on + loss_iloop_loc_x + loss_iloop_loc_y + \
            loss_iloop_sm_siz_x + loss_iloop_sm_siz_y + loss_iloop_sl_siz_x + loss_iloop_sl_siz_y + \
            loss_hloop_on + loss_hloop_loc_x + loss_hloop_loc_y + loss_hloop_sm_siz + loss_hloop_sl_siz
-
-    # return loss_stem_on + loss_stem_loc_x + loss_stem_loc_y + loss_stem_siz + \
-    #        loss_iloop_on + loss_iloop_loc_x + loss_iloop_loc_y + loss_iloop_siz_x + loss_iloop_siz_y + \
-    #        loss_hloop_on + loss_hloop_loc_x + loss_hloop_loc_y + loss_hloop_siz
-
-
-def old(x, y, m):   # FIXME remove?
-    # print(x.shape, y.shape, m.shape)
-    l = torch.nn.BCELoss(reduction='none')(x, y)
-    # number of valid entries = 1's in the mask
-    # TODO later on we might have different mask per channel - currently implementation assumes same mask across all channels
-    assert m.shape[1] == y.shape[1]
-    n_valid_output = torch.sum(torch.sum(m, dim=3), dim=2)  # vector of length = batch
-    # average over spatial dimension is achieved by summing then dividing by the above
-    # (need to do this since we're padding + masking, can't naively do mean)
-    # note that tensor shapes: batch x channel x H x W
-    loss_spatial_sum = torch.sum(torch.sum(torch.mul(l, m), dim=3), dim=2)
-    # for cases where all elements are masked, the corresponding element in n_valid_output will be 0
-    # in such case, since the final numerator will be 0, wlog, we'll set the denominator to 1 (if leaving as 0 will result in NaN)
-    n_valid_output[n_valid_output == 0] = 1
-    loss_spatial_mean = loss_spatial_sum/n_valid_output  # element-wise division
-    # average over batch, this is the per-channel loss
-    loss_batch_mean = torch.mean(loss_spatial_mean, dim=0)
-    logging.info(loss_batch_mean)
-    # average over channels
-    return torch.mean(loss_batch_mean)
-
-
-# def to_device(x, y, m, device):
-#     return x.to(device), y.to(device), m.to(device)
 
 
 def to_device(x, y, m, device):
