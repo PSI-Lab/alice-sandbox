@@ -278,11 +278,13 @@ See tmp_s1_plot_train_progress_csv.ipynb
 - TODO Validate a few more examples of different bounding boxes (see https://vectorinstitute.slack.com/archives/DAE7HH8QH/p1615672851006200)
 
 
-
-
 code update:  `git_hash`
 
+#### Visualize softmax activation pattern
 
+See https://docs.google.com/presentation/d/1qzjzpHrnJLYIsANx7zqU2a8Gj8XbAInSUOFR1zB5EZY/edit#slide=id.gc8469e9b72_0_5
+
+Produced by 
 
 
 
