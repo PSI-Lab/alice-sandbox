@@ -284,7 +284,18 @@ code update:  `git_hash`
 
 See https://docs.google.com/presentation/d/1qzjzpHrnJLYIsANx7zqU2a8Gj8XbAInSUOFR1zB5EZY/edit#slide=id.gc8469e9b72_0_5
 
-Produced by 
+Produced by [tmp_s1_pixel_pred_shift_example.ipynb](tmp_s1_pixel_pred_shift_example.ipynb)
+
+
+As shown on the plot, within the predicted bounding box,
+neighbouring pixels show a consistent pattern on softmax activation for the location_x and
+location_y units.
+(we're only testing pixels in the top "row" and right "column" in the bounding box in the plot)
+When we "step away" from the top right reference pixel, the "next" softmax unit gets activation every time
+we move one pixel.
+
+This is reassuring, since we weren't so sure whether a conv net architecture is capable of modelling such
+neighbouring-pixel non smooth function.
 
 
 
