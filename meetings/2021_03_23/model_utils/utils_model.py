@@ -518,18 +518,25 @@ class Predictor(object):
             # softmax size
             sm_siz_x = np.argmax(pred_sm_siz_x[:, i, j]) + 1  # size starts at 1 for index=0
             sm_siz_y = np.argmax(pred_sm_siz_y[:, i, j]) + 1
-            # prob of on/off & location
-            prob_1 = p_on * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y]
-            # softmax: compute joint probability of taking the max value
-            prob_sm = prob_1 *  softmax(pred_sm_siz_x[:, i, j])[sm_siz_x - 1] * softmax(pred_sm_siz_y[:, i, j])[
-                       sm_siz_y - 1]  # FIXME multiplying twice for case where y is set to x
-            bb_x = i - loc_x
-            bb_y = j + loc_y
-            # list of one tuple
-            result = [(bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm)]
-            return result
+
+            if loc_x == pred_loc_x.shape[0] - 1 or loc_y == pred_loc_y.shape[0] - 1 or sm_siz_x == pred_sm_siz_x.shape[
+                0] or sm_siz_y == pred_sm_siz_y.shape[0]:
+                # discard if any argmax = last_one (the "catch-all" unit)
+                return []
+            else:
+                # prob of on/off & location
+                prob_1 = p_on * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y]
+                # softmax: compute joint probability of taking the max value
+                prob_sm = prob_1 *  softmax(pred_sm_siz_x[:, i, j])[sm_siz_x - 1] * softmax(pred_sm_siz_y[:, i, j])[
+                           sm_siz_y - 1]  # FIXME multiplying twice for case where y is set to x
+                bb_x = i - loc_x
+                bb_y = j + loc_y
+                # list of one tuple
+                result = [(bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm)]
+                return result
 
         def sm_top_k(p_on, pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j, k, cutoff=0):
+            # TODO discard if idx = last_one (the "catch-all" unit)
             """take topk bbs,
             if cutoff is specified (i.e. !=0), only pick those whose prob >= cutoff * p_top"""
             assert k >= 2
@@ -574,6 +581,7 @@ class Predictor(object):
             return result
 
         def sm_top_perc(p_on, pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j, cutoff):
+            # TODO discard if idx = last_one (the "catch-all" unit)
             """select those whose marginal probability >= cutoff*p_top,
             setting cutoff == 1 correspond to picking the argmax"""
             assert 0 < cutoff <= 1
@@ -606,24 +614,30 @@ class Predictor(object):
         def sl_top_one(p_on, pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j):
             loc_x = np.argmax(pred_loc_x[:, i, j])
             loc_y = np.argmax(pred_loc_y[:, i, j])
-            # scalar size, round to int
-            sl_siz_x = int(np.round(pred_sl_siz_x[i, j]))
-            sl_siz_y = int(np.round(pred_sl_siz_y[i, j]))
-            # avoid setting size 0 or negative # TODO adding logging warning
-            if sl_siz_x < 1:
-                sl_siz_x = 1
-            if sl_siz_y < 1:
-                sl_siz_y = 1
-            # prob of on/off & location
-            prob_1 = p_on * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y]
-            # top right corner
-            bb_x = i - loc_x
-            bb_y = j + loc_y
-            # list of one tuple
-            result = [(bb_x, bb_y, sl_siz_x, sl_siz_y, prob_1)]
-            return result
+
+            if loc_x == pred_loc_x.shape[0] - 1 or loc_y == pred_loc_y.shape[0] - 1:
+                # discard if any argmax = last_one (the "catch-all" unit)
+                return []
+            else:
+                # scalar size, round to int
+                sl_siz_x = int(np.round(pred_sl_siz_x[i, j]))
+                sl_siz_y = int(np.round(pred_sl_siz_y[i, j]))
+                # avoid setting size 0 or negative # TODO adding logging warning
+                if sl_siz_x < 1:
+                    sl_siz_x = 1
+                if sl_siz_y < 1:
+                    sl_siz_y = 1
+                # prob of on/off & location
+                prob_1 = p_on * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y]
+                # top right corner
+                bb_x = i - loc_x
+                bb_y = j + loc_y
+                # list of one tuple
+                result = [(bb_x, bb_y, sl_siz_x, sl_siz_y, prob_1)]
+                return result
 
         def sl_top_k(p_on, pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j, k, cutoff=0):
+            # TODO discard if any argmax = last_one (the "catch-all" unit)
             """take topk bbs,
             if cutoff is specified (i.e. !=0), only pick those whose prob >= cutoff * p_top"""
             assert k >= 2
@@ -661,6 +675,7 @@ class Predictor(object):
             return result
 
         def sl_top_perc(p_on, pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j, cutoff):
+            # TODO # discard if any argmax = last_one (the "catch-all" unit)
             """select those whose marginal probability >= cutoff*p_top,
                         setting cutoff == 1 correspond to picking the argmax"""
             assert 0 < cutoff <= 1
