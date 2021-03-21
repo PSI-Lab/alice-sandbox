@@ -970,7 +970,8 @@ class Predictor(object):
             de = SeqPairEncoder(seq, seq2)
         else:
             de = DataEncoder(seq)
-        yp = self.model(torch.tensor(de.x_torch))
+        # yp = self.model(torch.tensor(de.x_torch))
+        yp = self.model(de.x_torch.clone().detach())
         # single example, remove batch dimension
         yp = {k: v.detach().cpu().numpy()[0, :, :, :] for k, v in yp.items()}
 
