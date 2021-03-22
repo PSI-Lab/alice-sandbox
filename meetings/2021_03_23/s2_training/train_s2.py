@@ -235,7 +235,7 @@ def run_one_epoch(model, dataset, device, training=False, optim=None):
             optim.step()
 
         # au-ROC
-        pred_np = preds.squeeze().detach().cpu().numpy()
+        pred_np = preds.squeeze(-1).detach().cpu().numpy()  # remove last singleton dimension
         for j in range(y_np.shape[0]):
             mask = m_np[j, :]
             y_true = y_np[j, :]
