@@ -198,11 +198,13 @@ def bb_augmentation_shift(x, offset, idx_bb_x, idx_bb_y):
     return x
 
     
-def make_single_pred(model, x, y):
+def make_single_pred(model, x, y, device):
     model.eval()
     # add batch dim, convert to torch tensor, make pred
     x = torch.from_numpy(x[np.newaxis, :, :]).float()
     y = torch.from_numpy(y[np.newaxis, :]).float()
+    x = x.to(device)
+    y = y.to(device)
     preds = model(x, mask=None)  # no masking since parsing one example at a time for now
     return preds
 
@@ -418,7 +420,7 @@ def main(in_file, config, out_dir):
         total_loss = 0
         # pick a random training example and print the prediction
         idx = np.random.randint(0, len(x_tr))
-        pred = make_single_pred(model, x_tr[idx], y_tr[idx])
+        pred = make_single_pred(model, x_tr[idx], y_tr[idx], device)
         logging.info("Training dataset idx {}\ny: {}\npred: {}".format(idx, y_tr[idx].flatten(), pred.squeeze()))
 
         # validation
@@ -427,7 +429,7 @@ def main(in_file, config, out_dir):
         df_log_metric.append({'epoch': epoch, 'tv': 'validation', 'loss': np.mean(loss_va), 'auc': np.nanmean(aucs_va)})
         # pick a random validation example and print the prediction
         idx = np.random.randint(0, len(x_va))
-        pred = make_single_pred(model, x_va[idx], y_va[idx])
+        pred = make_single_pred(model, x_va[idx], y_va[idx], device)
         logging.info("Validation dataset idx {}\ny: {}\npred: {}".format(idx, y_va[idx].flatten(), pred.squeeze()))
 
     # export metric
