@@ -146,7 +146,7 @@ cd s2_data_gen
 python generate_human_transcriptome_segment_high_mfe_freq_var_len.py --len_min 20 --len_max 200 --num_seq 100 --threshold_mfe_freq 0.02 --chromosomes chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13 chr14 chr15 chr16 chr17 chr18 chr19 chr20 chr21 --out ../data/debug_training_len20_200_100.pkl.gz
 ```
 
-TODO
+Dataset 5000:
 
 ```
 cd s2_data_gen
@@ -161,20 +161,116 @@ debug
 python model_utils/run_s1_threshold_on_n_proposal.py --data data/debug_training_len20_200_100.pkl.gz --threshold 0.2 --model s1_training/result/run_7/model_ckpt_ep_17.pth --out_file data/debug_s1_pred_len20_200_100.pkl.gz
 ```
 
+Dataset 5000:
+
+```
+python model_utils/run_s1_threshold_on_n_proposal.py --data data/human_transcriptome_segment_high_mfe_freq_training_len20_200_5000.pkl.gz --threshold 0.2 --model s1_training/result/run_7/model_ckpt_ep_17.pth --out_file data/human_transcriptome_segment_high_mfe_freq_s1_pred_len20_200_5000.pkl.gz
+```
+
 - Prune bounding boxes, remove invalid ones, min hloop size 3, set other to 0 (no pruning)
+
+debug
 
 ```
 python model_utils/prune_stage_1.py --in_file data/debug_s1_pred_len20_200_100.pkl.gz --discard_ns_stem --min_hloop_size 3 --min_pixel_pred 0 --min_prob 0 --out_file data/debug_s1_pred_len20_200_100_pruned.pkl.gz
 ```
 
+Dataset 5000:
+
+
+```
+python model_utils/prune_stage_1.py --in_file data/human_transcriptome_segment_high_mfe_freq_s1_pred_len20_200_5000.pkl.gz --discard_ns_stem --min_hloop_size 3 --min_pixel_pred 0 --min_prob 0 --out_file data/human_transcriptome_segment_high_mfe_freq_s1_pred_len20_200_5000_pruned.pkl.gz
+```
+
 - examples with sensitivity<100% discarded
+
+debug
+
+```
+python s2_training/make_dataset.py --in_file data/debug_s1_pred_len20_200_100_pruned.pkl.gz --out_file data/debug_s1_pred_len20_200_100_pruned_filtered.npz
+```
+
+```
+Subset to examples with 100% S1 bb sensitivity (for now). Before 99, after 39
+```
+
+Dataset 5000:
+
+```
+python s2_training/make_dataset.py --in_file data/human_transcriptome_segment_high_mfe_freq_s1_pred_len20_200_5000_pruned.pkl.gz --out_file data/human_transcriptome_segment_high_mfe_freq_s1_pred_len20_200_5000_pruned_filtered.npz
+```
+
+```
+Subset to examples with 100% S1 bb sensitivity (for now). Before 4949, after 1876
+```
+
+Note:
+
+    - compare to the old inference method this seems to yield a much lower number of examples? why? (to be investigated)
 
 
 - TODO check distribution, n bbs
 
 
+### Model training
+
+Using old method. TODO reference
+
+debug
+
+```
+cd s2_training/
+python train_s2.py --in_file ../data/debug_s1_pred_len20_200_100_pruned_filtered.npz --config debug_config.yml --out_dir result/debug/
+```
+
+Dataset 5000:
+
+```
+cd s2_training/
+CUDA_VISIBLE_DEVICES=1 python train_s2.py --in_file ../data/human_transcriptome_segment_high_mfe_freq_s1_pred_len20_200_5000_pruned_filtered.npz --config config.yml --out_dir result/run_1/
+```
+
+
+### Encode sequence feature
+
+- update S1 pred pruning to remove bb out of range: `bd0d027..5bc2a03`
+
+```
+python model_utils/prune_stage_1.py --in_file data/debug_s1_pred_len20_200_100.pkl.gz --discard_ns_stem --min_hloop_size 3 --min_pixel_pred 0 --min_prob 0 --out_file data/debug_s1_pred_len20_200_100_pruned.pkl.gz
+```
+
+- model ideas: S2 with LSTM as sequence encoder. Jamboard: https://jamboard.google.com/d/1exf2uP4ZERQDsTx2A2zEugMcZ8F-vGjMue2KsnuCyC8/viewer?f=0
+
+- Note that in the above encoding,
+there's actually intrisic symmetry (e.g. flip for stem),
+which could potentially be modeled in a systematic fashion in NN.
+
+- Working on data processing for training, see [tmp_s2_feature_new.ipynb](tmp_s2_feature_new.ipynb)
+
+
+
+
+
 
 ### S2 with kmer features
+
+Hard to come up with reasonable kmer features. different bb types.
+
+
+### RL?
+
+As a sanity check, use existing bb features
+
+immediate reward: blackbox
+
+discounted over time: whitebox
+
+final reward: validity, FE (if no pseudoknot? otherwise remove pseudoknot and approximate)
+
+NN: simple version, self attention with bb features and already-predicted labels, output is a big softmax
+
+
+complex version with background sequence?  attend to sequence?
 
 
 
