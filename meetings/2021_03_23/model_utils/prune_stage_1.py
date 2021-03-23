@@ -6,7 +6,7 @@ import copy
 from time import time
 import pandas as pd
 import dgutils.pandas as dgp
-from util_global_struct import make_bb_df, generate_structs, filter_non_standard_stem
+from util_global_struct import make_bb_df, generate_structs, filter_non_standard_stem, filter_out_of_range_bb
 
 
 def check_bb_sensitivity(df_target, df_stem, df_iloop, df_hloop):
@@ -63,6 +63,13 @@ def main(in_file, out_file, max_len, discard_ns_stem, min_hloop_size, min_pixel_
             print("seq len {}, num bb's {}, {}, {}".format(len(row['seq']), len(df_stem), len(df_iloop), len(df_hloop)))
 
             # prune bounding boxes
+            # remove out-of-bound bb
+            print("Pruning out-of-bound bounding boxes, before: {} {} {}".format(len(df_stem), len(df_iloop), len(df_hloop)))
+            df_stem = filter_out_of_range_bb(df_stem, len(row['seq']))
+            df_iloop = filter_out_of_range_bb(df_iloop, len(row['seq']))
+            df_hloop = filter_out_of_range_bb(df_hloop, len(row['seq']))
+            print("After: {} {} {}".format(len(df_stem), len(df_iloop), len(df_hloop)))
+
             # stem - non standard base pairing
             if discard_ns_stem:
                 n_before = len(df_stem)

@@ -96,6 +96,20 @@ def filter_non_standard_stem(df, seq):
     return df_new
 
 
+def filter_out_of_range_bb(df, l):
+    # filter out invalid bounding box that falls out of range
+    df_new = []
+    for _, row in df.iterrows():
+        bb_x = row['bb_x']
+        bb_y = row['bb_y']
+        siz_x = row['siz_x']
+        siz_y = row['siz_y']
+        if (0 <= bb_x < l) and (0 <= bb_x + siz_x - 1 < l) and (0 <= bb_y < l) and (0 <= bb_y - siz_y + 1 < l):
+            df_new.append(row)
+    df_new = pd.DataFrame(df_new)
+    return df_new
+
+
 class LocalStructureBb(object):
 
     def __init__(self, top_right_x, top_right_y, size_x, size_y, bb_id, bb_type):
