@@ -159,7 +159,7 @@ class MyModel(nn.Module):
 
         # TODO hard-coded lstm params
         self.lstm_hid = lstm_hid
-        # self.lstm_layer = lstm_layer
+        self.lstm_layer = lstm_layer
         self.lstm_stem = nn.LSTM(input_size=8, hidden_size=lstm_hid, num_layers=lstm_layer, batch_first=True)
         self.lstm_iloop = nn.LSTM(input_size=5, hidden_size=lstm_hid, num_layers=lstm_layer, batch_first=True)
         self.lstm_hloop = nn.LSTM(input_size=4, hidden_size=lstm_hid, num_layers=lstm_layer, batch_first=True)
@@ -181,9 +181,9 @@ class MyModel(nn.Module):
                                                        enforce_sorted=False,
                                                        batch_first=True)
         # Initialize hidden state with zeros
-        h0 = torch.zeros(2, x_stem.shape[0], self.lstm_hid).to(device)
+        h0 = torch.zeros(self.lstm_layer, x_stem.shape[0], self.lstm_hid).to(device)
         # Initialize cell state
-        c0 = torch.zeros(2, x_stem.shape[0], self.lstm_hid).to(device)
+        c0 = torch.zeros(self.lstm_layer, x_stem.shape[0], self.lstm_hid).to(device)
         lstm_outs, (h_t, h_c) = self.lstm_stem(lstm_input, (h0, c0))
         # unpack
         lstm_stem, _ = nn.utils.rnn.pad_packed_sequence(lstm_outs, batch_first=True)
@@ -196,8 +196,8 @@ class MyModel(nn.Module):
                                                        l_iloop,
                                                        enforce_sorted=False,
                                                        batch_first=True)
-        h0 = torch.zeros(2, x_iloop.shape[0], self.lstm_hid).to(device)
-        c0 = torch.zeros(2, x_iloop.shape[0], self.lstm_hid).to(device)
+        h0 = torch.zeros(self.lstm_layer, x_iloop.shape[0], self.lstm_hid).to(device)
+        c0 = torch.zeros(self.lstm_layer, x_iloop.shape[0], self.lstm_hid).to(device)
         lstm_outs, (h_t, h_c) = self.lstm_iloop(lstm_input, (h0, c0))
         lstm_iloop, _ = nn.utils.rnn.pad_packed_sequence(lstm_outs, batch_first=True)
         masks = (l_iloop - 1).unsqueeze(-1).unsqueeze(-1).expand(x_iloop.size(0), 1, lstm_iloop.size(2))
@@ -208,8 +208,8 @@ class MyModel(nn.Module):
                                                        l_hloop,
                                                        enforce_sorted=False,
                                                        batch_first=True)
-        h0 = torch.zeros(2, x_hloop.shape[0], self.lstm_hid).to(device)
-        c0 = torch.zeros(2, x_hloop.shape[0], self.lstm_hid).to(device)
+        h0 = torch.zeros(self.lstm_layer, x_hloop.shape[0], self.lstm_hid).to(device)
+        c0 = torch.zeros(self.lstm_layer, x_hloop.shape[0], self.lstm_hid).to(device)
         lstm_outs, (h_t, h_c) = self.lstm_hloop(lstm_input, (h0, c0))
         lstm_hloop, _ = nn.utils.rnn.pad_packed_sequence(lstm_outs, batch_first=True)
         masks = (l_hloop - 1).unsqueeze(-1).unsqueeze(-1).expand(x_hloop.size(0), 1, lstm_hloop.size(2))
