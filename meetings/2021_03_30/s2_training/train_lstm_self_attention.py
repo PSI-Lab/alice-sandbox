@@ -153,7 +153,7 @@ def get_clones(module, N):
 
 
 class MyModel(nn.Module):
-    def __init__(self, in_size, d_model, N, heads, n_hid):
+    def __init__(self, d_model, N, heads, n_hid):
         super().__init__()
         self.N = N
 
@@ -162,7 +162,7 @@ class MyModel(nn.Module):
         self.lstm_iloop = nn.LSTM(input_size=5, hidden_size=10, num_layers=2, batch_first=True)
         self.lstm_hloop = nn.LSTM(input_size=4, hidden_size=10, num_layers=2, batch_first=True)
 
-        self.embed = nn.Linear(in_size, d_model)
+        self.embed = nn.Linear(17, d_model)  # TODO hard-coded 17 = 7 (bb features) + 10 (LSTM output)
         self.layers = get_clones(EncoderLayer(d_model, heads), N)
         self.norm = Norm(d_model)
         self.hid = nn.Linear(d_model, n_hid)
@@ -184,10 +184,10 @@ class MyModel(nn.Module):
         c0 = torch.zeros(2, x_stem.shape[0], 10)
         lstm_outs, (h_t, h_c) = self.lstm_stem(lstm_input, (h0, c0))
         # unpack
-        lstm_stem = nn.utils.rnn.pad_packed_sequence(lstm_outs, batch_first=True)
+        lstm_stem, _ = nn.utils.rnn.pad_packed_sequence(lstm_outs, batch_first=True)
         # pick last time stamp
-        masks = (l_stem - 1).unsqueeze(-1).unsqueeze(-1).expand(x_stem.size(0), 1, lstm_outs.size(2))
-        lstm_stem = lstm_outs.gather(1, masks).squeeze(1)
+        masks = (l_stem - 1).unsqueeze(-1).unsqueeze(-1).expand(x_stem.size(0), 1, lstm_stem.size(2))
+        lstm_stem = lstm_stem.gather(1, masks).squeeze(1)
 
         # iloop
         lstm_input = nn.utils.rnn.pack_padded_sequence(x_iloop,
@@ -197,9 +197,9 @@ class MyModel(nn.Module):
         h0 = torch.zeros(2, x_iloop.shape[0], 10)
         c0 = torch.zeros(2, x_iloop.shape[0], 10)
         lstm_outs, (h_t, h_c) = self.lstm_iloop(lstm_input, (h0, c0))
-        lstm_iloop = nn.utils.rnn.pad_packed_sequence(lstm_outs, batch_first=True)
-        masks = (l_iloop - 1).unsqueeze(-1).unsqueeze(-1).expand(x_iloop.size(0), 1, lstm_outs.size(2))
-        lstm_iloop = lstm_outs.gather(1, masks).squeeze(1)
+        lstm_iloop, _ = nn.utils.rnn.pad_packed_sequence(lstm_outs, batch_first=True)
+        masks = (l_iloop - 1).unsqueeze(-1).unsqueeze(-1).expand(x_iloop.size(0), 1, lstm_iloop.size(2))
+        lstm_iloop = lstm_iloop.gather(1, masks).squeeze(1)
 
         # hloop
         lstm_input = nn.utils.rnn.pack_padded_sequence(x_hloop,
@@ -209,13 +209,16 @@ class MyModel(nn.Module):
         h0 = torch.zeros(2, x_hloop.shape[0], 10)
         c0 = torch.zeros(2, x_hloop.shape[0], 10)
         lstm_outs, (h_t, h_c) = self.lstm_hloop(lstm_input, (h0, c0))
-        lstm_hloop = nn.utils.rnn.pad_packed_sequence(lstm_outs, batch_first=True)
-        masks = (l_hloop - 1).unsqueeze(-1).unsqueeze(-1).expand(x_hloop.size(0), 1, lstm_outs.size(2))
-        lstm_hloop = lstm_outs.gather(1, masks).squeeze(1)
+        lstm_hloop, _ = nn.utils.rnn.pad_packed_sequence(lstm_outs, batch_first=True)
+        masks = (l_hloop - 1).unsqueeze(-1).unsqueeze(-1).expand(x_hloop.size(0), 1, lstm_hloop.size(2))
+        lstm_hloop = lstm_hloop.gather(1, masks).squeeze(1)
 
         # concat with bb feature
         lstm_features = torch.cat([lstm_stem, lstm_iloop, lstm_hloop], dim=0)   # n_bb x lstm_dim
-        all_features = torch.cat([x_bb, lstm_features], dim=1)
+        # add in batch dim
+        lstm_features = lstm_features.unsqueeze(0)
+        all_features = torch.cat([x_bb, lstm_features], dim=2)
+        # print(lstm_features.size, all_features.size)
 
         # self-attn
         x = self.embed(all_features)
@@ -271,16 +274,34 @@ def run_one_epoch(model, dataset, device, training=False, optim=None):
         assert optim is not None
     losses = []
     aucs = []
-    for x_bb, x_stem, x_iloop, x_hloop, l_stem, l_iloop, l_hloop, y_np in tqdm.tqdm(dataset):
+    for x_bb, x_stem, x_iloop, x_hloop, l_stem, l_iloop, l_hloop, y in tqdm.tqdm(dataset):
+
+        # print(x_bb.shape)
+
         # convert to torch tensor
-        x_bb = torch.from_numpy(x_bb).float()
-        x_stem = torch.from_numpy(x_stem).float()
-        x_iloop = torch.from_numpy(x_iloop).float()
-        x_hloop = torch.from_numpy(x_hloop).float()
-        l_stem = torch.from_numpy(l_stem)
-        l_iloop = torch.from_numpy(l_iloop)
-        l_hloop = torch.from_numpy(l_hloop)
-        y = torch.from_numpy(y_np).float()
+        # x_bb = torch.from_numpy(x_bb).float()
+        # x_stem = torch.from_numpy(x_stem).float()
+        # x_iloop = torch.from_numpy(x_iloop).float()
+        # x_hloop = torch.from_numpy(x_hloop).float()
+        # l_stem = torch.from_numpy(l_stem)
+        # l_iloop = torch.from_numpy(l_iloop)
+        # l_hloop = torch.from_numpy(l_hloop)
+        # y = torch.from_numpy(y_np).float()
+
+        # pre-processing
+        x_bb = x_bb.float()
+        x_stem = x_stem.float()
+        x_iloop = x_iloop.float()
+        x_hloop = x_hloop.float()
+        y = y.float()
+
+        # remove 'batch' dim added by torch dataset
+        x_stem = x_stem.squeeze(0)
+        x_iloop = x_iloop.squeeze(0)
+        x_hloop = x_hloop.squeeze(0)
+        l_stem = l_stem.squeeze(0)
+        l_iloop = l_iloop.squeeze(0)
+        l_hloop = l_hloop.squeeze(0)
 
         x_bb = x_bb.to(device)
         x_stem = x_stem.to(device)
@@ -305,6 +326,7 @@ def run_one_epoch(model, dataset, device, training=False, optim=None):
 
         # au-ROC
         pred_np = preds.squeeze(-1).detach().cpu().numpy()  # remove last singleton dimension
+        y_np = y.detach().cpu().numpy()
         for j in range(y_np.shape[0]):
             # mask = m_np[j, :]
             y_true = y_np[j, :]
@@ -376,7 +398,7 @@ def run_one_epoch(model, dataset, device, training=False, optim=None):
 
 class MyDataSet(Dataset):
 
-    def __init__(self, x_bb, x_stem, x_iloop, x_hloop, l_stem, l_iloop, l_hloop, y):
+    def __init__(self, x_bb, x_stem, x_iloop, x_hloop, l_stem, l_iloop, l_hloop, y_all):
         # both x and y are list of np arr (since they are of variable length)
         assert len(x_bb) == len(y_all)
         assert len(x_stem) == len(y_all)
@@ -392,10 +414,11 @@ class MyDataSet(Dataset):
         self.l_stem = l_stem
         self.l_iloop = l_iloop
         self.l_hloop = l_hloop
-        self.y = y
+        self.y = y_all
         self.len = len(x_bb)
 
     def __getitem__(self, index):
+        # print(self.x_stem[index].shape)
         return self.x_bb[index], self.x_stem[index], self.x_iloop[index], self.x_hloop[index], self.l_stem[index], \
                self.l_iloop[index], self.l_hloop[index], self.y[index]
 
@@ -440,7 +463,7 @@ def main(in_file, config, out_dir):
     assert config['batch_size'] == 1, "Batch size needs to be 1 for training LSTM+self-attn model!"
 
     logging.info("Initializing model")
-    model = MyModel(in_size=config['in_size'], d_model=config['n_dim'], N=config['n_attn_layer'],
+    model = MyModel(d_model=config['n_dim'], N=config['n_attn_layer'],
                     heads=config['n_heads'], n_hid=config['n_hid'])
     for p in model.parameters():
         if p.dim() > 1:
@@ -457,7 +480,7 @@ def main(in_file, config, out_dir):
     l_stem = dataset['l_stem']
     l_iloop = dataset['l_iloop']
     l_hloop = dataset['l_hloop']
-    y_all = dataset['y_all']
+    y_all = dataset['y']
 
     # train/validation split
     logging.info("Spliting into training and validation")
@@ -478,7 +501,6 @@ def main(in_file, config, out_dir):
     l_hloop_va = l_hloop[n_tr:]
     y_all_tr = y_all[:n_tr]
     y_all_va = y_all[n_tr:]
-
 
     # # partition by length
     # data_tr = []
