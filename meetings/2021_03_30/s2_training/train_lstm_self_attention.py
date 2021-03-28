@@ -434,7 +434,7 @@ class MyDataSet(Dataset):
         return self.len
 
 
-loss_b = torch.nn.BCELoss(reduction='sum')  # TODo sum/mean?
+loss_b = torch.nn.BCELoss(reduction='mean')  # TODo sum/mean?
 
 
 # loss_b = torch.nn.BCELoss(reduction='none')
