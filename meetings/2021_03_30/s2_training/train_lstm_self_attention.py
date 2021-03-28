@@ -256,25 +256,25 @@ def bb_augmentation_shift(x, offset, idx_bb_x, idx_bb_y):
     return x
 
 
-def make_single_pred(model, x, y, device):
-    model.eval()
-    # add batch dim, convert to torch tensor, make pred
-    x = torch.from_numpy(x[np.newaxis, :, :]).float()
-    y = torch.from_numpy(y[np.newaxis, :]).float()
-    x = x.to(device)
-    y = y.to(device)
-    preds = model(x, mask=None)  # no masking since parsing one example at a time for now
-    return preds
+# def make_single_pred(model, x, device):
+#     model.eval()
+#     # add batch dim, convert to torch tensor, make pred
+#     x = torch.from_numpy(x[np.newaxis, :, :]).float()
+#     # y = torch.from_numpy(y[np.newaxis, :]).float()
+#     x = x.to(device)
+#     # y = y.to(device)
+#     preds = model(x, mask=None)  # no masking since parsing one example at a time for now
+#     return preds
 
 
-def run_one_epoch(model, dataset, device, training=False, optim=None):
+def run_one_epoch(model, dataset, device, training=False, optim=None, print_last_batch=True):
     if not training:
         model.eval()
     else:
         assert optim is not None
     losses = []
     aucs = []
-    for x_bb, x_stem, x_iloop, x_hloop, l_stem, l_iloop, l_hloop, y in tqdm.tqdm(dataset):
+    for i, (x_bb, x_stem, x_iloop, x_hloop, l_stem, l_iloop, l_hloop, y) in tqdm.tqdm(enumerate(dataset)):
 
         # print(x_bb.shape)
 
@@ -339,6 +339,11 @@ def run_one_epoch(model, dataset, device, training=False, optim=None):
             else:
                 auc = roc_auc_score(y_true=y_true, y_score=y_pred)
             aucs.append(auc)
+
+        if print_last_batch and i == len(dataset) - 1:
+            print(y_true)
+            print(y_pred)
+
     return np.mean(losses), np.nanmean(aucs)
 
 
@@ -555,20 +560,20 @@ def main(in_file, config, out_dir):
             "End of epoch {}, training: mean loss {}, mean au-ROC {}".format(epoch, np.mean(losses), np.nanmean(aucs)))
         df_log_metric.append({'epoch': epoch, 'tv': 'training', 'loss': np.mean(losses), 'auc': np.nanmean(aucs)})
         total_loss = 0
-        # pick a random training example and print the prediction
-        idx = np.random.randint(0, len(x_tr))
-        pred = make_single_pred(model, x_tr[idx], y_tr[idx], device)
-        logging.info("Training dataset idx {}\ny: {}\npred: {}".format(idx, y_tr[idx].flatten(), pred.squeeze()))
+        # # pick a random training example and print the prediction
+        # idx = np.random.randint(0, len(x_tr))
+        # pred = make_single_pred(model, x_tr[idx], y_tr[idx], device)
+        # logging.info("Training dataset idx {}\ny: {}\npred: {}".format(idx, y_tr[idx].flatten(), pred.squeeze()))
 
         # validation
         loss_va, aucs_va = run_one_epoch(model, data_loader_va, device, training=False)
         logging.info("End of epoch {}, validation mean loss {}, mean au-ROC {}".format(epoch, np.mean(loss_va),
                                                                                        np.nanmean(aucs_va)))
         df_log_metric.append({'epoch': epoch, 'tv': 'validation', 'loss': np.mean(loss_va), 'auc': np.nanmean(aucs_va)})
-        # pick a random validation example and print the prediction
-        idx = np.random.randint(0, len(x_va))
-        pred = make_single_pred(model, x_va[idx], y_va[idx], device)
-        logging.info("Validation dataset idx {}\ny: {}\npred: {}".format(idx, y_va[idx].flatten(), pred.squeeze()))
+        # # pick a random validation example and print the prediction
+        # idx = np.random.randint(0, len(x_va))
+        # pred = make_single_pred(model, x_va[idx], y_va[idx], device)
+        # logging.info("Validation dataset idx {}\ny: {}\npred: {}".format(idx, y_va[idx].flatten(), pred.squeeze()))
 
     # export metric
     df_log_metric = pd.DataFrame(df_log_metric)
