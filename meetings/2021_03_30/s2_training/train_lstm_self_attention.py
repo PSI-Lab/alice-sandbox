@@ -170,7 +170,7 @@ class MyModel(nn.Module):
         self.act1 = nn.ReLU()
         self.act2 = nn.Sigmoid()
 
-    def forward(self, x_bb, x_stem, x_iloop, x_hloop, l_stem, l_iloop, l_hloop):
+    def forward(self, x_bb, x_stem, x_iloop, x_hloop, l_stem, l_iloop, l_hloop, device):
         # run LSTM on sequence
         # stem
         # pack var length sequences
@@ -179,9 +179,9 @@ class MyModel(nn.Module):
                                                        enforce_sorted=False,
                                                        batch_first=True)
         # Initialize hidden state with zeros
-        h0 = torch.zeros(2, x_stem.shape[0], 10)  # TODO hard-coded
+        h0 = torch.zeros(2, x_stem.shape[0], 10).to(device)  # TODO hard-coded
         # Initialize cell state
-        c0 = torch.zeros(2, x_stem.shape[0], 10)
+        c0 = torch.zeros(2, x_stem.shape[0], 10).to(device)
         lstm_outs, (h_t, h_c) = self.lstm_stem(lstm_input, (h0, c0))
         # unpack
         lstm_stem, _ = nn.utils.rnn.pad_packed_sequence(lstm_outs, batch_first=True)
@@ -194,8 +194,8 @@ class MyModel(nn.Module):
                                                        l_iloop,
                                                        enforce_sorted=False,
                                                        batch_first=True)
-        h0 = torch.zeros(2, x_iloop.shape[0], 10)
-        c0 = torch.zeros(2, x_iloop.shape[0], 10)
+        h0 = torch.zeros(2, x_iloop.shape[0], 10).to(device)
+        c0 = torch.zeros(2, x_iloop.shape[0], 10).to(device)
         lstm_outs, (h_t, h_c) = self.lstm_iloop(lstm_input, (h0, c0))
         lstm_iloop, _ = nn.utils.rnn.pad_packed_sequence(lstm_outs, batch_first=True)
         masks = (l_iloop - 1).unsqueeze(-1).unsqueeze(-1).expand(x_iloop.size(0), 1, lstm_iloop.size(2))
@@ -206,8 +206,8 @@ class MyModel(nn.Module):
                                                        l_hloop,
                                                        enforce_sorted=False,
                                                        batch_first=True)
-        h0 = torch.zeros(2, x_hloop.shape[0], 10)
-        c0 = torch.zeros(2, x_hloop.shape[0], 10)
+        h0 = torch.zeros(2, x_hloop.shape[0], 10).to(device)
+        c0 = torch.zeros(2, x_hloop.shape[0], 10).to(device)
         lstm_outs, (h_t, h_c) = self.lstm_hloop(lstm_input, (h0, c0))
         lstm_hloop, _ = nn.utils.rnn.pad_packed_sequence(lstm_outs, batch_first=True)
         masks = (l_hloop - 1).unsqueeze(-1).unsqueeze(-1).expand(x_hloop.size(0), 1, lstm_hloop.size(2))
@@ -311,7 +311,7 @@ def run_one_epoch(model, dataset, device, training=False, optim=None, print_last
         l_iloop = l_iloop.to(device)
         l_hloop = l_hloop.to(device)
         y = y.to(device)
-        preds = model(x_bb, x_stem, x_iloop, x_hloop, l_stem, l_iloop, l_hloop)
+        preds = model(x_bb, x_stem, x_iloop, x_hloop, l_stem, l_iloop, l_hloop, device)
 
         if training:
             optim.zero_grad()
