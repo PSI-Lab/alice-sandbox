@@ -1,5 +1,5 @@
 # smaller NN for debug
-in_size: 11
+#in_size: 11
 n_dim: 20
 n_attn_layer: 2
 n_heads: 5
@@ -8,8 +8,8 @@ lr: 0.002
 epoch: 40
 
 # data loader
-n_length_groups: 4  # split dataset into n groups by length, to make batch padding more efficient
-batch_size: 10
+#n_length_groups: 4  # split dataset into n groups by length, to make batch padding more efficient
+batch_size: 1
 
 # data_augmentation
 bb_augmentation_shift: False
