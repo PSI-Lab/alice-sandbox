@@ -153,16 +153,18 @@ def get_clones(module, N):
 
 
 class MyModel(nn.Module):
-    def __init__(self, d_model, N, heads, n_hid):
+    def __init__(self, lstm_hid, lstm_layer, d_model, N, heads, n_hid):
         super().__init__()
         self.N = N
 
         # TODO hard-coded lstm params
-        self.lstm_stem = nn.LSTM(input_size=8, hidden_size=10, num_layers=2, batch_first=True)
-        self.lstm_iloop = nn.LSTM(input_size=5, hidden_size=10, num_layers=2, batch_first=True)
-        self.lstm_hloop = nn.LSTM(input_size=4, hidden_size=10, num_layers=2, batch_first=True)
+        self.lstm_hid = lstm_hid
+        # self.lstm_layer = lstm_layer
+        self.lstm_stem = nn.LSTM(input_size=8, hidden_size=lstm_hid, num_layers=lstm_layer, batch_first=True)
+        self.lstm_iloop = nn.LSTM(input_size=5, hidden_size=lstm_hid, num_layers=lstm_layer, batch_first=True)
+        self.lstm_hloop = nn.LSTM(input_size=4, hidden_size=lstm_hid, num_layers=lstm_layer, batch_first=True)
 
-        self.embed = nn.Linear(17, d_model)  # TODO hard-coded 17 = 7 (bb features) + 10 (LSTM output)
+        self.embed = nn.Linear(7 + lstm_hid, d_model)  #  7 (bb features) + (LSTM output)
         self.layers = get_clones(EncoderLayer(d_model, heads), N)
         self.norm = Norm(d_model)
         self.hid = nn.Linear(d_model, n_hid)
@@ -179,9 +181,9 @@ class MyModel(nn.Module):
                                                        enforce_sorted=False,
                                                        batch_first=True)
         # Initialize hidden state with zeros
-        h0 = torch.zeros(2, x_stem.shape[0], 10).to(device)  # TODO hard-coded
+        h0 = torch.zeros(2, x_stem.shape[0], self.lstm_hid).to(device)
         # Initialize cell state
-        c0 = torch.zeros(2, x_stem.shape[0], 10).to(device)
+        c0 = torch.zeros(2, x_stem.shape[0], self.lstm_hid).to(device)
         lstm_outs, (h_t, h_c) = self.lstm_stem(lstm_input, (h0, c0))
         # unpack
         lstm_stem, _ = nn.utils.rnn.pad_packed_sequence(lstm_outs, batch_first=True)
@@ -194,8 +196,8 @@ class MyModel(nn.Module):
                                                        l_iloop,
                                                        enforce_sorted=False,
                                                        batch_first=True)
-        h0 = torch.zeros(2, x_iloop.shape[0], 10).to(device)
-        c0 = torch.zeros(2, x_iloop.shape[0], 10).to(device)
+        h0 = torch.zeros(2, x_iloop.shape[0], self.lstm_hid).to(device)
+        c0 = torch.zeros(2, x_iloop.shape[0], self.lstm_hid).to(device)
         lstm_outs, (h_t, h_c) = self.lstm_iloop(lstm_input, (h0, c0))
         lstm_iloop, _ = nn.utils.rnn.pad_packed_sequence(lstm_outs, batch_first=True)
         masks = (l_iloop - 1).unsqueeze(-1).unsqueeze(-1).expand(x_iloop.size(0), 1, lstm_iloop.size(2))
@@ -206,8 +208,8 @@ class MyModel(nn.Module):
                                                        l_hloop,
                                                        enforce_sorted=False,
                                                        batch_first=True)
-        h0 = torch.zeros(2, x_hloop.shape[0], 10).to(device)
-        c0 = torch.zeros(2, x_hloop.shape[0], 10).to(device)
+        h0 = torch.zeros(2, x_hloop.shape[0], self.lstm_hid).to(device)
+        c0 = torch.zeros(2, x_hloop.shape[0], self.lstm_hid).to(device)
         lstm_outs, (h_t, h_c) = self.lstm_hloop(lstm_input, (h0, c0))
         lstm_hloop, _ = nn.utils.rnn.pad_packed_sequence(lstm_outs, batch_first=True)
         masks = (l_hloop - 1).unsqueeze(-1).unsqueeze(-1).expand(x_hloop.size(0), 1, lstm_hloop.size(2))
@@ -469,7 +471,8 @@ def main(in_file, config, out_dir):
     assert config['batch_size'] == 1, "Batch size needs to be 1 for training LSTM+self-attn model!"
 
     logging.info("Initializing model")
-    model = MyModel(d_model=config['n_dim'], N=config['n_attn_layer'],
+    model = MyModel(lstm_hid=config['lstm_hid'] , lstm_layer=config['lstm_layer'],
+                    d_model=config['n_dim'], N=config['n_attn_layer'],
                     heads=config['n_heads'], n_hid=config['n_hid'])
     for p in model.parameters():
         if p.dim() > 1:

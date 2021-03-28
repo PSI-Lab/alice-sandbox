@@ -1,5 +1,9 @@
 # smaller NN for debug
 #in_size: 11
+
+lstm_hid: 5
+lstm_layer: 2
+
 n_dim: 20
 n_attn_layer: 2
 n_heads: 5

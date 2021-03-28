@@ -1,5 +1,9 @@
 # model architecture
 #in_size: 11
+
+lstm_hid: 20
+lstm_layer: 4
+
 n_dim: 100
 n_attn_layer: 5
 n_heads: 5
