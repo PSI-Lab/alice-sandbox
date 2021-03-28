@@ -271,6 +271,7 @@ def run_one_epoch(model, dataset, device, training=False, optim=None, print_last
     if not training:
         model.eval()
     else:
+        model.train()
         assert optim is not None
     losses = []
     aucs = []
