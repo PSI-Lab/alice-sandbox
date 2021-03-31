@@ -24,7 +24,7 @@ dataset 5000
 
 
 ```
-python s2_training/make_dataset_baseline_no_bb_type.py --in_file data/human_transcriptome_segment_high_mfe_freq_s1_pred_len20_200_5000_pruned.pkl.gz --out_file data/human_transcriptome_segment_high_mfe_freq_s1_pred_len20_200_5000_pruned_baseline_no_bb_type.npz
+python s2_training/make_dataset_baseline_no_bb_type.py --in_file ../2021_03_30/data/human_transcriptome_segment_high_mfe_freq_s1_pred_len20_200_5000_pruned.pkl.gz --out_file data/human_transcriptome_segment_high_mfe_freq_s1_pred_len20_200_5000_pruned_baseline_no_bb_type.npz
 ```
 
 
@@ -44,6 +44,57 @@ cd s2_training/
 CUDA_VISIBLE_DEVICES=2 python train_s2.py --in_file ../data/human_transcriptome_segment_high_mfe_freq_s1_pred_len20_200_5000_pruned_baseline_no_bb_type.npz --config config_baseline_no_bb_type.yml --out_dir result/run_baseline_np_bb_type_1/
 ```
 
+### Without bb location
+
+Dataset:
+
+debug
+
+```
+python s2_training/make_dataset_baseline_no_bb_location.py --in_file ../2021_03_23/data/debug_s1_pred_len20_200_100_pruned.pkl.gz --out_file data/debug_s1_pred_len20_200_100_pruned_filtered_baseline_no_bb_location.npz
+```
+
+dataset 5000
+
+```
+python s2_training/make_dataset_baseline_no_bb_location.py --in_file ../2021_03_30/data/human_transcriptome_segment_high_mfe_freq_s1_pred_len20_200_5000_pruned.pkl.gz --out_file data/human_transcriptome_segment_high_mfe_freq_s1_pred_len20_200_5000_pruned_baseline_no_bb_location.npz
+```
+
+
+Training:
+
+debug
+
+```
+cd s2_training/
+python train_s2.py --in_file ../data/debug_s1_pred_len20_200_100_pruned_filtered_baseline_no_bb_location.npz --config config_baseline_no_bb_location.yml --out_dir result/debug/
+```
+
+dataset 5000
+
+```
+cd s2_training/
+CUDA_VISIBLE_DEVICES=2 python train_s2.py --in_file ../data/human_transcriptome_segment_high_mfe_freq_s1_pred_len20_200_5000_pruned_baseline_no_bb_location.npz --config config_baseline_no_bb_location.yml --out_dir result/run_baseline_np_bb_location_1/
+```
+
+
+
+## Result summary
+
+From last week:
+
+- bb type, location, size & S1 feature (n_proposal_norm, median probability): training au-ROC 0.98 validation 0.96
+
+- bb type, location, size (baseline): training au-ROC 0.93 validation 0.87
+
+This week:
+
+- bb location, size: training au-ROC xxx validation xxx
+
+- bb type, size: training au-ROC xxx validation xxx
+
+- bb type, location: training au-ROC xxx validation xxx
+
 
 ## Investigate S1 LSTM+sttn model
 
@@ -59,6 +110,14 @@ S2 baseline: decrease NN capacity
 S2 baseline: try different subsets of input features (bb type, location, size)
 S2 baseline naive guess? metric? (but it’s actually pretty clear from the shuffled-label experiment that it’s not predicting all 0's or the naive guess)
 S2 other ideas involving ‘background sequence’?
+
+randomize features?
+
+backpropr to s1?
+
+memory network
+
+other ways to summerize s1 pred?
 
 
 -S 1 inference: check likelihood of ground truth bb
