@@ -78,6 +78,34 @@ CUDA_VISIBLE_DEVICES=2 python train_s2.py --in_file ../data/human_transcriptome_
 ```
 
 
+### Without bb size
+
+Dataset:
+
+debug
+
+```
+python s2_training/make_dataset_baseline_no_bb_size.py --in_file ../2021_03_23/data/debug_s1_pred_len20_200_100_pruned.pkl.gz --out_file data/debug_s1_pred_len20_200_100_pruned_filtered_baseline_no_bb_size.npz
+```
+
+dataset 5000
+
+TODO
+
+
+Training:
+
+debug
+
+```
+cd s2_training/
+python train_s2.py --in_file ../data/debug_s1_pred_len20_200_100_pruned_filtered_baseline_no_bb_size.npz --config config_baseline_no_bb_size.yml --out_dir result/debug/
+```
+
+dataset 5000
+
+TODO
+
 
 ## Result summary
 
