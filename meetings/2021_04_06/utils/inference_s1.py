@@ -491,14 +491,15 @@ class Predictor(object):
             m[np.tril_indices(l)] = 0
             return m
 
-        def _update(bb_x, bb_y, siz_x, siz_y, prob, proposed_boxes, pred_box, bb_source):
+        def _update(bb_x, bb_y, siz_x, siz_y, p_on, p_other, proposed_boxes, pred_box, bb_source):
             assert bb_source in ['sm', 'sl']
             proposed_boxes.append({
                 'bb_x': bb_x,
                 'bb_y': bb_y,
                 'siz_x': siz_x,
                 'siz_y': siz_y,
-                'prob_{}'.format(bb_source): prob,
+                'prob_on_{}'.format(bb_source): p_on,
+                'prob_other_{}'.format(bb_source): p_other,
             })
             # set value in pred box, be careful with out of bound index
             x0 = bb_x
@@ -512,6 +513,27 @@ class Predictor(object):
             pred_box[ix0:ix1, iy0:iy1] = 1
             return proposed_boxes, pred_box
 
+        # def _update(bb_x, bb_y, siz_x, siz_y, prob, proposed_boxes, pred_box, bb_source):
+        #     assert bb_source in ['sm', 'sl']
+        #     proposed_boxes.append({
+        #         'bb_x': bb_x,
+        #         'bb_y': bb_y,
+        #         'siz_x': siz_x,
+        #         'siz_y': siz_y,
+        #         'prob_{}'.format(bb_source): prob,
+        #     })
+        #     # set value in pred box, be careful with out of bound index
+        #     x0 = bb_x
+        #     y0 = bb_y - siz_y + 1  # 0-based
+        #     wx = siz_x
+        #     wy = siz_y
+        #     ix0 = max(0, x0)
+        #     iy0 = max(0, y0)
+        #     ix1 = min(x0 + wx, pred_box.shape[0])
+        #     iy1 = min(y0 + wy, pred_box.shape[1])
+        #     pred_box[ix0:ix1, iy0:iy1] = 1
+        #     return proposed_boxes, pred_box
+
         def sm_top_one(p_on, pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j):
             loc_x = np.argmax(pred_loc_x[:, i, j])
             loc_y = np.argmax(pred_loc_y[:, i, j])
@@ -524,93 +546,100 @@ class Predictor(object):
                 # discard if any argmax = last_one (the "catch-all" unit)
                 return []
             else:
-                # prob of on/off & location
-                prob_1 = p_on * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y]
+                # # prob of on/off & location
+                # prob_1 = p_on * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y]
+                # # softmax: compute joint probability of taking the max value
+                # prob_sm = prob_1 *  softmax(pred_sm_siz_x[:, i, j])[sm_siz_x - 1] * softmax(pred_sm_siz_y[:, i, j])[
+                #            sm_siz_y - 1]  # FIXME multiplying twice for case where y is set to x
+                # prob of location
+                prob_1 = softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y]
                 # softmax: compute joint probability of taking the max value
                 prob_sm = prob_1 *  softmax(pred_sm_siz_x[:, i, j])[sm_siz_x - 1] * softmax(pred_sm_siz_y[:, i, j])[
                            sm_siz_y - 1]  # FIXME multiplying twice for case where y is set to x
                 bb_x = i - loc_x
                 bb_y = j + loc_y
                 # list of one tuple
-                result = [(bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm)]
+                result = [(bb_x, bb_y, sm_siz_x, sm_siz_y, p_on, prob_sm)]
                 return result
 
         def sm_top_k(p_on, pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j, k, cutoff=0):
-            # TODO discard if idx = last_one (the "catch-all" unit)
-            """take topk bbs,
-            if cutoff is specified (i.e. !=0), only pick those whose prob >= cutoff * p_top"""
-            assert k >= 2
-            # outer product between 4 arrays: loc_x, loc_y, siz_x, siz_y
-            loc_x = softmax(pred_loc_x[:, i, j])
-            loc_y = softmax(pred_loc_y[:, i, j])
-            siz_x = softmax(pred_sm_siz_x[:, i, j])
-            siz_y = softmax(pred_sm_siz_y[:, i, j])
-            joint_prob_all = p_on * loc_x[:, np.newaxis, np.newaxis, np.newaxis] * loc_y[np.newaxis, :, np.newaxis, np.newaxis] * siz_x[np.newaxis, np.newaxis, :, np.newaxis] * siz_y[np.newaxis, np.newaxis, np.newaxis, :]
-            p_top = np.max(joint_prob_all)
-            # sort along all axis (reverse idx so result is descending)
-            idx_linear = np.argsort(joint_prob_all, axis=None)[::-1]
-            # take top k
-            idx_linear = idx_linear[:k]
-            assert len(idx_linear)
-            result = []
-            # checks
-            arr_shape = joint_prob_all.shape
-            top_idx = np.unravel_index(idx_linear[0], arr_shape)
-            # check whether it match the argmax, check value instead of index, in case there's a tie
-            assert loc_x[top_idx[0]] == np.max(loc_x), "top_idx {} loc_x {}".format(top_idx, loc_x)
-            assert loc_y[top_idx[1]] == np.max(loc_y), "top_idx {} loc_y {}".format(top_idx, loc_y)
-            assert siz_x[top_idx[2]] == np.max(siz_x), "top_idx {} siz_x {}".format(top_idx, siz_x)
-            assert siz_y[top_idx[3]] == np.max(siz_y), "top_idx {} loc_x {}".format(top_idx, siz_y)
-            # assert top_idx[0] == np.argmax(loc_x)
-            # assert top_idx[1] == np.argmax(loc_y)
-            # assert top_idx[2] == np.argmax(siz_x)
-            # assert top_idx[3] == np.argmax(siz_y)
-            for _i in idx_linear:  # avoid clash with i
-                idx = np.unravel_index(_i, arr_shape)  # this idx is 4-D
-                # print(i, j, idx)
-                bb_x = i - idx[0]
-                bb_y = j + idx[1]
-                sm_siz_x = idx[2] + 1
-                sm_siz_y = idx[3] + 1
-                prob_sm = joint_prob_all[idx]
-                # if cutoff is specified, we also check the probability
-                # break if it's lower than that (since loop is sorted descending)
-                if cutoff > 0 and prob_sm < cutoff * p_top:
-                    break
-                result.append((bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm))
-            return result
+            raise NotImplementedError
+        #     # TODO discard if idx = last_one (the "catch-all" unit)
+        #     """take topk bbs,
+        #     if cutoff is specified (i.e. !=0), only pick those whose prob >= cutoff * p_top"""
+        #     assert k >= 2
+        #     # outer product between 4 arrays: loc_x, loc_y, siz_x, siz_y
+        #     loc_x = softmax(pred_loc_x[:, i, j])
+        #     loc_y = softmax(pred_loc_y[:, i, j])
+        #     siz_x = softmax(pred_sm_siz_x[:, i, j])
+        #     siz_y = softmax(pred_sm_siz_y[:, i, j])
+        #     joint_prob_all = p_on * loc_x[:, np.newaxis, np.newaxis, np.newaxis] * loc_y[np.newaxis, :, np.newaxis, np.newaxis] * siz_x[np.newaxis, np.newaxis, :, np.newaxis] * siz_y[np.newaxis, np.newaxis, np.newaxis, :]
+        #     p_top = np.max(joint_prob_all)
+        #     # sort along all axis (reverse idx so result is descending)
+        #     idx_linear = np.argsort(joint_prob_all, axis=None)[::-1]
+        #     # take top k
+        #     idx_linear = idx_linear[:k]
+        #     assert len(idx_linear)
+        #     result = []
+        #     # checks
+        #     arr_shape = joint_prob_all.shape
+        #     top_idx = np.unravel_index(idx_linear[0], arr_shape)
+        #     # check whether it match the argmax, check value instead of index, in case there's a tie
+        #     assert loc_x[top_idx[0]] == np.max(loc_x), "top_idx {} loc_x {}".format(top_idx, loc_x)
+        #     assert loc_y[top_idx[1]] == np.max(loc_y), "top_idx {} loc_y {}".format(top_idx, loc_y)
+        #     assert siz_x[top_idx[2]] == np.max(siz_x), "top_idx {} siz_x {}".format(top_idx, siz_x)
+        #     assert siz_y[top_idx[3]] == np.max(siz_y), "top_idx {} loc_x {}".format(top_idx, siz_y)
+        #     # assert top_idx[0] == np.argmax(loc_x)
+        #     # assert top_idx[1] == np.argmax(loc_y)
+        #     # assert top_idx[2] == np.argmax(siz_x)
+        #     # assert top_idx[3] == np.argmax(siz_y)
+        #     for _i in idx_linear:  # avoid clash with i
+        #         idx = np.unravel_index(_i, arr_shape)  # this idx is 4-D
+        #         # print(i, j, idx)
+        #         bb_x = i - idx[0]
+        #         bb_y = j + idx[1]
+        #         sm_siz_x = idx[2] + 1
+        #         sm_siz_y = idx[3] + 1
+        #         prob_sm = joint_prob_all[idx]
+        #         # if cutoff is specified, we also check the probability
+        #         # break if it's lower than that (since loop is sorted descending)
+        #         if cutoff > 0 and prob_sm < cutoff * p_top:
+        #             break
+        #         result.append((bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm))
+        #     return result
 
         def sm_top_perc(p_on, pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j, cutoff):
-            # TODO discard if idx = last_one (the "catch-all" unit)
-            """select those whose marginal probability >= cutoff*p_top,
-            setting cutoff == 1 correspond to picking the argmax"""
-            assert 0 < cutoff <= 1
-            # outer product between 4 arrays: loc_x, loc_y, siz_x, siz_y
-            loc_x = softmax(pred_loc_x[:, i, j])
-            loc_y = softmax(pred_loc_y[:, i, j])
-            siz_x = softmax(pred_sm_siz_x[:, i, j])
-            siz_y = softmax(pred_sm_siz_y[:, i, j])
-            joint_prob_all = p_on * loc_x[:, np.newaxis, np.newaxis, np.newaxis] * loc_y[np.newaxis, :, np.newaxis,
-                                                                                   np.newaxis] * siz_x[np.newaxis,
-                                                                                                 np.newaxis, :,
-                                                                                                 np.newaxis] * siz_y[
-                                                                                                               np.newaxis,
-                                                                                                               np.newaxis,
-                                                                                                               np.newaxis,
-                                                                                                               :]
-            joint_prob_max = np.max(joint_prob_all)
-            # find index where p > cutoff * joint_prob_max
-            idx_selected = np.where(joint_prob_all >= joint_prob_max * cutoff)
-            result = []
-            for idx in zip(*idx_selected):
-                bb_x = i - idx[0]
-                bb_y = j + idx[1]
-                sm_siz_x = idx[2] + 1
-                sm_siz_y = idx[3] + 1
-                prob_sm = joint_prob_all[idx]
-                result.append((bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm))
-            return result
-
+            raise NotImplementedError
+        #     # TODO discard if idx = last_one (the "catch-all" unit)
+        #     """select those whose marginal probability >= cutoff*p_top,
+        #     setting cutoff == 1 correspond to picking the argmax"""
+        #     assert 0 < cutoff <= 1
+        #     # outer product between 4 arrays: loc_x, loc_y, siz_x, siz_y
+        #     loc_x = softmax(pred_loc_x[:, i, j])
+        #     loc_y = softmax(pred_loc_y[:, i, j])
+        #     siz_x = softmax(pred_sm_siz_x[:, i, j])
+        #     siz_y = softmax(pred_sm_siz_y[:, i, j])
+        #     joint_prob_all = p_on * loc_x[:, np.newaxis, np.newaxis, np.newaxis] * loc_y[np.newaxis, :, np.newaxis,
+        #                                                                            np.newaxis] * siz_x[np.newaxis,
+        #                                                                                          np.newaxis, :,
+        #                                                                                          np.newaxis] * siz_y[
+        #                                                                                                        np.newaxis,
+        #                                                                                                        np.newaxis,
+        #                                                                                                        np.newaxis,
+        #                                                                                                        :]
+        #     joint_prob_max = np.max(joint_prob_all)
+        #     # find index where p > cutoff * joint_prob_max
+        #     idx_selected = np.where(joint_prob_all >= joint_prob_max * cutoff)
+        #     result = []
+        #     for idx in zip(*idx_selected):
+        #         bb_x = i - idx[0]
+        #         bb_y = j + idx[1]
+        #         sm_siz_x = idx[2] + 1
+        #         sm_siz_y = idx[3] + 1
+        #         prob_sm = joint_prob_all[idx]
+        #         result.append((bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm))
+        #     return result
+        #
         def sl_top_one(p_on, pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j):
             loc_x = np.argmax(pred_loc_x[:, i, j])
             loc_y = np.argmax(pred_loc_y[:, i, j])
@@ -627,81 +656,85 @@ class Predictor(object):
                     sl_siz_x = 1
                 if sl_siz_y < 1:
                     sl_siz_y = 1
-                # prob of on/off & location
+                # # prob of on/off & location
+                # prob_1 = p_on * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y]
+                # prob of location
                 prob_1 = p_on * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y]
                 # top right corner
                 bb_x = i - loc_x
                 bb_y = j + loc_y
                 # list of one tuple
-                result = [(bb_x, bb_y, sl_siz_x, sl_siz_y, prob_1)]
+                result = [(bb_x, bb_y, sl_siz_x, sl_siz_y, p_on, prob_1)]
                 return result
 
         def sl_top_k(p_on, pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j, k, cutoff=0):
-            # TODO discard if any argmax = last_one (the "catch-all" unit)
-            """take topk bbs,
-            if cutoff is specified (i.e. !=0), only pick those whose prob >= cutoff * p_top"""
-            assert k >= 2
-            assert 0 <= cutoff <= 1
-            # outer product between 2 arrays: loc_x, loc_y
-            loc_x = softmax(pred_loc_x[:, i, j])
-            loc_y = softmax(pred_loc_y[:, i, j])
-            # scalar size, round to int
-            sl_siz_x = int(np.round(pred_sl_siz_x[i, j]))
-            sl_siz_y = int(np.round(pred_sl_siz_y[i, j]))
-            # avoid setting size 0 or negative # TODO adding logging warning
-            if sl_siz_x < 1:
-                sl_siz_x = 1
-            if sl_siz_y < 1:
-                sl_siz_y = 1
-            joint_prob_all = p_on * loc_x[:, np.newaxis] * loc_y[np.newaxis, :]
-            p_top = np.max(joint_prob_all)
-            # sort along all axis (reverse idx so result is descending)
-            idx_linear = np.argsort(joint_prob_all, axis=None)[::-1]
-            # take top k
-            idx_linear = idx_linear[:k]
-            assert len(idx_linear)
-            result = []
-            arr_shape = joint_prob_all.shape
-            for _i in idx_linear:  # avoid clash with i
-                idx = np.unravel_index(_i, arr_shape)  # this idx is 2-D
-                bb_x = i - idx[0]
-                bb_y = j + idx[1]
-                prob_sl = joint_prob_all[idx]
-                # if cutoff is specified, we also check the probability
-                # break if it's lower than that (since loop is sorted descending)
-                if cutoff > 0 and prob_sl < cutoff * p_top:
-                    break
-                result.append((bb_x, bb_y, sl_siz_x, sl_siz_y, prob_sl))
-            return result
+            raise NotImplementedError
+        #     # TODO discard if any argmax = last_one (the "catch-all" unit)
+        #     """take topk bbs,
+        #     if cutoff is specified (i.e. !=0), only pick those whose prob >= cutoff * p_top"""
+        #     assert k >= 2
+        #     assert 0 <= cutoff <= 1
+        #     # outer product between 2 arrays: loc_x, loc_y
+        #     loc_x = softmax(pred_loc_x[:, i, j])
+        #     loc_y = softmax(pred_loc_y[:, i, j])
+        #     # scalar size, round to int
+        #     sl_siz_x = int(np.round(pred_sl_siz_x[i, j]))
+        #     sl_siz_y = int(np.round(pred_sl_siz_y[i, j]))
+        #     # avoid setting size 0 or negative # TODO adding logging warning
+        #     if sl_siz_x < 1:
+        #         sl_siz_x = 1
+        #     if sl_siz_y < 1:
+        #         sl_siz_y = 1
+        #     joint_prob_all = p_on * loc_x[:, np.newaxis] * loc_y[np.newaxis, :]
+        #     p_top = np.max(joint_prob_all)
+        #     # sort along all axis (reverse idx so result is descending)
+        #     idx_linear = np.argsort(joint_prob_all, axis=None)[::-1]
+        #     # take top k
+        #     idx_linear = idx_linear[:k]
+        #     assert len(idx_linear)
+        #     result = []
+        #     arr_shape = joint_prob_all.shape
+        #     for _i in idx_linear:  # avoid clash with i
+        #         idx = np.unravel_index(_i, arr_shape)  # this idx is 2-D
+        #         bb_x = i - idx[0]
+        #         bb_y = j + idx[1]
+        #         prob_sl = joint_prob_all[idx]
+        #         # if cutoff is specified, we also check the probability
+        #         # break if it's lower than that (since loop is sorted descending)
+        #         if cutoff > 0 and prob_sl < cutoff * p_top:
+        #             break
+        #         result.append((bb_x, bb_y, sl_siz_x, sl_siz_y, prob_sl))
+        #     return result
 
         def sl_top_perc(p_on, pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j, cutoff):
-            # TODO # discard if any argmax = last_one (the "catch-all" unit)
-            """select those whose marginal probability >= cutoff*p_top,
-                        setting cutoff == 1 correspond to picking the argmax"""
-            assert 0 < cutoff <= 1
-            # outer product between 2 arrays: loc_x, loc_y
-            loc_x = softmax(pred_loc_x[:, i, j])
-            loc_y = softmax(pred_loc_y[:, i, j])
-            # scalar size, round to int
-            sl_siz_x = int(np.round(pred_sl_siz_x[i, j]))
-            sl_siz_y = int(np.round(pred_sl_siz_y[i, j]))
-            # avoid setting size 0 or negative # TODO adding logging warning
-            if sl_siz_x < 1:
-                sl_siz_x = 1
-            if sl_siz_y < 1:
-                sl_siz_y = 1
-            joint_prob_all = p_on * loc_x[:, np.newaxis] * loc_y[np.newaxis, :]
-            joint_prob_max = np.max(joint_prob_all)
-            # find index where p > cutoff * joint_prob_max
-            idx_selected = np.where(joint_prob_all >= joint_prob_max * cutoff)
-            result = []
-            for idx in zip(*idx_selected):
-                bb_x = i - idx[0]
-                bb_y = j + idx[1]
-                prob_sl = joint_prob_all[idx]
-                result.append((bb_x, bb_y, sl_siz_x, sl_siz_y, prob_sl))
-            return result
-
+            raise NotImplementedError
+        #     # TODO # discard if any argmax = last_one (the "catch-all" unit)
+        #     """select those whose marginal probability >= cutoff*p_top,
+        #                 setting cutoff == 1 correspond to picking the argmax"""
+        #     assert 0 < cutoff <= 1
+        #     # outer product between 2 arrays: loc_x, loc_y
+        #     loc_x = softmax(pred_loc_x[:, i, j])
+        #     loc_y = softmax(pred_loc_y[:, i, j])
+        #     # scalar size, round to int
+        #     sl_siz_x = int(np.round(pred_sl_siz_x[i, j]))
+        #     sl_siz_y = int(np.round(pred_sl_siz_y[i, j]))
+        #     # avoid setting size 0 or negative # TODO adding logging warning
+        #     if sl_siz_x < 1:
+        #         sl_siz_x = 1
+        #     if sl_siz_y < 1:
+        #         sl_siz_y = 1
+        #     joint_prob_all = p_on * loc_x[:, np.newaxis] * loc_y[np.newaxis, :]
+        #     joint_prob_max = np.max(joint_prob_all)
+        #     # find index where p > cutoff * joint_prob_max
+        #     idx_selected = np.where(joint_prob_all >= joint_prob_max * cutoff)
+        #     result = []
+        #     for idx in zip(*idx_selected):
+        #         bb_x = i - idx[0]
+        #         bb_y = j + idx[1]
+        #         prob_sl = joint_prob_all[idx]
+        #         result.append((bb_x, bb_y, sl_siz_x, sl_siz_y, prob_sl))
+        #     return result
+        #
         # remove singleton dimensions
         pred_on = np.squeeze(pred_on)
         pred_loc_x = np.squeeze(pred_loc_x)
@@ -741,13 +774,21 @@ class Predictor(object):
                 result = sm_top_perc(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j, perc_cutoff)
             else:
                 result = sm_top_k(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j, topk, perc_cutoff)
-            for bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm in result:
-                # assert 0 <= bb_x <= seq_len
-                # assert 0 <= bb_y <= seq_len
+
+            for bb_x, bb_y, sm_siz_x, sm_siz_y, prob_on, prob_sm in result:
                 # ignore out of bound bbs # TODO print warning?
                 if not (0 <= bb_x <= seq_len and 0 <= bb_y <= seq_len):
                     continue
-                proposed_boxes, pred_box = _update(bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm, proposed_boxes, pred_box, bb_source='sm')
+                proposed_boxes, pred_box = _update(bb_x, bb_y, sm_siz_x, sm_siz_y, prob_on, prob_sm, proposed_boxes, pred_box,
+                                                   bb_source='sm')
+
+            # for bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm in result:
+            #     # assert 0 <= bb_x <= seq_len
+            #     # assert 0 <= bb_y <= seq_len
+            #     # ignore out of bound bbs # TODO print warning?
+            #     if not (0 <= bb_x <= seq_len and 0 <= bb_y <= seq_len):
+            #         continue
+            #     proposed_boxes, pred_box = _update(bb_x, bb_y, sm_siz_x, sm_siz_y, prob_sm, proposed_boxes, pred_box, bb_source='sm')
 
             # save sl box (it's ok if sl box is identical with sm box, since probabilities will be aggregated in the end)
             if perc_cutoff == 0:
@@ -759,13 +800,24 @@ class Predictor(object):
                 result = sl_top_perc(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j, perc_cutoff)
             else:
                 result = sl_top_k(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j, topk, perc_cutoff)
-            for bb_x, bb_y, sl_siz_x, sl_siz_y, prob_sl in result:
+
+            for bb_x, bb_y, sl_siz_x, sl_siz_y, prob_on, prob_sl in result:
                 # assert 0 <= bb_x <= seq_len
                 # assert 0 <= bb_y <= seq_len
                 # ignore out of bound bbs # TODO print warning?
                 if not (0 <= bb_x <= seq_len and 0 <= bb_y <= seq_len):
                     continue
-                proposed_boxes, pred_box = _update(bb_x, bb_y, sl_siz_x, sl_siz_y, prob_sl, proposed_boxes, pred_box, bb_source='sl')
+                proposed_boxes, pred_box = _update(bb_x, bb_y, sl_siz_x, sl_siz_y, prob_on, prob_sl, proposed_boxes, pred_box,
+                                                   bb_source='sl')
+
+
+            # for bb_x, bb_y, sl_siz_x, sl_siz_y, prob_sl in result:
+            #     # assert 0 <= bb_x <= seq_len
+            #     # assert 0 <= bb_y <= seq_len
+            #     # ignore out of bound bbs # TODO print warning?
+            #     if not (0 <= bb_x <= seq_len and 0 <= bb_y <= seq_len):
+            #         continue
+            #     proposed_boxes, pred_box = _update(bb_x, bb_y, sl_siz_x, sl_siz_y, prob_sl, proposed_boxes, pred_box, bb_source='sl')
 
         # apply hard-mask to pred box
         pred_box = pred_box * m
