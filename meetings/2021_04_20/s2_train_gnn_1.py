@@ -134,13 +134,13 @@ class GATEConv(MessagePassing):
 
 
 class Net(torch.nn.Module):
-    def __init__(self, n_hid=10):
+    def __init__(self, num_hids):
         super(Net, self).__init__()
         # FIXME layers are hard-coded here
         # graph conv layers for node message passing
-        self.conv1 = GATEConv(4, n_hid, 1)
-        self.conv2 = GATEConv(n_hid, n_hid, 1)
-        self.conv3 = GATEConv(n_hid, n_hid, 1)
+        self.gcn = [GATEConv(4, num_hids[0], 1)]
+        for num_hid_prev, num_hid in zip(num_hids[:-1], num_hids[1:]):
+            self.gcn.append(GATEConv(num_hid_prev, num_hid, 1))
 
         # activations
         self.act1 = torch.nn.ReLU()
@@ -149,19 +149,20 @@ class Net(torch.nn.Module):
         # node-node NN
         # this is the channel wide (thus 1x1) 2D conv net
         # that effectively applies a weight-tied fully connected NN to each node pair
-        self.node_pair_conv1 = torch.nn.Conv2d((n_hid * 3 + 4) * 2, n_hid, kernel_size=1, stride=1,
+        # FIXME hard-coded n hid
+        self.node_pair_conv1 = torch.nn.Conv2d((np.sum(num_hids) + 4) * 2, 20, kernel_size=1, stride=1,
                                                padding=0)
-        self.node_pair_conv2 = torch.nn.Conv2d(n_hid, 1, kernel_size=1, stride=1,
+        self.node_pair_conv2 = torch.nn.Conv2d(20, 1, kernel_size=1, stride=1,
                                                padding=0)
 
     def forward(self, data):
         x_all = [data.x]
-        x = self.act1(self.conv1(data.x, data.edge_index, data.edge_attr))
-        x_all.append(x)
-        x = self.act1(self.conv2(x, data.edge_index, data.edge_attr))
-        x_all.append(x)
-        x = self.act1(self.conv3(x, data.edge_index, data.edge_attr))
-        x_all.append(x)
+
+        x = data.x
+        for gcn in self.gcn:
+            x = self.act1(gcn(x, data.edge_index, data.edge_attr))
+            x_all.append(x)
+
         x = torch.cat(x_all, axis=-1) # concat node features from all layers, including input
 
         # outer concat: L x L x 2f
@@ -206,7 +207,7 @@ def roc_prc(x, y, m):
     return roc, prc
 
 
-def main(input_data, training_proportion, learning_rate, epochs):
+def main(input_data, training_proportion, learning_rate, num_hids, epochs):
     df = pd.read_pickle(input_data)
 
     # train/valid dataset
@@ -219,7 +220,7 @@ def main(input_data, training_proportion, learning_rate, epochs):
     data_list_va = make_dataset(df_va)
 
     # init model
-    model = Net(n_hid=20)  # FIXME hard-coded
+    model = Net(num_hids)
     model.train()
 
     # optimizer
@@ -268,10 +269,11 @@ if __name__ == "__main__":
     parser.add_argument('--input_data', type=str, help='Path to dataset')
     parser.add_argument('--training_proportion', type=float, default=0.9, help='proportion of training data')
     parser.add_argument('--learning_rate', type=float, default=0.01, help='learinng rate')
+    parser.add_argument('--hid', type=int, nargs='+', default=[20, 20, 20], help='number of hidden units for each layer')
     parser.add_argument('--epochs', type=int, default=10, help='learinng rate')
     args = parser.parse_args()
     assert  0 < args.training_proportion < 1
-    main(args.input_data, args.training_proportion, args.learning_rate, args.epochs)
+    main(args.input_data, args.training_proportion, args.learning_rate, args.hid, args.epochs)
 
 
 
