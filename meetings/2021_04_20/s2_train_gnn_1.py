@@ -1,6 +1,7 @@
 import argparse
 import numpy as np
 import pandas as pd
+import logging
 import torch
 from torch_geometric.data import InMemoryDataset
 from torch_geometric.data import Data, DataLoader
@@ -207,7 +208,17 @@ def roc_prc(x, y, m):
     return roc, prc
 
 
-def main(input_data, training_proportion, learning_rate, num_hids, epochs):
+def main(input_data, training_proportion, learning_rate, num_hids, epochs, log_file):
+    logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    fileHandler = logging.FileHandler(log_file)
+    fileHandler.setFormatter(logFormatter)
+    logger.addHandler(fileHandler)
+    consoleHandler = logging.StreamHandler()
+    consoleHandler.setFormatter(logFormatter)
+    logger.addHandler(consoleHandler)
+
     df = pd.read_pickle(input_data)
 
     # train/valid dataset
@@ -246,7 +257,7 @@ def main(input_data, training_proportion, learning_rate, num_hids, epochs):
             # FIXME we're backprop after each example, should probably accumulate gradient
             loss.backward()
             optimizer.step()
-        print("Epoch {}, training, mean loss {}, mean AUC {}".format(epoch, np.nanmean(loss_all), np.nanmean(auc_all)))
+        logger.info("Epoch {}, training, mean loss {}, mean AUC {}".format(epoch, np.nanmean(loss_all), np.nanmean(auc_all)))
 
         # validation dataset
         loss_all = []
@@ -261,7 +272,7 @@ def main(input_data, training_proportion, learning_rate, num_hids, epochs):
             loss_all.append(loss.item())
             auc, prc = roc_prc(y, pred, m)
             auc_all.append(auc)
-        print("Epoch {}, testing, mean loss {}, mean AUC {}".format(epoch, np.nanmean(loss_all), np.nanmean(auc_all)))
+        logger.info("Epoch {}, testing, mean loss {}, mean AUC {}".format(epoch, np.nanmean(loss_all), np.nanmean(auc_all)))
 
 
 if __name__ == "__main__":
@@ -271,9 +282,10 @@ if __name__ == "__main__":
     parser.add_argument('--learning_rate', type=float, default=0.01, help='learinng rate')
     parser.add_argument('--hid', type=int, nargs='+', default=[20, 20, 20], help='number of hidden units for each layer')
     parser.add_argument('--epochs', type=int, default=10, help='learinng rate')
+    parser.add_argument('--log', type=str, help='output log file')
     args = parser.parse_args()
     assert  0 < args.training_proportion < 1
-    main(args.input_data, args.training_proportion, args.learning_rate, args.hid, args.epochs)
+    main(args.input_data, args.training_proportion, args.learning_rate, args.hid, args.epochs, args.log)
 
 
 
