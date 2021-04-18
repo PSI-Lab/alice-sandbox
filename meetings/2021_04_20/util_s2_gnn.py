@@ -151,7 +151,7 @@ def make_dataset(df, fn_make_target, fn_encode_seq=one_hot_single_base):
 
 
 loss_bce = torch.nn.BCELoss(reduction='none')
-loss_sce = torch.nn.CrossEntropyLoss()
+loss_sce = torch.nn.CrossEntropyLoss(reduction='none')
 
 
 def masked_loss_bce(x, y, m):
@@ -162,6 +162,16 @@ def masked_loss_bce(x, y, m):
     loss_spatial_mean = loss_spatial_sum / n_valid_output
     loss_batch_mean = torch.mean(loss_spatial_mean, dim=0)
     return torch.mean(loss_batch_mean)
+
+
+def masked_loss_sce(x, y, m):
+    # mask out gradient for those nodes where all connections are masked
+    l = loss_sce(x, y)
+    m, _ = torch.max(m, dim=1)  # entries with 0 will be masked  # torch.max returns tuple
+    n_valid_output = torch.sum(m)
+    loss_sum = torch.sum(torch.mul(l, m))
+    loss_mean = loss_sum / n_valid_output
+    return loss_mean
 
 
 def get_logger(log_file):

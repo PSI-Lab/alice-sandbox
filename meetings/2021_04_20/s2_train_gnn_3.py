@@ -25,7 +25,7 @@ from torch.nn import Linear, Parameter, GRUCell
 from torch_geometric.utils import softmax
 from torch_geometric.nn import GATConv, MessagePassing, global_add_pool
 from torch_geometric.nn.inits import glorot, zeros
-from util_s2_gnn import GATEConv, roc_prc, make_dataset, loss_sce, get_logger
+from util_s2_gnn import GATEConv, roc_prc, make_dataset, masked_loss_sce, get_logger
 
 
 def make_target(seq, stem_bb_bps, target_bps):
@@ -157,8 +157,8 @@ def main(input_data, training_proportion, learning_rate, num_hids, epochs, batch
             pred = model(data)
             # this should work (see gradient_check.ipynb)
             # using built-in loss, since the prediction is already masked
-            # TODO quite hacky, also we're not taking care of those nodes without any hydrogen bond candidate connections
-            loss += loss_sce(pred, y.argmax(dim=1))
+            # we're masking out those nodes without any hydrogen bond candidate connections
+            loss += masked_loss_sce(pred, y.argmax(dim=1), m)
             auc, prc = roc_prc(y, pred.detach(), m)
             auc_all.append(auc)
 
@@ -181,7 +181,7 @@ def main(input_data, training_proportion, learning_rate, num_hids, epochs, batch
             m = torch.from_numpy(data.m).float()
             optimizer.zero_grad()
             pred = model(data)
-            loss = loss_sce(pred, y.argmax(dim=1))
+            loss = masked_loss_sce(pred, y.argmax(dim=1), m)
             loss_all.append(loss.item())
             auc, prc = roc_prc(y, pred, m)
             auc_all.append(auc)
