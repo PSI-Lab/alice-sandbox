@@ -151,6 +151,7 @@ def make_dataset(df, fn_make_target, fn_encode_seq=one_hot_single_base):
 
 
 loss_bce = torch.nn.BCELoss(reduction='none')
+loss_sce = torch.nn.CrossEntropyLoss()
 
 
 def masked_loss_bce(x, y, m):
