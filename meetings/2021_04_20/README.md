@@ -84,16 +84,95 @@ Other advantages:
 
 - S2 model will be able to 'fine-tune' some bbs, e.g. make it 1bp smaller (won't be able to extend it)
 
+debug:
+
+
+```
+python s2_train_gnn_1.py --input_data data/debug_training_len20_200_100_s1_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.01 --epochs 1 --batch_size 10 --hid 10 10 --log tmp.log
+```
+
+
+real dataset:
+
 
 ```
 python s2_train_gnn_1.py --input_data data/human_transcriptome_segment_high_mfe_freq_training_len20_200_5000_pred_stem_bps.pkl.gz \
---training_proportion 0.95 --learning_rate 0.01 --epochs 1
+--training_proportion 0.95 --learning_rate 0.01 --epochs 1 --hid 10 10 --log tmp.log
 ```
+
+```
+python s2_train_gnn_1.py --input_data data/human_transcriptome_segment_high_mfe_freq_training_len20_200_5000_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.001 --epochs 100 --hid 20 20 20 20 20 20 20 20 20 20 --log result/s2_gnn_run_1.log
+```
+
+
+```
+python s2_train_gnn_1.py --input_data data/human_transcriptome_segment_high_mfe_freq_training_len20_200_5000_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.0005 --epochs 100 --hid 50 50 50 50 50 50 50 50 50 50 --log result/s2_gnn_run_2.log
+```
+
+```
+python s2_train_gnn_1.py --input_data data/human_transcriptome_segment_high_mfe_freq_training_len20_200_5000_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.0005 --epochs 100 --hid 200 200 200 200 --batch_size 20 --log result/s2_gnn_run_3.log
+```
+
+
+### k-mer embedding
+
+```
+python s2_train_gnn_2.py --input_data data/debug_training_len20_200_100_s1_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.01 --epochs 1 --batch_size 10 --hid 10 10 --log tmp.log --kmer 3 --embed_dim 20
+```
+
+
+```
+python s2_train_gnn_2.py --input_data data/human_transcriptome_segment_high_mfe_freq_training_len20_200_5000_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.001 --epochs 100 --batch_size 10 --hid 50 50 50 50 50 \
+ --log result/s2_gnn_run_4.log --kmer 5 --embed_dim 100
+```
+
+overfit?
+
+```
+2021-04-18 01:39:45,737 [MainThread  ] [INFO ]  Epoch 99, training, mean loss 0.017095582736049882, mean AUC 0.7990723658650051
+2021-04-18 01:39:48,782 [MainThread  ] [INFO ]  Epoch 99, testing, mean loss 0.6578992579819104, mean AUC 0.5951351727922218
+```
+
+#### try smaller NN
+
+```
+python s2_train_gnn_2.py --input_data data/human_transcriptome_segment_high_mfe_freq_training_len20_200_5000_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.001 --epochs 100 --batch_size 10 --hid 20 20 20 20 20 \
+ --log result/s2_gnn_run_5.log --kmer 3 --embed_dim 50
+```
+
+better?
+
+```
+2021-04-18 09:59:59,187 [MainThread  ] [INFO ]  Epoch 99, training, mean loss 0.02624728402795171, mean AUC 0.7104701549247721
+2021-04-18 10:00:00,974 [MainThread  ] [INFO ]  Epoch 99, testing, mean loss 0.27273789339558374, mean AUC 0.6843603798848465
+```
+
+
+### TODOs
 
 
 not working?
 
+- make it easier problem: (1) shorter seq, (2) fewer proposals?
 
+- read paper
+
+- k-mer embedding
+
+- edge feature 0, 1 -> [0, 1] & [1, 0]
+
+- per-node softmax (on the matrix, using mask?)
+
+- debug loss accumulation
+
+- GPU
 
 - (done) sub-class graph conv layer, add in edge features, added GATEConv
 
@@ -115,6 +194,11 @@ not working?
 
 
 - node level prediction: whether each base is paired
+
+
+### Gradient check for loss accumulation
+
+See [gradient_check.ipynb](gradient_check.ipynb)
 
 
 ## S2 GNN - toy task
