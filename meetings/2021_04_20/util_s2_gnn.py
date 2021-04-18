@@ -75,7 +75,18 @@ def roc_prc(x, y, m):
     return roc, prc
 
 
-def make_dataset(df, fn_make_target):
+def one_hot_single_base(seq):
+    seq = seq.upper().replace('A', '1').replace('C', '2').replace('G', '3').replace('T', '4').replace('U',
+                                                                                                      '4').replace(
+        'N', '0')
+    tmp = np.asarray(list(map(int, list(seq))), dtype=np.int16)
+    # one-hot
+    x = np.zeros((len(seq), 4))
+    x[np.arange(len(seq)), tmp - 1] = 1
+    return torch.from_numpy(x).float()
+
+
+def make_dataset(df, fn_make_target, fn_encode_seq=one_hot_single_base):
     data_list = []
 
     for _, row in df.iterrows():
@@ -83,16 +94,17 @@ def make_dataset(df, fn_make_target):
         stem_bb_bps = row['stem_bb_bps']
         target_bps = row['target_bps']
 
-        # use integer encoding for now
-        seq = seq.upper().replace('A', '1').replace('C', '2').replace('G', '3').replace('T', '4').replace('U',
-                                                                                                          '4').replace(
-            'N', '0')
-        tmp = np.asarray(list(map(int, list(seq))), dtype=np.int16)
-        # one-hot
-        # TODO instead of 1-hot encode each base, we can 1-hot encode the local k-mer
-        node_features = np.zeros((len(seq), 4))
-        node_features[np.arange(len(seq)), tmp - 1] = 1
-        node_features = torch.from_numpy(node_features).float()
+        # # use integer encoding for now
+        # seq = seq.upper().replace('A', '1').replace('C', '2').replace('G', '3').replace('T', '4').replace('U',
+        #                                                                                                   '4').replace(
+        #     'N', '0')
+        # tmp = np.asarray(list(map(int, list(seq))), dtype=np.int16)
+        # # one-hot
+        # # TODO instead of 1-hot encode each base, we can 1-hot encode the local k-mer
+        # node_features = np.zeros((len(seq), 4))
+        # node_features[np.arange(len(seq)), tmp - 1] = 1
+        node_features = fn_encode_seq(seq)
+        # node_features =
 
         # build edges
         edge_from = []
