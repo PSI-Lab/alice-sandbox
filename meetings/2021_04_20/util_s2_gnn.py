@@ -86,7 +86,7 @@ def one_hot_single_base(seq):
     return torch.from_numpy(x).float()
 
 
-def make_dataset(df, fn_make_target, fn_encode_seq=one_hot_single_base):
+def make_dataset(df, fn_make_target, fn_encode_seq=one_hot_single_base, edge_feature='binary'):
     data_list = []
 
     for _, row in df.iterrows():
@@ -129,8 +129,17 @@ def make_dataset(df, fn_make_target, fn_encode_seq=one_hot_single_base):
         n_edge_2 = len(edge_from) - n_edge_1  # number of 'hydrogen bond' edges
         edge_index = torch.tensor([edge_from, edge_to], dtype=torch.long)
 
-        # edge feature, 0 for "backbone", 1 for "hydrogen bond"
-        edge_attr = torch.LongTensor([0] * n_edge_1 + [1] * n_edge_2).unsqueeze(1)
+        # edge feature
+        if edge_feature == 'binary':
+            # 0 for "backbone", 1 for "hydrogen bond"
+            edge_attr = torch.LongTensor([0] * n_edge_1 + [1] * n_edge_2).unsqueeze(1)
+        elif edge_feature == 'one_hot':
+            # [1, 0] for "backbone", [0, 1] for "hydrogen bond"
+            edge_attr = torch.cat([torch.LongTensor([1] * n_edge_1 + [0] * n_edge_2).unsqueeze(1),
+                                   torch.LongTensor([0] * n_edge_1 + [1] * n_edge_2).unsqueeze(1)],
+                                  dim=1)
+        else:
+            raise NotImplementedError
 
         y, m = fn_make_target(seq, stem_bb_bps, target_bps)
         # # edge-level target, encoded as 2D binary matrix, with masking
