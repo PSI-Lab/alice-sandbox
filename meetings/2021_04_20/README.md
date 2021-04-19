@@ -73,6 +73,16 @@ TODO
 ### Neural Relational Inference for Interacting Systems
 
 
+## S2 dataset statistics
+
+![plot/s2_dataset_1.png](plot/s2_dataset_1.png)
+
+![plot/s2_dataset_2.png](plot/s2_dataset_2.png)
+
+![plot/s2_dataset_3.png](plot/s2_dataset_3.png)
+
+![plot/s2_dataset_4.png](plot/s2_dataset_4.png)
+
 ## S2 GNN idea
 
 From last week:
@@ -154,6 +164,149 @@ better?
 2021-04-18 10:00:00,974 [MainThread  ] [INFO ]  Epoch 99, testing, mean loss 0.27273789339558374, mean AUC 0.6843603798848465
 ```
 
+#### Increase capacity a bit
+
+
+```
+python s2_train_gnn_2.py --input_data data/human_transcriptome_segment_high_mfe_freq_training_len20_200_5000_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.001 --epochs 100 --batch_size 10 --hid 50 50 50 50 50 \
+ --log result/s2_gnn_run_6.log --kmer 3 --embed_dim 50
+```
+
+Overfitting? also note the gap between the two losses
+
+```
+2021-04-18 13:52:32,810 [MainThread  ] [INFO ]  Epoch 99, training, mean loss 0.026406431665434642, mean AUC 0.7022502249526361
+2021-04-18 13:52:35,316 [MainThread  ] [INFO ]  Epoch 99, testing, mean loss 0.2874277385586467, mean AUC 0.6629097471300608
+```
+
+#### Tuning capacity
+
+
+```
+python s2_train_gnn_2.py --input_data data/human_transcriptome_segment_high_mfe_freq_training_len20_200_5000_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.001 --epochs 100 --batch_size 10 --hid 10 10 10 10 10 \
+ --log result/s2_gnn_run_8.log --kmer 3 --embed_dim 10
+```
+
+
+```
+2021-04-18 16:06:03,559 [MainThread  ] [INFO ]  Epoch 99, training, mean loss 0.026875300458549745, mean AUC 0.6969837448916736
+2021-04-18 16:06:05,194 [MainThread  ] [INFO ]  Epoch 99, testing, mean loss 0.2894021285562542, mean AUC 0.6788339036915995
+```
+
+#### More layers
+
+```
+python s2_train_gnn_2.py --input_data data/human_transcriptome_segment_high_mfe_freq_training_len20_200_5000_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.001 --epochs 100 --batch_size 10 --hid 10 10 10 10 10 10 10 10 \
+ --log result/s2_gnn_run_9.log --kmer 3 --embed_dim 10
+```
+
+(log file got overwritten...)
+
+seems to help a little bit?
+
+```
+2021-04-19 00:40:53,499 [MainThread  ] [INFO ]  Epoch 99, training, mean loss 0.027050670174628314, mean AUC 0.6915427046019291
+2021-04-19 00:40:55,777 [MainThread  ] [INFO ]  Epoch 99, testing, mean loss 0.28041177888156316, mean AUC 0.6806621243559404
+```
+
+#### More layers + more epochs
+
+```
+python s2_train_gnn_2.py --input_data data/human_transcriptome_segment_high_mfe_freq_training_len20_200_5000_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.001 --epochs 200 --batch_size 10 --hid 10 10 10 10 10 10 10 10 10 10 10 10 \
+ --log result/s2_gnn_run_9.log --kmer 3 --embed_dim 10
+```
+
+not better:
+
+```
+2021-04-19 14:48:39,467 [MainThread  ] [INFO ]  Epoch 199, training, mean loss 0.02681501193864811, mean AUC 0.6918375018130758
+2021-04-19 14:48:41,861 [MainThread  ] [INFO ]  Epoch 199, testing, mean loss 0.3017125247077569, mean AUC 0.6655066365296489
+```
+
+
+
+### Per-node softmax
+
+- instead of predicting the binary label for each edge,
+predict the picked edge for each node
+
+- output mask should be multiplied before taking softmax
+
+- implemented on top of previous step (i.e. with kmer embedding)
+
+- Caveat: we're not taking care of the case where a node has no connection
+(target will be `[0, 0, ..., 0]`, will the gradient work in this case?).
+Proper solution would be to predict another per-node binary label,
+and mask out softmax gradient for those nodes where ground truth is no connection.
+
+debug:
+
+```
+python s2_train_gnn_3.py --input_data data/debug_training_len20_200_100_s1_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.01 --epochs 1 --batch_size 10 --hid 10 10 --log tmp.log --kmer 3 --embed_dim 20
+```
+
+real data:
+
+```
+python s2_train_gnn_3.py --input_data data/human_transcriptome_segment_high_mfe_freq_training_len20_200_5000_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.001 --epochs 100 --batch_size 10 --hid 20 20 20 20 20 \
+ --log result/s2_gnn_run_7.log --kmer 3 --embed_dim 50
+```
+
+why is validation loss so high?
+
+```
+2021-04-18 13:22:25,392 [MainThread  ] [INFO ]  Epoch 99, training, mean loss 0.41078687236153866, mean AUC 0.6431484792832344
+2021-04-18 13:22:27,617 [MainThread  ] [INFO ]  Epoch 99, testing, mean loss 4.144261710470615, mean AUC 0.6272982001279099
+```
+
+updated loss with mask (node without any candidate connections are masked):
+
+```
+python s2_train_gnn_3.py --input_data data/human_transcriptome_segment_high_mfe_freq_training_len20_200_5000_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.001 --epochs 100 --batch_size 10 --hid 20 20 20 20 20 \
+ --log result/s2_gnn_run_7_2.log --kmer 3 --embed_dim 50
+```
+
+similar result...
+
+```
+2021-04-18 16:55:30,868 [MainThread  ] [INFO ]  Epoch 99, training, mean loss 0.4073270097992123, mean AUC 0.6420452665115585
+2021-04-18 16:55:32,563 [MainThread  ] [INFO ]  Epoch 99, testing, mean loss 4.023479684105133, mean AUC 0.6286711335698179
+```
+
+### one-hot encoding of edge feature
+
+- instead of binary (easier for NN to pick up features?)
+
+- implemented on top of kmer embedding (s2_train_gnn_2.py)
+
+debug:
+
+```
+python s2_train_gnn_4.py --input_data data/debug_training_len20_200_100_s1_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.01 --epochs 1 --batch_size 10 --hid 10 10 --log tmp.log --kmer 3 --embed_dim 20
+```
+
+real data:
+
+```
+python s2_train_gnn_4.py --input_data data/human_transcriptome_segment_high_mfe_freq_training_len20_200_5000_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.001 --epochs 100 --batch_size 10 --hid 20 20 20 20 20 \
+ --log result/s2_gnn_run_10.log --kmer 3 --embed_dim 50
+```
+
+
+```
+2021-04-19 00:42:52,737 [MainThread  ] [INFO ]  Epoch 99, training, mean loss 0.026146557852184987, mean AUC 0.7121764932797567
+2021-04-19 00:42:54,509 [MainThread  ] [INFO ]  Epoch 99, testing, mean loss 0.2853089367460938, mean AUC 0.6718298622619296
+```
+
 
 ### TODOs
 
@@ -164,13 +317,27 @@ not working?
 
 - read paper
 
-- k-mer embedding
+- jamboard
 
-- edge feature 0, 1 -> [0, 1] & [1, 0]
+- (done, running) k-mer embedding
 
-- per-node softmax (on the matrix, using mask?)
+- update GATEconv -> simpler, just use edge feature
 
-- debug loss accumulation
+- super node?
+
+- backbone edge directed?
+
+- (done, running) edge feature 0, 1 -> [0, 1] & [1, 0]
+
+- (done -running) per-node softmax (on the matrix, using mask?)
+
+- (done - working) debug loss accumulation
+
+- debug dataset, inspect a few examples, make sure it make sense
+
+- plot, distribution of: num_edges per node, v,s, len?
+
+- incoportate s1 prediction as edge features
 
 - GPU
 
@@ -179,6 +346,8 @@ not working?
 - (done, seems to help with performance but not sure if it's overfitting) concat GCN features across multiple layers
 
 - (done, checked that above is overfitting on small data) add validation set
+
+- modify GATEconv?
 
 - simple inner product
 
