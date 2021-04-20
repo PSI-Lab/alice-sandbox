@@ -83,6 +83,8 @@ TODO
 
 ![plot/s2_dataset_4.png](plot/s2_dataset_4.png)
 
+Produced by [dataset_statistics.ipynb](dataset_statistics.ipynb)
+
 ## S2 GNN idea
 
 From last week:
@@ -308,6 +310,167 @@ python s2_train_gnn_4.py --input_data data/human_transcriptome_segment_high_mfe_
 ```
 
 
+### Shorter sequences
+
+- shorter sequences have fewer number of connections, does it make the problem easier?
+
+- implemented on top of kmer embedding (s2_train_gnn_2.py)
+
+debug
+
+```
+python s2_train_gnn_5.py --input_data data/debug_training_len20_200_100_s1_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.01 --epochs 1 --batch_size 10 --hid 10 10 \
+--log tmp.log --kmer 3 --embed_dim 20 --max_len 50
+```
+
+real dataset:
+
+```
+python s2_train_gnn_5.py --input_data data/human_transcriptome_segment_high_mfe_freq_training_len20_200_5000_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.01 --epochs 100 --batch_size 10 --hid 20 20 20 20 \
+--log result/s2_gnn_run_11.log --kmer 3 --embed_dim 20 --max_len 50
+```
+
+overfit!
+
+reduce capacity:
+
+```
+python s2_train_gnn_5.py --input_data data/human_transcriptome_segment_high_mfe_freq_training_len20_200_5000_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.001 --epochs 100 --batch_size 10 --hid 10 10 10 10 \
+--log result/s2_gnn_run_11.log --kmer 3 --embed_dim 10 --max_len 50
+```
+
+nothing better than use all the lengths:
+
+```
+2021-04-19 18:38:13,942 [MainThread  ] [INFO ]  Epoch 99, training, mean loss 0.03799169484306784, mean AUC 0.7273895164274633
+2021-04-19 18:38:14,188 [MainThread  ] [INFO ]  Epoch 99, testing, mean loss 0.41748447329909716, mean AUC 0.6775187989761299
+```
+
+
+So using shorter sequences does not make the problem easier? Are we missing some important input features?
+
+
+### Fewer proposals
+
+- reducing the number of bb proposals also result in fewer number of connections, does it make the problem easier?
+
+- implement in a hacky way:
+split proposed bp into target bp (proposal is always a super set, by construction),
+and non-target. Sample equal number of non-target. (i.e. make the problem balanced, thus easier?)
+
+- implemented on top of kmer embedding (s2_train_gnn_2.py)
+
+debug
+
+```
+python s2_train_gnn_6.py --input_data data/debug_training_len20_200_100_s1_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.01 --epochs 1 --batch_size 10 --hid 10 10 \
+--log tmp.log --kmer 3 --embed_dim 20
+```
+
+real data:
+
+```
+python s2_train_gnn_6.py --input_data data/human_transcriptome_segment_high_mfe_freq_training_len20_200_5000_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.01 --epochs 100 --batch_size 10 --hid 20 20 20 20 \
+--log result/s2_gnn_run_12.log --kmer 3 --embed_dim 20
+```
+
+(killed by accident)
+
+```
+2021-04-19 21:32:52,558 [MainThread  ] [INFO ]  Epoch 93, training, mean loss 0.03652355214195139, mean AUC 0.9153664666449748
+2021-04-19 21:32:53,709 [MainThread  ] [INFO ]  Epoch 93, testing, mean loss 0.41485167994013045, mean AUC 0.8932613979436786
+```
+
+ratio `2:1`:
+
+```
+python s2_train_gnn_6.py --input_data data/human_transcriptome_segment_high_mfe_freq_training_len20_200_5000_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.01 --epochs 100 --batch_size 10 --hid 20 20 20 20 \
+--log result/s2_gnn_run_13.log --kmer 3 --embed_dim 20 --class_ratio 2
+```
+
+```
+2021-04-20 01:44:54,207 [MainThread  ] [INFO ]  Epoch 99, training, mean loss 0.045109673346993485, mean AUC 0.842180624548866
+2021-04-20 01:44:58,747 [MainThread  ] [INFO ]  Epoch 99, testing, mean loss 0.4658787787460082, mean AUC 0.8280812596667222
+```
+
+ratio `3:1`:
+
+```
+python s2_train_gnn_6.py --input_data data/human_transcriptome_segment_high_mfe_freq_training_len20_200_5000_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.01 --epochs 100 --batch_size 10 --hid 20 20 20 20 \
+--log result/s2_gnn_run_14.log --kmer 3 --embed_dim 20 --class_ratio 3
+```
+
+```
+2021-04-20 01:58:50,632 [MainThread  ] [INFO ]  Epoch 99, training, mean loss 0.04513125981275852, mean AUC 0.7944396921968713
+2021-04-20 01:58:52,106 [MainThread  ] [INFO ]  Epoch 99, testing, mean loss 0.46132132535873177, mean AUC 0.7841428772981031
+```
+
+ratio `4:1`:
+
+```
+python s2_train_gnn_6.py --input_data data/human_transcriptome_segment_high_mfe_freq_training_len20_200_5000_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.01 --epochs 100 --batch_size 10 --hid 20 20 20 20 \
+--log result/s2_gnn_run_15.log --kmer 3 --embed_dim 20 --class_ratio 4
+```
+
+```
+2021-04-20 02:24:24,733 [MainThread  ] [INFO ]  Epoch 99, training, mean loss 0.0424776128939623, mean AUC 0.7678636968284884
+2021-04-20 02:24:25,946 [MainThread  ] [INFO ]  Epoch 99, testing, mean loss 0.44685361039039145, mean AUC 0.7398440204208613
+```
+
+
+ratio `5:1`:
+
+```
+python s2_train_gnn_6.py --input_data data/human_transcriptome_segment_high_mfe_freq_training_len20_200_5000_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.01 --epochs 100 --batch_size 10 --hid 20 20 20 20 \
+--log result/s2_gnn_run_16.log --kmer 3 --embed_dim 20 --class_ratio 5
+```
+
+```
+2021-04-20 03:52:09,555 [MainThread  ] [INFO ]  Epoch 99, training, mean loss 0.03980019794413324, mean AUC 0.7503946940139058
+2021-04-20 03:52:10,719 [MainThread  ] [INFO ]  Epoch 99, testing, mean loss 0.41689481948341073, mean AUC 0.7214459235632925
+```
+
+
+ratio `6:1`:
+
+```
+python s2_train_gnn_6.py --input_data data/human_transcriptome_segment_high_mfe_freq_training_len20_200_5000_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.01 --epochs 100 --batch_size 10 --hid 20 20 20 20 \
+--log result/s2_gnn_run_17.log --kmer 3 --embed_dim 20 --class_ratio 6
+```
+
+```
+2021-04-20 05:20:18,294 [MainThread  ] [INFO ]  Epoch 99, training, mean loss 0.03737643659114837, mean AUC 0.7408531803927315
+2021-04-20 05:20:19,534 [MainThread  ] [INFO ]  Epoch 99, testing, mean loss 0.37856194385270164, mean AUC 0.7294182883954133
+```
+
+
+ratio `7:1`:
+
+```
+python s2_train_gnn_6.py --input_data data/human_transcriptome_segment_high_mfe_freq_training_len20_200_5000_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.01 --epochs 100 --batch_size 10 --hid 20 20 20 20 \
+--log result/s2_gnn_run_18.log --kmer 3 --embed_dim 20 --class_ratio 7
+```
+
+```
+2021-04-20 06:49:09,104 [MainThread  ] [INFO ]  Epoch 99, training, mean loss 0.03537181767486256, mean AUC 0.7317497717552663
+2021-04-20 06:49:10,351 [MainThread  ] [INFO ]  Epoch 99, testing, mean loss 0.3578015141313968, mean AUC 0.714786327686034
+```
+
+
+
+
+
 ### TODOs
 
 
@@ -318,6 +481,8 @@ not working?
 - read paper
 
 - jamboard
+
+- re-try softmax: update eval metric to accuracy (not global auc)
 
 - (done, running) k-mer embedding
 
