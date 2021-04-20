@@ -28,7 +28,7 @@ from torch_geometric.nn.inits import glorot, zeros
 from util_s2_gnn import GATEConv, roc_prc, masked_loss_bce, get_logger, one_hot_single_base
 
 
-def make_dataset(df, fn_make_target, fn_encode_seq=one_hot_single_base, edge_feature='binary'):
+def make_dataset(df, fn_make_target, fn_encode_seq=one_hot_single_base, edge_feature='binary', class_ratio=1):
     data_list = []
 
     for _, row in df.iterrows():
@@ -39,7 +39,8 @@ def make_dataset(df, fn_make_target, fn_encode_seq=one_hot_single_base, edge_fea
         # for the sake of this expeirment, sample equal number of non-target edges as the target
         stem_bb_bps_non_target = [x for x in stem_bb_bps if x not in target_bps]
         random.shuffle(stem_bb_bps_non_target)
-        stem_bb_bps = target_bps + stem_bb_bps_non_target[:len(target_bps)]
+        n_sample = max(len(stem_bb_bps_non_target), len(target_bps) * class_ratio)
+        stem_bb_bps = target_bps + stem_bb_bps_non_target[:n_sample]
 
         node_features = fn_encode_seq(seq)
 
@@ -170,7 +171,7 @@ class Net(torch.nn.Module):
         return x.squeeze()  # this is L x L
 
 
-def main(input_data, training_proportion, learning_rate, num_hids, epochs, batch_size, log_file, kmer, embed_dim):
+def main(input_data, training_proportion, learning_rate, num_hids, epochs, batch_size, log_file, kmer, embed_dim, class_ratio):
     logger = get_logger(log_file)
 
     df = pd.read_pickle(input_data)
@@ -181,8 +182,10 @@ def main(input_data, training_proportion, learning_rate, num_hids, epochs, batch
     assert n_tr < len(df)
     df_tr = df[:n_tr]
     df_va = df[n_tr:]
-    data_list_tr = make_dataset(df_tr, make_target, lambda x: kmer_int(x, k=kmer))
-    data_list_va = make_dataset(df_va, make_target, lambda x: kmer_int(x, k=kmer))
+    data_list_tr = make_dataset(df_tr, make_target, lambda x: kmer_int(x, k=kmer),
+                                class_ratio=class_ratio)
+    data_list_va = make_dataset(df_va, make_target, lambda x: kmer_int(x, k=kmer),
+                                class_ratio=class_ratio)
 
     # init model
     model = Net(num_hids, k=kmer, embed_dim=embed_dim)
@@ -251,11 +254,12 @@ if __name__ == "__main__":
     parser.add_argument('--log', type=str, help='output log file')
     parser.add_argument('--kmer', type=int, default=3, help='kmer')
     parser.add_argument('--embed_dim', type=int, default=20, help='embedding dim for kmer')
+    parser.add_argument('--class_ratio', type=int, default=1, help='class ratio: n_neg/n_pos')
 
     args = parser.parse_args()
     assert  0 < args.training_proportion < 1
     main(args.input_data, args.training_proportion, args.learning_rate, args.hid,
-         args.epochs, args.batch_size, args.log, args.kmer, args.embed_dim)
+         args.epochs, args.batch_size, args.log, args.kmer, args.embed_dim, args.class_ratio)
 
 
 
