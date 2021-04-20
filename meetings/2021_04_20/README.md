@@ -363,6 +363,36 @@ and non-target. Sample equal number of non-target. (i.e. make the problem balanc
 
 - implemented on top of kmer embedding (s2_train_gnn_2.py)
 
+Result summary:
+
+| class ratio | AUC training | AUC validation |
+|-------------|--------------|----------------|
+| 1:1         | 0.92         | 0.89           |
+| 2:1         | 0.84         | 0.83           |
+| 3:1         | 0.79         | 0.78           |
+| 4:1         | 0.77         | 0.74           |
+| 5:1         | 0.75         | 0.72           |
+| 6:1         | 0.74         | 0.73           |
+| 7:1         | 0.73         | 0.71           |
+
+
+- thoughts: it seems that the higher the class ratio (i.e. more negative-class edges),
+the harder the problem. This result does not seem too surprising,
+but makes me think that could the difficulty come from the fact that
+all (hydrogen bond candidate) edges are being treated equally in message passing?
+
+- Two solutions to the above problem:
+(1) use S1 prediction as edge features, this is not ideal since we can't fine-tune S2 model is S2 sensitivity is not 100%.
+(2) propagate edge embedding,
+i.e. update edge features as well. By doing this,
+the NN can learn to treat edges differently when updating node embeddings
+(which in turn affect the node embeddings). We need to look into how to
+implement this in pytorch-geometric.
+
+
+
+log:
+
 debug
 
 ```
