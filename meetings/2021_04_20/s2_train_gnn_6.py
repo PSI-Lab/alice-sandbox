@@ -39,7 +39,7 @@ def make_dataset(df, fn_make_target, fn_encode_seq=one_hot_single_base, edge_fea
         # for the sake of this expeirment, sample equal number of non-target edges as the target
         stem_bb_bps_non_target = [x for x in stem_bb_bps if x not in target_bps]
         random.shuffle(stem_bb_bps_non_target)
-        n_sample = max(len(stem_bb_bps_non_target), len(target_bps) * class_ratio)
+        n_sample = min(len(stem_bb_bps_non_target), len(target_bps) * class_ratio)
         stem_bb_bps = target_bps + stem_bb_bps_non_target[:n_sample]
 
         node_features = fn_encode_seq(seq)
