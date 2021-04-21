@@ -75,14 +75,36 @@ python s2_train_gnn_3.py --input_data ../2021_04_20/data/debug_training_len20_20
 ```
 
 
-TODO update metric
+real data:
+
+```
+python s2_train_gnn_3.py --input_data ../2021_04_20/data/human_transcriptome_segment_high_mfe_freq_training_len20_200_5000_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.001 --epochs 100 --batch_size 10 --hid 20 20 20 20 20 \
+ --log result/s2_gnn_run_3_1.log --kmer 3 --embed_dim 50
+```
+
+Reporting accuracy:
 
 
+```
+2021-04-21 18:56:32,590 [MainThread  ] [INFO ]  Epoch 99, training, mean loss 0.4069409890287727, mean accuracy 0.3617328405380249
+2021-04-21 18:56:34,138 [MainThread  ] [INFO ]  Epoch 99, testing, mean loss 4.129653316636325, mean accuracy 0.36053499579429626
+```
+
+increase capacity (also fixed loss scale):
+
+```
+python s2_train_gnn_3.py --input_data ../2021_04_20/data/human_transcriptome_segment_high_mfe_freq_training_len20_200_5000_pred_stem_bps.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.001 --epochs 100 --batch_size 10 --hid 50 50 50 50 50 \
+ --log result/s2_gnn_run_3_2.log --kmer 3 --embed_dim 50
+```
 
 ### TODOs
 
 
 not working?
+
+- fix 10x loss
 
 - modified GATEconv to make it simple (just node + edge feature)
 
@@ -100,6 +122,7 @@ not working?
 
 - backbone edge directed?
 
+- try using S1 pred. see if it improves performance? (although we wouldn't want to use it in actual training)
 
 - debug dataset, inspect a few examples, make sure it make sense
 

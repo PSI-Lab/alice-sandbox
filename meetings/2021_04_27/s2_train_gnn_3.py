@@ -170,7 +170,7 @@ def main(input_data, training_proportion, learning_rate, num_hids, epochs, batch
                 loss.backward()
                 optimizer.step()
                 optimizer.zero_grad()
-                loss_all.append(loss.item() / batch_size)
+                loss_all.append(loss.item())
                 loss = 0
 
         logger.info("Epoch {}, training, mean loss {}, mean accuracy {}".format(epoch, np.nanmean(loss_all), np.nanmean(acc_all)))
