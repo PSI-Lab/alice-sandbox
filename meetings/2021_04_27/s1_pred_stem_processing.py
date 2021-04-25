@@ -44,6 +44,9 @@ def pred_threshold_on_n_proposal(seq, predictor, threshold):
 def check_stem_sensitivity_exact(df_target, df_stem):
     n_found = 0
 
+    if len(df_stem) == 0:
+        return n_found
+
     df_target = df_target[df_target['bb_type'] == 'stem']
 
     for _, target_bb in df_target.iterrows():
@@ -74,6 +77,9 @@ def bb_boundary(bb_x, bb_y, siz_x, siz_y):
 
 def check_stem_sensitivity_within(df_target, df_stem):
     n_found = 0
+
+    if len(df_stem) == 0:
+        return n_found
 
     df_target = df_target[df_target['bb_type'] == 'stem']
 
