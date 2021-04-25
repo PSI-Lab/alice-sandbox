@@ -1,3 +1,4 @@
+from collections import defaultdict
 import argparse
 import pandas as pd
 from utils.rna_ss_utils import one_idx2arr, sort_pairs, LocalStructureParser, make_target_pixel_bb
@@ -192,16 +193,44 @@ def main(in_file, out_file, model_path, threshold_on=-1, threshold_n_proposal=-1
 
         assert len(df_target[df_target['bb_type'] == 'stem']) == check_stem_sensitivity_within(df_target, df_stem)
 
-        # extract base pair indices
-        # pred
-        stem_bb_bps = []
-        # TODO add features (add ipput arg - only for one inference method)
-        # TODO use dict
-        # TODO summarize prob_on_sm         prob_other_sm             prob_on_sl          prob_other_sl
-        for _, r in df_stem.iterrows():
-            bps = stem_bb_to_bp(r['bb_x'], r['bb_y'], r['siz_x'], r['siz_y'])
-            stem_bb_bps.extend(bps)
-        stem_bb_bps = sorted(list(set(stem_bb_bps)))  # remove duplicates (some pred bb might be within other pred bb)
+        if compute_feature:
+            # extract base pair indices
+            # pred
+            # stem_bb_bps = []
+            stem_bb_bps_prob = defaultdict(lambda: ([], [], [], []))  # 4 lists of prob
+            # TODO add features (add ipput arg - only for one inference method)
+            # TODO use dict
+            # TODO summarize prob_on_sm         prob_other_sm             prob_on_sl          prob_other_sl
+            for _, r in df_stem.iterrows():
+                bps = stem_bb_to_bp(r['bb_x'], r['bb_y'], r['siz_x'], r['siz_y'])
+                # stem_bb_bps.extend(bps)
+                for bp in bps:
+                    stem_bb_bps_prob[bp][0].extend(r['prob_on_sm'])
+                    stem_bb_bps_prob[bp][1].extend(r['prob_other_sm'])
+                    stem_bb_bps_prob[bp][2].extend(r['prob_on_sl'])
+                    stem_bb_bps_prob[bp][3].extend(r['prob_other_sl'])
+            # stem_bb_bps = sorted(list(set(stem_bb_bps)))  # remove duplicates (some pred bb might be within other pred bb)
+            # bps
+            stem_bb_bps = list(stem_bb_bps_prob.keys())
+            # compute features
+            stem_bb_bps_features = {}
+            for bp in stem_bb_bps_prob:
+                p1, p2, p3, p4 = stem_bb_bps_prob[bp]
+                n1 = len(p1)
+                n2 = len(p2)
+                n3 = len(p3)
+                n4 = len(p4)
+                p1_med = np.nanmedian(p1) if len(p1) > 0 else 0  # nanmedian still returns NaN if input list is empty
+                p2_med = np.nanmedian(p2) if len(p2) > 0 else 0
+                p3_med = np.nanmedian(p3) if len(p3) > 0 else 0
+                p4_med = np.nanmedian(p4) if len(p4) > 0 else 0
+                stem_bb_bps_features[bp] = (n1, n2, n3, n4, p1_med, p2_med, p3_med, p4_med)
+        else:
+            stem_bb_bps = []
+            for _, r in df_stem.iterrows():
+                bps = stem_bb_to_bp(r['bb_x'], r['bb_y'], r['siz_x'], r['siz_y'])
+                stem_bb_bps.extend(bps)
+            stem_bb_bps = sorted(list(set(stem_bb_bps)))
         # target
         target_bps = []
         for _, r in df_target[df_target['bb_type'] == 'stem'].iterrows():
@@ -215,6 +244,8 @@ def main(in_file, out_file, model_path, threshold_on=-1, threshold_n_proposal=-1
         row_new = row.copy()
         row_new['stem_bb_bps'] = stem_bb_bps
         row_new['target_bps'] = target_bps
+        if compute_feature:
+            row_new['stem_bb_bps_features'] = stem_bb_bps_features
         df_bps.append(row_new)
 
     df_bps = pd.DataFrame(df_bps)
