@@ -8,9 +8,24 @@ import torch
 from torch import Tensor
 import torch.nn.functional as F
 from torch.nn import Linear, Parameter, GRUCell
-from torch_geometric.utils import softmax
+from torch_geometric.utils import softmax, add_self_loops
 from torch_geometric.nn import GATConv, MessagePassing, global_add_pool
 from torch_geometric.nn.inits import glorot, zeros
+
+
+class SimpleNodeEdgeConv(MessagePassing):
+    # simplify GATEConv
+    def __init__(self, in_channels: int, out_channels: int, edge_dim: int):
+        super(SimpleNodeEdgeConv, self).__init__(aggr='add')
+        self.lin = Linear(in_channels + edge_dim, out_channels)
+
+    def forward(self, x: Tensor, edge_index: Adj, edge_attr: Tensor) -> Tensor:
+        # FIXME how to add self loop, what about edge feature?
+        # edge_index, _ = add_self_loops(edge_index, num_nodes=x.size(0))  # no edge features for these?
+        return self.propagate(edge_index, x=x, edge_attr=edge_attr)
+
+    def message(self, x_j: Tensor, x_i: Tensor, edge_attr: Tensor) -> Tensor:
+        return F.leaky_relu_(self.lin(torch.cat([x_j, edge_attr], dim=-1)))
 
 
 # from: https://pytorch-geometric.readthedocs.io/en/latest/_modules/torch_geometric/nn/models/attentive_fp.html?highlight=edge_attr
