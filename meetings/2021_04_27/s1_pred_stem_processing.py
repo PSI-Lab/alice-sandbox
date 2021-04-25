@@ -203,6 +203,8 @@ def main(in_file, out_file, model_path, threshold_on=-1, threshold_n_proposal=-1
             # TODO summarize prob_on_sm         prob_other_sm             prob_on_sl          prob_other_sl
             for _, r in df_stem.iterrows():
                 bps = stem_bb_to_bp(r['bb_x'], r['bb_y'], r['siz_x'], r['siz_y'])
+                # FIXME debug
+                assert 'prob_on_sm' in r, r
                 # stem_bb_bps.extend(bps)
                 for bp in bps:
                     stem_bb_bps_prob[bp][0].extend(r['prob_on_sm'])
