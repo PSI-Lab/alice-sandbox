@@ -220,11 +220,13 @@ def main(in_file, out_file, model_path, threshold_on=-1, threshold_n_proposal=-1
                 n2 = len(p2)
                 n3 = len(p3)
                 n4 = len(p4)
+                assert n1 == n2  # one is prob_on the other is other softmax probabilities
+                assert n3 == n4
                 p1_med = np.nanmedian(p1) if len(p1) > 0 else 0  # nanmedian still returns NaN if input list is empty
                 p2_med = np.nanmedian(p2) if len(p2) > 0 else 0
                 p3_med = np.nanmedian(p3) if len(p3) > 0 else 0
                 p4_med = np.nanmedian(p4) if len(p4) > 0 else 0
-                stem_bb_bps_features[bp] = (n1, n2, n3, n4, p1_med, p2_med, p3_med, p4_med)
+                stem_bb_bps_features[bp] = (n1, n3, p1_med, p2_med, p3_med, p4_med)
         else:
             stem_bb_bps = []
             for _, r in df_stem.iterrows():
