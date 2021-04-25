@@ -110,7 +110,7 @@ def stem_bb_to_bp(bb_x, bb_y, siz_x, siz_y):
     return bps
 
 
-def main(in_file, out_file, model_path, threshold_on=-1, threshold_n_proposal=-1):
+def main(in_file, out_file, model_path, threshold_on=-1, threshold_n_proposal=-1, compute_feature=False):
     # df = pd.read_pickle('../2021_03_23/data/debug_training_len20_200_100.pkl.gz')
     df = pd.read_pickle(in_file)
 
@@ -165,6 +165,12 @@ def main(in_file, out_file, model_path, threshold_on=-1, threshold_n_proposal=-1
         # for stem, we need the bb bottom left corner to be in the upper triangular (exclude diagonal), i.e. i < j
         df_stem = filter_diagonal_stem(df_stem)
 
+        # print(df_stem.head())
+        # print(pred_bb_stem)
+        # print(pred_bb_stem_2)
+        # print(threshold_on, threshold_n_proposal)
+        # assert False
+
         # check stem sensitivity
         print("Idx {}, n_target_stem {}, n_exact_hit {}, n_within_hit {}".format(idx, len(
             df_target[df_target['bb_type'] == 'stem']),
@@ -184,6 +190,8 @@ def main(in_file, out_file, model_path, threshold_on=-1, threshold_n_proposal=-1
         # pred
         stem_bb_bps = []
         # TODO add features (add ipput arg - only for one inference method)
+        # TODO use dict
+        # TODO summarize prob_on_sm         prob_other_sm             prob_on_sl          prob_other_sl
         for _, r in df_stem.iterrows():
             bps = stem_bb_to_bp(r['bb_x'], r['bb_y'], r['siz_x'], r['siz_y'])
             stem_bb_bps.extend(bps)
@@ -216,11 +224,15 @@ if __name__ == "__main__":
                         help='threshold for stem n_proposal, default is to ignore this inference method')
     parser.add_argument('--model', type=str, help='Path to pytorch model params')
     parser.add_argument('--out_file', type=str, help='Path to output csv pickle')
+    parser.add_argument('--features', action='store_true',
+                        help='Specify this to compute s1 pred feature for each bp. For now only support inference method 1 using threshold_p')
     args = parser.parse_args()
     if args.threshold_p != -1:
-        assert  0 < args.threshold_p < 1
+        assert 0 < args.threshold_p < 1
     if args.threshold_n != -1:
         assert 0 < args.threshold_n < 1
     assert args.threshold_p != -1 or args.threshold_n != -1, "At least one of threshold_p and threshold_n need to be set!"
-    main(args.data, args.out_file, args.model, args.threshold_n, args.threshold_p)
-
+    if args.features:
+        assert args.threshold_n == -1
+    main(args.data, args.out_file, args.model, threshold_n_proposal=args.threshold_n, threshold_on=args.threshold_p,
+         compute_feature=args.features)
