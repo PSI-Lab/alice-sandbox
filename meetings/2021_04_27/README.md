@@ -9,7 +9,7 @@ and n_proposal got swapped)
 Doesn't seem to improve the performance. Will try more hyperparameters.
 
 - Generate new dataset with S1 prediction as edge features. See `S1 pred prob_on only with S1 features`.
-Improves performance. Will try more hyperparameters.
+Improves performance (validation auROC ~0.77). Will try more hyperparameters.
 
 ### Ideas to try
 
@@ -24,7 +24,11 @@ since iloop/hloop will be implied.
 
 - softmax with new dataset
 
+- other toy problems?
+
 - try real dataset
+
+- super node
 
 ## Debug - dataset
 
@@ -454,7 +458,21 @@ taskset --cpu-list 1,2,3,4 python s2_train_gnn_10.py --input_data data/human_tra
  --log result/s2_gnn_run_10_4.log --kmer 3 --embed_dim 50
 ```
 
-running
+a little bit better?
+
+```
+2021-04-26 19:16:55,852 [MainThread  ] [INFO ]  Epoch 196, training, mean loss 0.3800988471037463, mean AUC 0.8165906603195353
+2021-04-26 19:16:59,648 [MainThread  ] [INFO ]  Epoch 196, testing, mean loss 0.5141868271216435, mean AUC 0.7735673611375103
+1904it [02:26, 12.96it/s]
+2021-04-26 19:19:26,613 [MainThread  ] [INFO ]  Epoch 197, training, mean loss 0.37652536905125567, mean AUC 0.8174127248735553
+2021-04-26 19:19:30,313 [MainThread  ] [INFO ]  Epoch 197, testing, mean loss 0.5024306403769478, mean AUC 0.7667929903586915
+1904it [02:30, 12.65it/s]
+2021-04-26 19:22:00,888 [MainThread  ] [INFO ]  Epoch 198, training, mean loss 0.376108884183984, mean AUC 0.8174849130077365
+2021-04-26 19:22:04,565 [MainThread  ] [INFO ]  Epoch 198, testing, mean loss 0.5125255980728716, mean AUC 0.7692825518051348
+1904it [02:27, 12.87it/s]
+2021-04-26 19:24:32,459 [MainThread  ] [INFO ]  Epoch 199, training, mean loss 0.3771052502487835, mean AUC 0.817049923343341
+2021-04-26 19:24:36,226 [MainThread  ] [INFO ]  Epoch 199, testing, mean loss 0.5097983856585866, mean AUC 0.7682182368529487
+```
 
 
 
@@ -466,6 +484,7 @@ taskset --cpu-list 5,6,7,8 python s2_train_gnn_10.py --input_data data/human_tra
  --log result/s2_gnn_run_10_5.log --kmer 3 --embed_dim 50
 ```
 
+running
 
 ## Re-generated dataset S1 pred
 
@@ -530,9 +549,9 @@ increase capacity? todo
 
 not working?
 
-- cut down num connections, only use n_prob proposals? (1/2-2/3?)
+<!--- (done) cut down num connections, only use n_prob proposals? (1/2-2/3?)-->
 
-- use s1 pred (sanity check?), missing bb -> set p = 0.5?  (NN will learn to always pick 0.5?)
+<!--- (not doing this) use s1 pred (sanity check?), missing bb -> set p = 0.5?  (NN will learn to always pick 0.5?)-->
 
 
 - s2 dataset: only predict the target that's in proposal (makes it possible to fine-tune on real dataset)
@@ -549,57 +568,36 @@ not working?
 of shape [N, N] only, but can also exchange messages in general sparse assignment matrices,
 .e.g., bipartite graphs, of shape [N, M]
 
-- easy toy example
-
 - modify graph attention to incoporate edge feature?
 
-- super node
-
-- fully connected GNN (3x the connections)
-
-- train s2 model when s1 sensitivity <100%: just predict as many bb as possible?
-
-- fix 10x loss
 
 <!--- (done) lmit num cpu-->
 
 <!--- (done) update edge embed NN to be invariant (sum?)-->
 
-- make it easier problem: (1) shorter seq, (2) fewer proposals?
+<!--- (done) make it easier problem: (1) shorter seq, (2) fewer proposals?-->
 
-- read paper
-
-- jamboard
 
 <!--- (done) re-try softmax: update eval metric to accuracy (not global auc)-->
 
-- update GATEconv -> simpler, just use edge feature
+<!--- (done, worse)update GATEconv -> simpler, just use edge feature-->
 
 - super node?
 
-- backbone edge directed?
-
-- try using S1 pred. see if it improves performance? (although we wouldn't want to use it in actual training)
+<!--- (not doing this) backbone edge directed?-->
 
 - debug dataset, inspect a few examples, make sure it make sense
 
 <!--- (done) plot, distribution of: num_edges per node, v,s, len?-->
 
-- incoportate s1 prediction as edge features
+<!--- (done) incoportate s1 prediction as edge features-->
 
-- GPU
-
-- modify GATEconv?
 
 - simple inner product
 
-- toy task 2: predict base pair binary label
-
-- more layers (more hops - we should cover the size of a typical 'loop')
 
 - other toy tasks?
 
-- convert edge to node? like a factor graph?
 
 - node level prediction: whether each base is paired
 
