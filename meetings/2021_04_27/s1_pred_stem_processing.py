@@ -203,14 +203,16 @@ def main(in_file, out_file, model_path, threshold_on=-1, threshold_n_proposal=-1
             # TODO summarize prob_on_sm         prob_other_sm             prob_on_sl          prob_other_sl
             for _, r in df_stem.iterrows():
                 bps = stem_bb_to_bp(r['bb_x'], r['bb_y'], r['siz_x'], r['siz_y'])
-                # FIXME debug
-                assert 'prob_on_sm' in r, r
                 # stem_bb_bps.extend(bps)
                 for bp in bps:
-                    stem_bb_bps_prob[bp][0].extend(r['prob_on_sm'])
-                    stem_bb_bps_prob[bp][1].extend(r['prob_other_sm'])
-                    stem_bb_bps_prob[bp][2].extend(r['prob_on_sl'])
-                    stem_bb_bps_prob[bp][3].extend(r['prob_other_sl'])
+                    if 'prob_on_sm' in r:
+                        stem_bb_bps_prob[bp][0].extend(r['prob_on_sm'])
+                    if 'prob_other_sm' in r:
+                        stem_bb_bps_prob[bp][1].extend(r['prob_other_sm'])
+                    if 'prob_on_sl' in r:
+                        stem_bb_bps_prob[bp][2].extend(r['prob_on_sl'])
+                    if 'prob_other_sl' in r:
+                        stem_bb_bps_prob[bp][3].extend(r['prob_other_sl'])
             # stem_bb_bps = sorted(list(set(stem_bb_bps)))  # remove duplicates (some pred bb might be within other pred bb)
             # bps
             stem_bb_bps = list(stem_bb_bps_prob.keys())
