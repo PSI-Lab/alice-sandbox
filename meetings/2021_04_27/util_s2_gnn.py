@@ -127,7 +127,7 @@ def make_edge_target(edge_index, stem_bb_bps, target_bps):
 
 
 def make_dataset(df, fn_make_target, fn_encode_seq=one_hot_single_base, edge_feature='binary',
-                 fn_make_target_edge=make_edge_target):
+                 fn_make_target_edge=make_edge_target, include_s1_feature=False, s1_feature_dim=None):
     data_list = []
 
     for _, row in df.iterrows():
@@ -147,6 +147,9 @@ def make_dataset(df, fn_make_target, fn_encode_seq=one_hot_single_base, edge_fea
         node_features = fn_encode_seq(seq)
         # node_features =
 
+        if include_s1_feature:
+            s1_edge_feat = []
+
         # build edges
         edge_from = []
         edge_to = []
@@ -159,6 +162,9 @@ def make_dataset(df, fn_make_target, fn_encode_seq=one_hot_single_base, edge_fea
         edge_to.extend(node_left)
         assert len(edge_from) == len(edge_to)
         n_edge_1 = len(edge_from)  # number of 'backbone' edges
+        if include_s1_feature:  # all 0 features for backbond edges
+            s1_edge_feat = [[0] * s1_feature_dim for _ in range(n_edge_1)]
+
         # hydrogen bond candidates - undirected edge
         # for all predicted stem bbs
         for idx_left, idx_right in stem_bb_bps:
@@ -166,6 +172,9 @@ def make_dataset(df, fn_make_target, fn_encode_seq=one_hot_single_base, edge_fea
             edge_to.append(idx_right)
             edge_from.append(idx_right)
             edge_to.append(idx_left)
+            if include_s1_feature:  # append twice for both direction
+                s1_edge_feat.append(row['stem_bb_bps_features'][(idx_left, idx_right)])
+                s1_edge_feat.append(row['stem_bb_bps_features'][(idx_left, idx_right)])
         assert len(edge_from) == len(edge_to)
         n_edge_2 = len(edge_from) - n_edge_1  # number of 'hydrogen bond' edges
         edge_index = torch.tensor([edge_from, edge_to], dtype=torch.long)
@@ -181,6 +190,11 @@ def make_dataset(df, fn_make_target, fn_encode_seq=one_hot_single_base, edge_fea
                                   dim=1)
         else:
             raise NotImplementedError
+
+        if include_s1_feature:
+            s1_edge_feat = np.asarray(s1_edge_feat)
+            s1_edge_feat = torch.from_numpy(s1_edge_feat).float()
+            edge_attr = torch.cat([edge_attr, s1_edge_feat], dim=1)
 
         # 2D target and mask
         y, m = fn_make_target(seq, stem_bb_bps, target_bps)
