@@ -168,6 +168,13 @@ def main(input_data, training_proportion, learning_rate, num_hids, epochs, batch
 
         logger.info("Epoch {}, training, mean loss {}, mean AUC {}".format(epoch, np.nanmean(loss_all), np.nanmean(auc_all)))
 
+        # FIXME hacky way to save model
+        if (epoch + 1) % (epochs//10) == 0:
+            # _model_path = os.path.join(out_dir, 'model_ckpt_ep_{}.pth'.format(epoch))
+            _model_path = log_file.replace('log', 'model_ckpt_ep_{}.pth'.format(epoch))
+            torch.save(model.state_dict(), _model_path)
+            logging.info("Model checkpoint saved at: {}".format(_model_path))
+
         # validation dataset
         loss_all = []
         auc_all = []
