@@ -117,7 +117,8 @@ def stem_bb_to_bp(bb_x, bb_y, siz_x, siz_y):
     return bps
 
 
-def main(in_file, out_file, model_path, threshold_on=-1, threshold_n_proposal=-1, compute_feature=False):
+def main(in_file, out_file, model_path, threshold_on=-1, threshold_n_proposal=-1,
+         compute_feature=False, include_all=False):
     # df = pd.read_pickle('../2021_03_23/data/debug_training_len20_200_100.pkl.gz')
     df = pd.read_pickle(in_file)
 
@@ -178,6 +179,11 @@ def main(in_file, out_file, model_path, threshold_on=-1, threshold_n_proposal=-1
         # print(threshold_on, threshold_n_proposal)
         # assert False
 
+        # skip if no predicted bb
+        if len(df_stem) == 0:
+            print("Skip example with no predicted bb")
+            continue
+
         # check stem sensitivity
         print("Idx {}, n_target_stem {}, n_exact_hit {}, n_within_hit {}".format(idx, len(
             df_target[df_target['bb_type'] == 'stem']),
@@ -186,12 +192,20 @@ def main(in_file, out_file, model_path, threshold_on=-1, threshold_n_proposal=-1
                                                                                  check_stem_sensitivity_within(
                                                                                      df_target, df_stem)))
 
-        # for now only use examples with 100% sensitivy (for target equal/within pred bb)
-        if len(df_target[df_target['bb_type'] == 'stem']) > check_stem_sensitivity_within(df_target, df_stem):
-            print("Skip example for now.")
-            continue
+        df_target_stem = df_target[df_target['bb_type'] == 'stem']
 
-        assert len(df_target[df_target['bb_type'] == 'stem']) == check_stem_sensitivity_within(df_target, df_stem)
+        if len(df_target[df_target['bb_type'] == 'stem']) > check_stem_sensitivity_within(df_target, df_stem):
+            if not include_all:
+                # only use examples with 100% sensitivy (for target equal/within pred bb)
+                print("Skip example for now.")
+                continue
+            else:
+                # use all, but in case sensitivity < 100%, subset target bb
+                df_target_stem = pd.merge(df_target_stem, df_stem[['bb_x', 'bb_y', 'siz_x', 'siz_y']], how='inner')
+                print("subset target stem bb to those in pred stem bb: {}".format(len(df_target_stem)))
+
+        assert len(df_target_stem) == check_stem_sensitivity_within(df_target_stem, df_stem)
+        # assert len(df_target[df_target['bb_type'] == 'stem']) == check_stem_sensitivity_within(df_target, df_stem)
 
         if compute_feature:
             # extract base pair indices
@@ -239,7 +253,7 @@ def main(in_file, out_file, model_path, threshold_on=-1, threshold_n_proposal=-1
             stem_bb_bps = sorted(list(set(stem_bb_bps)))
         # target
         target_bps = []
-        for _, r in df_target[df_target['bb_type'] == 'stem'].iterrows():
+        for _, r in df_target_stem.iterrows():
             bps = stem_bb_to_bp(r['bb_x'], r['bb_y'], r['siz_x'], r['siz_y'])
             target_bps.extend(bps)
 
@@ -269,6 +283,8 @@ if __name__ == "__main__":
     parser.add_argument('--out_file', type=str, help='Path to output csv pickle')
     parser.add_argument('--features', action='store_true',
                         help='Specify this to compute s1 pred feature for each bp. For now only support inference method 1 using threshold_p')
+    parser.add_argument('--include_all', action='store_true',
+                        help='Specify this to include all examples, regardless of their S1 bb sensitivity')
     args = parser.parse_args()
     if args.threshold_p != -1:
         assert 0 < args.threshold_p < 1
@@ -278,4 +294,4 @@ if __name__ == "__main__":
     if args.features:
         assert args.threshold_n == -1
     main(args.data, args.out_file, args.model, threshold_n_proposal=args.threshold_n, threshold_on=args.threshold_p,
-         compute_feature=args.features)
+         compute_feature=args.features, include_all=args.include_all)
