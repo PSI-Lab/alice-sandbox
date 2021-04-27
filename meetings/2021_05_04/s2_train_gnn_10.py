@@ -1,4 +1,5 @@
 import argparse
+import pickle
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
 import pandas as pd
@@ -110,7 +111,8 @@ class Net(torch.nn.Module):
         return x.squeeze()  # this is L x L
 
 
-def main(input_data, training_proportion, learning_rate, num_hids, epochs, batch_size, log_file, kmer, embed_dim):
+def main(input_data, training_proportion, learning_rate, num_hids, epochs, batch_size,
+         log_file, kmer, embed_dim, debug=False):
     logger = get_logger(log_file)
 
     df = pd.read_pickle(input_data)
@@ -168,16 +170,10 @@ def main(input_data, training_proportion, learning_rate, num_hids, epochs, batch
 
         logger.info("Epoch {}, training, mean loss {}, mean AUC {}".format(epoch, np.nanmean(loss_all), np.nanmean(auc_all)))
 
-        # FIXME hacky way to save model
-        if (epoch + 1) % (epochs//10) == 0:
-            # _model_path = os.path.join(out_dir, 'model_ckpt_ep_{}.pth'.format(epoch))
-            _model_path = log_file.replace('log', 'model_ckpt_ep_{}.pth'.format(epoch))
-            torch.save(model.state_dict(), _model_path)
-            logging.info("Model checkpoint saved at: {}".format(_model_path))
-
         # validation dataset
         loss_all = []
         auc_all = []
+        data_debug = []
         model.eval()
         for data in data_list_va:
             y = torch.from_numpy(data.y).float()
@@ -188,7 +184,27 @@ def main(input_data, training_proportion, learning_rate, num_hids, epochs, batch
             loss_all.append(loss.item())
             auc, prc = roc_prc(y, pred, m)
             auc_all.append(auc)
+
+            data_debug.append({
+                'y': data.y,
+                'm': data.m,
+                'yp': pred.detach().numpy(),
+            })
+
         logger.info("Epoch {}, testing, mean loss {}, mean AUC {}".format(epoch, np.nanmean(loss_all), np.nanmean(auc_all)))
+
+        # FIXME hacky way to save model
+        if (epoch + 1) % (max(1, epochs//10)) == 0:
+            # _model_path = os.path.join(out_dir, 'model_ckpt_ep_{}.pth'.format(epoch))
+            _model_path = log_file.replace('log', 'model_ckpt_ep_{}.pth'.format(epoch))
+            torch.save(model.state_dict(), _model_path)
+            logging.info("Model checkpoint saved at: {}".format(_model_path))
+        # if debug, also save prediction on validation set
+        if debug:
+            data_debug_export_path = log_file.replace('log', 'pred_va_ep_{}.pkl'.format(epoch))
+            with open(data_debug_export_path, 'wb') as f:
+                pickle.dump(data_debug, f, protocol=pickle.HIGHEST_PROTOCOL)
+            logging.info("Prediction saved at: {}".format(data_debug_export_path))
 
 
 if __name__ == "__main__":
@@ -202,11 +218,12 @@ if __name__ == "__main__":
     parser.add_argument('--log', type=str, help='output log file')
     parser.add_argument('--kmer', type=int, default=3, help='kmer')
     parser.add_argument('--embed_dim', type=int, default=20, help='embedding dim for kmer')
+    parser.add_argument('--debug', action='store_true', help='Set this to export validation set prediction for debugging')
 
     args = parser.parse_args()
     assert  0 < args.training_proportion < 1
     main(args.input_data, args.training_proportion, args.learning_rate, args.hid,
-         args.epochs, args.batch_size, args.log, args.kmer, args.embed_dim)
+         args.epochs, args.batch_size, args.log, args.kmer, args.embed_dim, args.debug)
 
 
 
