@@ -200,7 +200,7 @@ def main(input_data, training_proportion, learning_rate, num_hids, epochs, batch
             torch.save(model.state_dict(), _model_path)
             logging.info("Model checkpoint saved at: {}".format(_model_path))
         # if debug, also save prediction on validation set
-        if debug:
+        if debug and (epoch + 1) % (max(1, epochs//10)) == 0:
             data_debug_export_path = log_file.replace('log', 'pred_va_ep_{}.pkl'.format(epoch))
             with open(data_debug_export_path, 'wb') as f:
                 pickle.dump(data_debug, f, protocol=pickle.HIGHEST_PROTOCOL)
