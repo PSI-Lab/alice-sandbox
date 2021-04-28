@@ -186,6 +186,9 @@ def main(input_data, training_proportion, learning_rate, num_hids, epochs, batch
             auc_all.append(auc)
 
             data_debug.append({
+                'x': data.x.detach().numpy(),
+                'edge_index': data.edge_index.detach().numpy(),
+                'edge_attr': data.edge_attr.detach().numpy(),
                 'y': data.y,
                 'm': data.m,
                 'yp': pred.detach().numpy(),
