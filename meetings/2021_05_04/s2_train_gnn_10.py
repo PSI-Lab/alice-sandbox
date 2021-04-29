@@ -72,6 +72,7 @@ class Net(torch.nn.Module):
         self.gcn = [GATEConv(embed_dim, num_hids[0], 1+6)]
         for num_hid_prev, num_hid in zip(num_hids[:-1], num_hids[1:]):
             self.gcn.append(GATEConv(num_hid_prev, num_hid, 1+6))
+        self.gcn = torch.nn.ModuleList(self.gcn)
 
         # activations
         self.act1 = torch.nn.ReLU()
@@ -178,7 +179,7 @@ def main(input_data, training_proportion, learning_rate, num_hids, epochs, batch
         for data in data_list_va:
             y = torch.from_numpy(data.y).float()
             m = torch.from_numpy(data.m).float()
-            optimizer.zero_grad()
+            # optimizer.zero_grad()
             pred = model(data)
             loss = masked_loss_bce(pred, y, m)
             loss_all.append(loss.item())
