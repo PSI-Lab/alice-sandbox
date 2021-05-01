@@ -27,6 +27,8 @@ def get_interval_segments(gene, seq_len_min, seq_len_max, n_seq_per_gene_max, ra
             break
         seq_len = np.random.randint(seq_len_min, seq_len_max + 1)
         itvs.append(gene.end5.shift(position).expand(0, seq_len))
+        # shift position to avoid generating overlapping sequences
+        position += seq_len
     return itvs
 
 
