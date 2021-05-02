@@ -195,9 +195,33 @@ done:
 
 #### Verify the fix
 
-See TODO
+- From run `s2_gnn_run_10_10`, we've saved both the model parameters, as well as input and prediction on validation set
 
+- We initialize the model, load the parameters, and use the model to compute prediction on one randomly picked example
 
+- Compare the above with the predictions saved during training
+
+- We've verified the two arrays are almost equal:
+
+```
+np.testing.assert_almost_equal(tmp_pred.detach().numpy(), data['yp'], decimal=5)
+```
+
+- Visualizing a small slice of the array, we can see that they're almost equal:
+
+```
+tmp_pred[:2, :2].detach().numpy()
+array([[1.1315030e-22, 4.6394876e-21],
+       [2.4324624e-16, 9.9738324e-15]], dtype=float32)
+
+data['yp'][:2, :2]
+array([[1.1314901e-22, 4.6394165e-21],
+       [2.4324716e-16, 9.9737562e-15]], dtype=float32)
+```
+
+- Now we've verified that the model parameters have been fully saved and restored
+
+See [tmp_debug.ipynb](tmp_debug.ipynb)
 
 ### Eval
 
