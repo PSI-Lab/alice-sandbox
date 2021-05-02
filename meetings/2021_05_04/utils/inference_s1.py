@@ -305,7 +305,7 @@ class DataEncoder(object):
         # x: sequence
         # y (optional): one_idx (two lists), zero-based
         x = x.upper().replace('U', 'T')
-        assert set(x).issubset(set(list('ACGTN')))
+        assert set(x).issubset(set(list('ACGTN'))), "Seq {}, set: {}".format(x, set(x))
         self.x = x
         if y:
             assert len(y) == 2
