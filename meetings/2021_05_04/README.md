@@ -1,14 +1,26 @@
 ## Summary
 
-### Finished + WIP
+- fixed bug in data generation (human transcriptome)
+
+- fixed bug in model parameter export
+
+- increase model capacity, increase training dataset size -> better performance
+
+- WIP initial result on synthetic test set
+
+- WIP debug dataset (test set index 10, (53, 12) un-masked, in one_idx but not in y?)
+
+- also working on bpRNA dataset
+
+<!--### Finished + WIP-->
 
 
-### Ideas to try
+<!--### Ideas to try-->
 
 
-## Re-generated dataset S1 pred
+<!--## Re-generated dataset S1 pred-->
 
-- continued from last week
+<!--- continued from last week-->
 
 
 ## S1 pred prob_on only with S1 features
@@ -17,7 +29,9 @@
 
 
 - update s1 inference and s2 data gen to include all examples,
-regardless of whether it's 100% sensitivity
+regardless of whether it's 100% sensitivity.
+i.e. S2 tasks is to predict the correct label for node pairs
+that are part of one or more stem bb from S1 prediction.
 
 ### Data generation with all examples
 
@@ -173,7 +187,7 @@ odict_keys(['node_embedding.weight', 'node_pair_conv1.weight', 'node_pair_conv1.
 
 Need to use `nn.ModuleList` instead of Python list! (This is the 2nd time I'm making this mistake!)
 
-Fixed! (TODO fix other scripts, update shared repo)
+Fixed!
 
 Re-run after fixing:
 
@@ -223,9 +237,7 @@ array([[1.1314901e-22, 4.6394165e-21],
 
 See [tmp_debug.ipynb](tmp_debug.ipynb)
 
-### Eval
 
-performance mismatch? during training v.s. loaded model.. debugging
 
 ## Re-generate dataset
 
@@ -310,25 +322,125 @@ taskset --cpu-list 21,22,23,24 python s2_train_gnn_10.py --input_data data/human
 
 running
 
+
+Evaluate ep19 model on synthetic test set:
+
+![plot/test_set_performance.png](plot/test_set_performance.png)
+
+
+
+## Use bpRNA dataset to train S2 model
+
+### Generate data
+
+Use raw data `DmNgdP` (Processed by me a while ago)
+
+
+Filter out 'invalid' examples:
+
+    - those we can not unambiguisely convert back and forth
+
+    - those with non-ACGT bases (e.g. `S`)
+
+    - those without any structures (will think about how to take care of these later)
+
+```python
+import pandas as pd
+
+df = pd.read_pickle("/Users/alicegao/Library/Application Support/DataCorral/DmNgdP#1597761785004865.gz")
+df = df[df['verified']]  # 13419 -> 13185
+
+data = []
+for _, row in df.iterrows():
+    seq = row['seq']
+    if set(seq).issubset({'A', 'C', 'G', 'T', 'U'}):
+        data.append(row)
+
+data = pd.DataFrame(data)  # 13185 -> 12953
+
+data2 = []
+for _, row in data.iterrows():
+    one_idx = row['one_idx']
+    if len(one_idx[0]) > 0:
+        data2.append(row)
+
+data2 = pd.DataFrame(data2)  # 12953 -> 12947
+
+data2.to_pickle('data/bprna_spotrna_training.pkl.gz', compression='gzip', protocol=4)  # supports Py3.7
+```
+
+
+Run inference:
+
+
+```
+taskset --cpu-list 11,12,13,14 python s1_pred_stem_processing.py --data data/bprna_spotrna_training.pkl.gz \
+--threshold_p 0.1 --model ../2021_03_23/s1_training/result/run_7/model_ckpt_ep_17.pth \
+--out_file data/bprna_spotrna_training_pred_stem_bps_only_prob_on_all.pkl.gz \
+--features  --include_all
+```
+
+done
+
+
+
+
+### Traning
+
+```
+taskset --cpu-list 11,12,13,14 python s2_train_gnn_10.py --input_data data/bprna_spotrna_training_pred_stem_bps_only_prob_on_all.pkl.gz \
+--training_proportion 0.95 --learning_rate 0.002 --epochs 100 --batch_size 10 --hid 20 20 40 40 40 40 50 50 50 50 50 50 100 100 100 100 \
+ --log result/s2_gnn_run_10_14.log --kmer 3 --embed_dim 50
+```
+
+running
+
+fine-tune after training on synthetic dataset?
+
+
+TODO do we need to lower S1 inference threshold? sensitivity?
+
+TODO train S1 on bpRNA?
+
+
 ## TODOs
 
-- TODO copy from last week
-
-- TODO debug data gen? similar sequences?
+<!--- (done) debug data gen? similar sequences?-->
 
 - bpRNA S2
+
+- add metric, f1 (v.s. threshold?)
+
+- s2 inference: no thresholding,
+greedy from the top prediction,
+satisfy constraint.
+
+- missed bb per bb size?
+
+- add evaluation (note that the performance during training only reflect
+performance w.r.t. bb proposal, not w.r.t. ground truth base pairs)
 
 - predict binary label for each node
 
 - add bb location as feature? how? or positional encoding of nodes?
 
+- S2 final prediction on full matrix? missing link prediction?
+
 - residual connection?
 
-- double check S1 doesn't have the same parameter saving problem
+<!--- (done, verified it's ok) double check S1 doesn't have the same parameter saving problem-->
 
-- larger dataset?
+<!--- (done, running) larger dataset?-->
 
 - check video
 
 - bpRNA: GNN predict distance? process raw data?
+
+- softmax with new dataset
+
+- other toy problems?
+
+- try real dataset
+
+- super node
 
