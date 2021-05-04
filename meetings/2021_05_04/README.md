@@ -9,6 +9,9 @@
 - WIP initial result on synthetic test set
 
 - WIP debug dataset (test set index 10, (53, 12) un-masked, in one_idx but not in y?)
+-> figured out why: when target bb is not identical to but within a predicted bb,
+we exclude that target bb when generating target, where we should have included
+a subset of the base pairs that are covered by predicted bbs.
 
 - also working on bpRNA dataset
 
