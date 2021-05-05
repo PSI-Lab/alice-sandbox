@@ -29,11 +29,23 @@ from torch_geometric.nn.inits import glorot, zeros
 from util_s2_gnn import GATEConv, roc_prc, make_dataset, masked_loss_bce, get_logger
 
 
-def make_target(seq, stem_bb_bps, target_bps):
+# def make_target(seq, stem_bb_bps, target_bps):
+#     # edge-level target, encoded as 2D binary matrix, with masking
+#     # binary matrix of size lxl
+#     y = np.zeros((len(seq), len(seq)))
+#     y[tuple(zip(*target_bps))] = 1
+#     # mask: locations with 0 are don't-cares
+#     # we only backprop from edges in pred stem bbs
+#     m = np.zeros((len(seq), len(seq)))
+#     m[tuple(zip(*stem_bb_bps))] = 1
+#     return y, m
+
+
+def make_target(seq, stem_bb_bps, one_idx):
     # edge-level target, encoded as 2D binary matrix, with masking
     # binary matrix of size lxl
     y = np.zeros((len(seq), len(seq)))
-    y[tuple(zip(*target_bps))] = 1
+    y[tuple(one_idx)] = 1
     # mask: locations with 0 are don't-cares
     # we only backprop from edges in pred stem bbs
     m = np.zeros((len(seq), len(seq)))

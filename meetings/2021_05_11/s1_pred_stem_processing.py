@@ -200,6 +200,7 @@ def main(in_file, out_file, model_path, threshold_on=-1, threshold_n_proposal=-1
                 print("Skip example for now.")
                 continue
             else:
+                # FIXME this is not super useful since it does not take into account overlapping bbs
                 # use all, but in case sensitivity < 100%, subset target bb
                 df_target_stem = pd.merge(df_target_stem, df_stem[['bb_x', 'bb_y', 'siz_x', 'siz_y']], how='inner')
                 print("subset target stem bb to those in pred stem bb: {}".format(len(df_target_stem)))

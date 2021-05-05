@@ -111,9 +111,29 @@ def one_hot_single_base(seq):
     return torch.from_numpy(x).float()
 
 
-def make_edge_target(edge_index, stem_bb_bps, target_bps):
+# def make_edge_target(edge_index, stem_bb_bps, target_bps):
+#     y = np.zeros(edge_index.size(1))
+#     m = np.zeros(edge_index.size(1))
+#
+#     # TODO better to vectorize this
+#     for i in range(edge_index.size(1)):
+#         edge_idx = (edge_index[0, i].item(), edge_index[1, i].item())
+#         if edge_idx in stem_bb_bps:
+#             m[i] = 1
+#         if edge_idx in target_bps:
+#             assert edge_idx in stem_bb_bps
+#             y[i] = 1
+#     return y, m
+
+
+def make_edge_target(edge_index, stem_bb_bps, one_idx):
     y = np.zeros(edge_index.size(1))
     m = np.zeros(edge_index.size(1))
+
+    target_bps = list(zip(one_idx[0], one_idx[1]))
+    # TODO shall we do this?
+    # onlu keep those i < j
+    target_bps = [(i, j) for i, j in target_bps if i < j]
 
     # TODO better to vectorize this
     for i in range(edge_index.size(1)):
@@ -121,7 +141,7 @@ def make_edge_target(edge_index, stem_bb_bps, target_bps):
         if edge_idx in stem_bb_bps:
             m[i] = 1
         if edge_idx in target_bps:
-            assert edge_idx in stem_bb_bps
+            assert edge_idx in stem_bb_bps, "edge_idx: {}, stem_bb_bps: {}".format(edge_idx, stem_bb_bps)
             y[i] = 1
     return y, m
 
@@ -133,7 +153,8 @@ def make_dataset(df, fn_make_target, fn_encode_seq=one_hot_single_base, edge_fea
     for _, row in df.iterrows():
         seq = row['seq']
         stem_bb_bps = row['stem_bb_bps']
-        target_bps = row['target_bps']
+        # target_bps = row['target_bps']  # not using this! since it does not include proposal that overlaps ground truth
+        one_idx = row['one_idx']
 
         # # use integer encoding for now
         # seq = seq.upper().replace('A', '1').replace('C', '2').replace('G', '3').replace('T', '4').replace('U',
@@ -197,9 +218,9 @@ def make_dataset(df, fn_make_target, fn_encode_seq=one_hot_single_base, edge_fea
             edge_attr = torch.cat([edge_attr, s1_edge_feat], dim=1)
 
         # 2D target and mask
-        y, m = fn_make_target(seq, stem_bb_bps, target_bps)
+        y, m = fn_make_target(seq, stem_bb_bps, one_idx)
         # equivalent edge-leve 1D target and mask
-        ye, me = fn_make_target_edge(edge_index, stem_bb_bps, target_bps)
+        ye, me = fn_make_target_edge(edge_index, stem_bb_bps, one_idx)
 
         # make data point
         data = Data(x=node_features, edge_index=edge_index, edge_attr=edge_attr,
