@@ -140,9 +140,9 @@ def make_edge_target(edge_index, stem_bb_bps, one_idx):
         edge_idx = (edge_index[0, i].item(), edge_index[1, i].item())
         if edge_idx in stem_bb_bps:
             m[i] = 1
-        if edge_idx in target_bps:
-            assert edge_idx in stem_bb_bps, "edge_idx: {}, stem_bb_bps: {}".format(edge_idx, stem_bb_bps)
-            y[i] = 1
+            if edge_idx in target_bps:  # edge index in both s1 proposal and target
+                # assert edge_idx in stem_bb_bps, "edge_idx: {}, stem_bb_bps: {}".format(edge_idx, stem_bb_bps)
+                y[i] = 1
     return y, m
 
 
