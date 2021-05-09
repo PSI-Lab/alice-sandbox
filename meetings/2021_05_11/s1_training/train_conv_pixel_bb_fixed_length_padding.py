@@ -17,8 +17,7 @@ import datacorral as dc
 # from utils import db2pairs
 # from local_struct_utils import one_idx2arr, sort_pairs, LocalStructureParser, make_target_pixel_bb
 sys.path.insert(0, '../rna_ss_utils/')  # FIXME hacky
-from utils import db2pairs
-from local_struct_utils import one_idx2arr, sort_pairs, LocalStructureParser, make_target_pixel_bb
+from rna_ss_utils import db2pairs, one_idx2arr, sort_pairs, LocalStructureParser, make_target_pixel_bb
 
 
 def add_column(df, output_col, input_cols, func):
