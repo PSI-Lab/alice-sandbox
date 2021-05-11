@@ -12,7 +12,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 from torch.utils.data import Dataset, DataLoader
-import datacorral as dc
+# import datacorral as dc
 # sys.path.insert(0, '../../rna_ss/')
 # from utils import db2pairs
 # from local_struct_utils import one_idx2arr, sort_pairs, LocalStructureParser, make_target_pixel_bb
@@ -255,7 +255,7 @@ class PadCollate2D:
 
 
 class SimpleConvNet(nn.Module):
-    def __init__(self, num_filters, filter_width, dropout):
+    def __init__(self, num_filters, filter_width, hid_shared, hid_output, dropout):
         super(SimpleConvNet, self).__init__()
 
         # not used for now
@@ -285,47 +285,55 @@ class SimpleConvNet(nn.Module):
                 cnn_layers.append(nn.Dropout(dropout))
         self.cnn_layers = nn.Sequential(*cnn_layers)
 
-        # TODO re-visit number of filters and architecture
-
-        self.fc = nn.Sequential(
-            nn.Conv2d(num_filters[-1], 50, kernel_size=1),
-            nn.ReLU(),
-        )
+        # FC layers (shared)
+        fc_shared = []
+        hid_shared = [num_filters[-1]] + hid_shared
+        for i, hid in enumerate(hid_shared[1:]):
+            fc_shared.append(nn.Conv2d(hid_shared[i], hid, kernel_size=1))
+            fc_shared.append(nn.ReLU())
+        self.fc = nn.Sequential(*fc_shared)
+        # self.fc = nn.Sequential(
+        #     nn.Conv2d(num_filters[-1], 50, kernel_size=1),
+        #     nn.ReLU(),
+        # )
 
         # add output specific hidden layers
-
+        # for now support only one layer
+        assert len(hid_output) == 1
+        hid_output = hid_output[0]
+        hid_fc_last = hid_shared[-1]
         # stem
         self.out_stem_on = nn.Sequential(
-            nn.Conv2d(50, 20, kernel_size=1),
+            nn.Conv2d(hid_fc_last, hid_output, kernel_size=1),
             nn.ReLU(),
-            nn.Conv2d(20, 1, kernel_size=1),
+            nn.Conv2d(hid_output, 1, kernel_size=1),
             nn.Sigmoid(),
         )
 
         # TODO loc share hid?
         self.out_stem_loc_x = nn.Sequential(
-            nn.Conv2d(50, 20, kernel_size=1),
+            nn.Conv2d(hid_fc_last, hid_output, kernel_size=1),
             nn.ReLU(),
-            nn.Conv2d(20, 12, kernel_size=1),
+            nn.Conv2d(hid_output, 12, kernel_size=1),
             nn.LogSoftmax(dim=1),
         )
         self.out_stem_loc_y = nn.Sequential(
-            nn.Conv2d(50, 20, kernel_size=1),
+            nn.Conv2d(hid_fc_last, hid_output, kernel_size=1),
             nn.ReLU(),
-            nn.Conv2d(20, 12, kernel_size=1),
+            nn.Conv2d(hid_output, 12, kernel_size=1),
             nn.LogSoftmax(dim=1),
         )
 
         self.hid_stem_siz = nn.Sequential(
-            nn.Conv2d(50, 20, kernel_size=1),
+            nn.Conv2d(hid_fc_last, hid_output, kernel_size=1),
             nn.ReLU(),
         )
         self.out_stem_sm_siz = nn.Sequential(
-            nn.Conv2d(20, 11, kernel_size=1),
+            nn.Conv2d(hid_output, 11, kernel_size=1),
             nn.LogSoftmax(dim=1),
         )
         self.out_stem_sl_siz = nn.Sequential(
-            nn.Conv2d(20, 1, kernel_size=1),
+            nn.Conv2d(hid_output, 1, kernel_size=1),
         )
         
         # # iloop
@@ -880,16 +888,18 @@ def compute_metrics(x, y, m):
     return evalm
 
 
-def main(path_data, num_filters, filter_width, dropout, maskw, local_unmask_offset, n_epoch, batch_size, max_length, out_dir, n_cpu):
+def main(path_data, num_filters, filter_width, hid_shared, hid_output,
+         dropout, maskw, local_unmask_offset, n_epoch, lr, batch_size, max_length, out_dir, n_cpu):
     logging.info("Loading dataset: {}".format(path_data))
-    dc_client = dc.Client()
+    # dc_client = dc.Client()
     df = []
     for _p in path_data:
         if os.path.isfile(_p):
             df.append(pd.read_pickle(_p, compression='gzip'))
         else:
-            print(dc_client.get_path(_p))
-            df.append(pd.read_pickle(dc_client.get_path(_p), compression='gzip'))
+            raise NotImplementedError
+            # print(dc_client.get_path(_p))
+            # df.append(pd.read_pickle(dc_client.get_path(_p), compression='gzip'))
     df = pd.concat(df)
     # subset to max length if specified
     if max_length:
@@ -910,7 +920,7 @@ def main(path_data, num_filters, filter_width, dropout, maskw, local_unmask_offs
     logging.info("After: {}".format(len(df)))
     df.drop(columns=['is_seq_valid'], inplace=True)
 
-    model = SimpleConvNet(num_filters, filter_width, dropout)
+    model = SimpleConvNet(num_filters, filter_width, hid_shared, hid_output, dropout)
     print(model)
 
     # device
@@ -918,7 +928,7 @@ def main(path_data, num_filters, filter_width, dropout, maskw, local_unmask_offs
 
     model = model.to(device)
 
-    learning_rate = 1e-4
+    learning_rate = lr
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     # split into training+validation
@@ -1134,10 +1144,15 @@ if __name__ == "__main__":
     parser.add_argument('--result', type=str, help='Path to output result')
     parser.add_argument('--num_filters', nargs='*', type=int, help='Number of conv filters for each layer.')
     parser.add_argument('--filter_width', nargs='*', type=int, help='Filter width for each layer.')
+
+    parser.add_argument('--hid_shared', nargs='*', type=int, help='Number of units for shared hidden layers.')
+    parser.add_argument('--hid_output', nargs='*', type=int, help='Number of units for output-specific hidden layers.')
+
     parser.add_argument('--dropout', type=float, default=0.0, help='Dropout probability')
     parser.add_argument('--mask', type=float, default=0.0, help='Mask weight. Setting to 0 is equivalent to hard mask (for on/off prob).')
     parser.add_argument('--local_unmask_offset', type=int, default=10, help='Number of pixels around each bb to unmask (for on/off prob).')
     parser.add_argument('--epoch', type=int, help='Number of epochs')
+    parser.add_argument('--lr', type=float, default=0.0001, help='learning rate')
     parser.add_argument('--batch_size', type=int, help='Mini batch size')
     parser.add_argument('--max_length', type=int, default=0,
                         help='Max sequence length to train on. This is used to subset the dataaset.')
@@ -1153,5 +1168,6 @@ if __name__ == "__main__":
     # training
     assert 0 <= args.dropout <= 1
     assert 0 <= args.mask <= 1
-    main(args.data, args.num_filters, args.filter_width, args.dropout, args.mask, args.local_unmask_offset,
-         args.epoch, args.batch_size, args.max_length, args.result, args.cpu)
+    main(args.data, args.num_filters, args.filter_width, args.hid_shared, args.hid_output,
+         args.dropout, args.mask, args.local_unmask_offset,
+         args.epoch, args.lr, args.batch_size, args.max_length, args.result, args.cpu)
