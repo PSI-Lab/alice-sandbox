@@ -77,9 +77,10 @@ class MyDataSet(Dataset):
 
     # TODO length grouping
 
-    def __init__(self, df):
+    def __init__(self, df, local_unmask_offset=10):
         self.len = len(df)
         self.df = df
+        self.local_unmask_offset = local_unmask_offset
 
     def _encode_seq(self, seq):
         seq = seq.upper().replace('A', '1').replace('C', '2').replace('G', '3').replace('T', '4').replace('U', '4').replace('N', '0')
@@ -115,7 +116,7 @@ class MyDataSet(Dataset):
         target_stem_sm_size, target_iloop_sm_size_x, target_iloop_sm_size_y, target_hloop_sm_size, \
         target_stem_sl_size, target_iloop_sl_size_x, target_iloop_sl_size_y, target_hloop_sl_size, \
         mask_stem_location_size, mask_iloop_location_size, \
-        mask_hloop_location_size = make_target_pixel_bb(structure_arr, bounding_boxes)
+        mask_hloop_location_size = make_target_pixel_bb(structure_arr, bounding_boxes, self.local_unmask_offset)
 
         # organize
         y = {
@@ -879,7 +880,7 @@ def compute_metrics(x, y, m):
     return evalm
 
 
-def main(path_data, num_filters, filter_width, dropout, maskw, n_epoch, batch_size, max_length, out_dir, n_cpu):
+def main(path_data, num_filters, filter_width, dropout, maskw, local_unmask_offset, n_epoch, batch_size, max_length, out_dir, n_cpu):
     logging.info("Loading dataset: {}".format(path_data))
     dc_client = dc.Client()
     df = []
@@ -933,11 +934,11 @@ def main(path_data, num_filters, filter_width, dropout, maskw, n_epoch, batch_si
     # length group + chain dataset, to ensure that sequences in the same minibatch are of similar length
     n_groups = 20
     # data loaders
-    data_loader_tr = DataLoader(torch.utils.data.ConcatDataset([MyDataSet(x) for x in length_grouping(df_tr, n_groups)]),
+    data_loader_tr = DataLoader(torch.utils.data.ConcatDataset([MyDataSet(x, local_unmask_offset) for x in length_grouping(df_tr, n_groups)]),
                                 batch_size=batch_size,
                                 shuffle=True, num_workers=n_cpu,
                                 collate_fn=PadCollate2D())
-    data_loader_va = DataLoader(torch.utils.data.ConcatDataset([MyDataSet(x) for x in length_grouping(df_va, n_groups)]),
+    data_loader_va = DataLoader(torch.utils.data.ConcatDataset([MyDataSet(x, local_unmask_offset) for x in length_grouping(df_va, n_groups)]),
                                 batch_size=batch_size,
                                 shuffle=True, num_workers=n_cpu,
                                 collate_fn=PadCollate2D())
@@ -1134,7 +1135,8 @@ if __name__ == "__main__":
     parser.add_argument('--num_filters', nargs='*', type=int, help='Number of conv filters for each layer.')
     parser.add_argument('--filter_width', nargs='*', type=int, help='Filter width for each layer.')
     parser.add_argument('--dropout', type=float, default=0.0, help='Dropout probability')
-    parser.add_argument('--mask', type=float, default=0.0, help='Mask weight. Setting to 0 is equivalent to hard mask.')
+    parser.add_argument('--mask', type=float, default=0.0, help='Mask weight. Setting to 0 is equivalent to hard mask (for on/off prob).')
+    parser.add_argument('--local_unmask_offset', type=int, default=10, help='Number of pixels around each bb to unmask (for on/off prob).')
     parser.add_argument('--epoch', type=int, help='Number of epochs')
     parser.add_argument('--batch_size', type=int, help='Mini batch size')
     parser.add_argument('--max_length', type=int, default=0,
@@ -1151,5 +1153,5 @@ if __name__ == "__main__":
     # training
     assert 0 <= args.dropout <= 1
     assert 0 <= args.mask <= 1
-    main(args.data, args.num_filters, args.filter_width, args.dropout, args.mask, args.epoch, args.batch_size, args.max_length, args.result,
-         args.cpu)
+    main(args.data, args.num_filters, args.filter_width, args.dropout, args.mask, args.local_unmask_offset,
+         args.epoch, args.batch_size, args.max_length, args.result, args.cpu)
