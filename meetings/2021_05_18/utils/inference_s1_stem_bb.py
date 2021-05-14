@@ -292,29 +292,28 @@ class Predictor(object):
 
     @staticmethod
     def predict_bounding_box(pred_on, pred_loc_x, pred_loc_y,
-                             pred_sm_siz_x, pred_sm_siz_y,
-                             pred_sl_siz_x, pred_sl_siz_y, thres=0.1):
+                             pred_sm_siz, pred_sl_siz, thres=0.1):
 
         def _make_mask(l):
             m = np.ones((l, l))
             m[np.tril_indices(l)] = 0
             return m
 
-        def _update(bb_x, bb_y, siz_x, siz_y, p_on, p_other, proposed_boxes, pred_box, bb_source):
+        def _update(bb_x, bb_y, siz, p_on, p_other, proposed_boxes, pred_box, bb_source):
             assert bb_source in ['sm', 'sl']
             proposed_boxes.append({
                 'bb_x': bb_x,
                 'bb_y': bb_y,
-                'siz_x': siz_x,
-                'siz_y': siz_y,
+                'siz_x': siz,
+                'siz_y': siz,
                 'prob_on_{}'.format(bb_source): p_on,
                 'prob_other_{}'.format(bb_source): p_other,
             })
             # set value in pred box, be careful with out of bound index
             x0 = bb_x
-            y0 = bb_y - siz_y + 1  # 0-based
-            wx = siz_x
-            wy = siz_y
+            y0 = bb_y - siz + 1  # 0-based
+            wx = siz
+            wy = siz
             ix0 = max(0, x0)
             iy0 = max(0, y0)
             ix1 = min(x0 + wx, pred_box.shape[0])
@@ -322,30 +321,28 @@ class Predictor(object):
             pred_box[ix0:ix1, iy0:iy1] = 1
             return proposed_boxes, pred_box
 
-        def sm_top_one(p_on, pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j):
+        def sm_top_one(p_on, pred_loc_x, pred_loc_y, pred_sm_siz, i, j):
             loc_x = np.argmax(pred_loc_x[:, i, j])
             loc_y = np.argmax(pred_loc_y[:, i, j])
             # softmax size
-            sm_siz_x = np.argmax(pred_sm_siz_x[:, i, j]) + 1  # size starts at 1 for index=0
-            sm_siz_y = np.argmax(pred_sm_siz_y[:, i, j]) + 1
+            sm_siz = np.argmax(pred_sm_siz[:, i, j]) + 1
 
-            if loc_x == pred_loc_x.shape[0] - 1 or loc_y == pred_loc_y.shape[0] - 1 or sm_siz_x == pred_sm_siz_x.shape[
-                0] or sm_siz_y == pred_sm_siz_y.shape[0]:
+            if loc_x == pred_loc_x.shape[0] - 1 or loc_y == pred_loc_y.shape[0] - 1 or sm_siz == pred_sm_siz.shape[
+                0]:
                 # discard if any argmax = last_one (the "catch-all" unit)
                 return []
             else:
                 # prob of location
                 prob_1 = softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y]
                 # softmax: compute joint probability of taking the max value
-                prob_sm = prob_1 * softmax(pred_sm_siz_x[:, i, j])[sm_siz_x - 1] * softmax(pred_sm_siz_y[:, i, j])[
-                    sm_siz_y - 1]  # FIXME multiplying twice for case where y is set to x
+                prob_sm = prob_1 * softmax(pred_sm_siz[:, i, j])[sm_siz - 1]
                 bb_x = i - loc_x
                 bb_y = j + loc_y
                 # list of one tuple
-                result = [(bb_x, bb_y, sm_siz_x, sm_siz_y, p_on, prob_sm)]
+                result = [(bb_x, bb_y, sm_siz, p_on, prob_sm)]
                 return result
 
-        def sl_top_one(p_on, pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j):
+        def sl_top_one(p_on, pred_loc_x, pred_loc_y, pred_sl_siz, i, j):
             loc_x = np.argmax(pred_loc_x[:, i, j])
             loc_y = np.argmax(pred_loc_y[:, i, j])
 
@@ -354,13 +351,10 @@ class Predictor(object):
                 return []
             else:
                 # scalar size, round to int
-                sl_siz_x = int(np.round(pred_sl_siz_x[i, j]))
-                sl_siz_y = int(np.round(pred_sl_siz_y[i, j]))
+                sl_siz = int(np.round(pred_sl_siz[i, j]))
                 # avoid setting size 0 or negative # TODO adding logging warning
-                if sl_siz_x < 1:
-                    sl_siz_x = 1
-                if sl_siz_y < 1:
-                    sl_siz_y = 1
+                if sl_siz < 1:
+                    sl_siz = 1
                 # # prob of on/off & location
                 # prob_1 = p_on * softmax(pred_loc_x[:, i, j])[loc_x] * softmax(pred_loc_y[:, i, j])[loc_y]
                 # prob of location
@@ -369,23 +363,16 @@ class Predictor(object):
                 bb_x = i - loc_x
                 bb_y = j + loc_y
                 # list of one tuple
-                result = [(bb_x, bb_y, sl_siz_x, sl_siz_y, p_on, prob_1)]
+                result = [(bb_x, bb_y, sl_siz, p_on, prob_1)]
                 return result
 
         # remove singleton dimensions
         pred_on = np.squeeze(pred_on)
         pred_loc_x = np.squeeze(pred_loc_x)
         pred_loc_y = np.squeeze(pred_loc_y)
-        pred_sm_siz_x = np.squeeze(pred_sm_siz_x)
-        if pred_sm_siz_y is None:
-            pred_sm_siz_y = np.copy(pred_sm_siz_x)
-        else:
-            pred_sm_siz_y = np.squeeze(pred_sm_siz_y)
-        pred_sl_siz_x = np.squeeze(pred_sl_siz_x)
-        if pred_sl_siz_y is None:
-            pred_sl_siz_y = np.copy(pred_sl_siz_x)
-        else:
-            pred_sl_siz_y = np.squeeze(pred_sl_siz_y)
+        pred_sm_siz = np.squeeze(pred_sm_siz)
+        pred_sl_siz = np.squeeze(pred_sl_siz)
+
         # TODO assert on input shape
 
         # hard-mask
@@ -402,26 +389,26 @@ class Predictor(object):
 
         for i, j in np.transpose(np.where(pred_on > thres)):  # TODO vectorize
             # # save sm box # TODO some computation is duplicated in sm/sl
-            result = sm_top_one(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sm_siz_x, pred_sm_siz_y, i, j)
+            result = sm_top_one(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sm_siz, i, j)
 
-            for bb_x, bb_y, sm_siz_x, sm_siz_y, prob_on, prob_sm in result:
+            for bb_x, bb_y, sm_siz, prob_on, prob_sm in result:
                 # ignore out of bound bbs # TODO print warning?
                 if not (0 <= bb_x <= seq_len and 0 <= bb_y <= seq_len):
                     continue
-                proposed_boxes, pred_box = _update(bb_x, bb_y, sm_siz_x, sm_siz_y, prob_on, prob_sm, proposed_boxes,
+                proposed_boxes, pred_box = _update(bb_x, bb_y, sm_siz, prob_on, prob_sm, proposed_boxes,
                                                    pred_box,
                                                    bb_source='sm')
 
             # save sl box (it's ok if sl box is identical with sm box, since probabilities will be aggregated in the end)
-            result = sl_top_one(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sl_siz_x, pred_sl_siz_y, i, j)
+            result = sl_top_one(pred_on[i, j], pred_loc_x, pred_loc_y, pred_sl_siz, i, j)
 
-            for bb_x, bb_y, sl_siz_x, sl_siz_y, prob_on, prob_sl in result:
+            for bb_x, bb_y, sl_siz, prob_on, prob_sl in result:
                 # assert 0 <= bb_x <= seq_len
                 # assert 0 <= bb_y <= seq_len
                 # ignore out of bound bbs # TODO print warning?
                 if not (0 <= bb_x <= seq_len and 0 <= bb_y <= seq_len):
                     continue
-                proposed_boxes, pred_box = _update(bb_x, bb_y, sl_siz_x, sl_siz_y, prob_on, prob_sl, proposed_boxes,
+                proposed_boxes, pred_box = _update(bb_x, bb_y, sl_siz, prob_on, prob_sl, proposed_boxes,
                                                    pred_box,
                                                    bb_source='sl')
 
@@ -439,10 +426,8 @@ class Predictor(object):
         # bb
         pred_bb_stem, pred_box_stem = self.predict_bounding_box(pred_on=stem_on, pred_loc_x=yp['stem_location_x'],
                                                                 pred_loc_y=yp['stem_location_y'],
-                                                                pred_sm_siz_x=yp['stem_sm_size'],
-                                                                pred_sm_siz_y=None,
-                                                                pred_sl_siz_x=yp['stem_sl_size'],
-                                                                pred_sl_siz_y=None,
+                                                                pred_sm_siz=yp['stem_sm_size'],
+                                                                pred_sl_siz=yp['stem_sl_size'],
                                                                 thres=threshold)
 
         return yp, pred_bb_stem, pred_box_stem
