@@ -265,10 +265,6 @@ class SimpleConvNet(nn.Module):
         filter_width = [None] + filter_width
         cnn_layers = []
         for i, (nf, fw) in enumerate(zip(num_filters[1:], filter_width[1:])):
-            # assert fw % 2 == 1  # odd
-            # cnn_layers.append(nn.Conv2d(num_filters[i], nf, kernel_size=fw, stride=1,
-            #                             padding=fw//2, padding_mode='zeros'))
-
             # explicitly pad in the first layer with enough context
             if i == 0:
                 cnn_layers.append(nn.Conv2d(num_filters[i], nf, kernel_size=fw, stride=1,
@@ -292,10 +288,7 @@ class SimpleConvNet(nn.Module):
             fc_shared.append(nn.Conv2d(hid_shared[i], hid, kernel_size=1))
             fc_shared.append(nn.ReLU())
         self.fc = nn.Sequential(*fc_shared)
-        # self.fc = nn.Sequential(
-        #     nn.Conv2d(num_filters[-1], 50, kernel_size=1),
-        #     nn.ReLU(),
-        # )
+
 
         # add output specific hidden layers
         # for now support only one layer
@@ -335,81 +328,6 @@ class SimpleConvNet(nn.Module):
         self.out_stem_sl_siz = nn.Sequential(
             nn.Conv2d(hid_output, 1, kernel_size=1),
         )
-        
-        # # iloop
-        # self.out_iloop_on = nn.Sequential(
-        #     nn.Conv2d(50, 20, kernel_size=1),
-        #     nn.ReLU(),
-        #     nn.Conv2d(20, 1, kernel_size=1),
-        #     nn.Sigmoid(),
-        # )
-        # self.out_iloop_loc_x = nn.Sequential(
-        #     nn.Conv2d(50, 20, kernel_size=1),
-        #     nn.ReLU(),
-        #     nn.Conv2d(20, 12, kernel_size=1),
-        #     nn.LogSoftmax(dim=1),
-        # )
-        # self.out_iloop_loc_y = nn.Sequential(
-        #     nn.Conv2d(50, 20, kernel_size=1),
-        #     nn.ReLU(),
-        #     nn.Conv2d(20, 12, kernel_size=1),
-        #     nn.LogSoftmax(dim=1),
-        # )
-        #
-        # self.hid_iloop_siz_x = nn.Sequential(
-        #     nn.Conv2d(50, 20, kernel_size=1),
-        #     nn.ReLU(),
-        # )
-        # self.out_iloop_sm_siz_x = nn.Sequential(
-        #     nn.Conv2d(20, 11, kernel_size=1),
-        #     nn.LogSoftmax(dim=1),
-        # )
-        # self.out_iloop_sl_siz_x = nn.Sequential(
-        #     nn.Conv2d(20, 1, kernel_size=1),
-        # )
-        #
-        # self.hid_iloop_siz_y = nn.Sequential(
-        #     nn.Conv2d(50, 20, kernel_size=1),
-        #     nn.ReLU(),
-        # )
-        # self.out_iloop_sm_siz_y = nn.Sequential(
-        #     nn.Conv2d(20, 11, kernel_size=1),
-        #     nn.LogSoftmax(dim=1),
-        # )
-        # self.out_iloop_sl_siz_y = nn.Sequential(
-        #     nn.Conv2d(20, 1, kernel_size=1),
-        # )
-        #
-        # # hloop
-        # self.out_hloop_on = nn.Sequential(
-        #     nn.Conv2d(50, 20, kernel_size=1),
-        #     nn.ReLU(),
-        #     nn.Conv2d(20, 1, kernel_size=1),
-        #     nn.Sigmoid(),
-        # )
-        # self.out_hloop_loc_x = nn.Sequential(
-        #     nn.Conv2d(50, 20, kernel_size=1),
-        #     nn.ReLU(),
-        #     nn.Conv2d(20, 12, kernel_size=1),
-        #     nn.LogSoftmax(dim=1),
-        # )
-        # self.out_hloop_loc_y = nn.Sequential(
-        #     nn.Conv2d(50, 20, kernel_size=1),
-        #     nn.ReLU(),
-        #     nn.Conv2d(20, 12, kernel_size=1),
-        #     nn.LogSoftmax(dim=1),
-        # )
-        # self.hid_hloop_siz = nn.Sequential(
-        #     nn.Conv2d(50, 20, kernel_size=1),
-        #     nn.ReLU(),
-        # )
-        # self.out_hloop_sm_siz = nn.Sequential(
-        #     nn.Conv2d(20, 11, kernel_size=1),
-        #     nn.LogSoftmax(dim=1),
-        # )
-        # self.out_hloop_sl_siz = nn.Sequential(
-        #     nn.Conv2d(20, 1, kernel_size=1),
-        # )
 
     @staticmethod
     def compute_context(filter_width):
@@ -432,28 +350,6 @@ class SimpleConvNet(nn.Module):
         y_stem_sm_siz = self.out_stem_sm_siz(hid_stem_siz)
         y_stem_sl_siz = self.out_stem_sl_siz(hid_stem_siz)
 
-        # # iloop
-        # y_iloop_on = self.out_iloop_on(x)
-        # y_iloop_loc_x = self.out_iloop_loc_x(x)
-        # y_iloop_loc_y = self.out_iloop_loc_y(x)
-        # # y_iloop_siz_x = self.out_iloop_siz_x(x)
-        # # y_iloop_siz_y = self.out_iloop_siz_y(x)
-        # hid_iloop_siz_x = self.hid_iloop_siz_x(x)
-        # y_iloop_sm_siz_x = self.out_iloop_sm_siz_x(hid_iloop_siz_x)
-        # y_iloop_sl_siz_x = self.out_iloop_sl_siz_x(hid_iloop_siz_x)
-        # hid_iloop_siz_y = self.hid_iloop_siz_y(x)
-        # y_iloop_sm_siz_y = self.out_iloop_sm_siz_y(hid_iloop_siz_y)
-        # y_iloop_sl_siz_y = self.out_iloop_sl_siz_y(hid_iloop_siz_y)
-        #
-        # # hloop
-        # y_hloop_on = self.out_hloop_on(x)
-        # y_hloop_loc_x = self.out_hloop_loc_x(x)
-        # y_hloop_loc_y = self.out_hloop_loc_y(x)
-        # # y_hloop_siz = self.out_hloop_siz(x)
-        # hid_hloop_siz = self.hid_hloop_siz(x)
-        # y_hloop_sm_siz = self.out_hloop_sm_siz(hid_hloop_siz)
-        # y_hloop_sl_siz = self.out_hloop_sl_siz(hid_hloop_siz)
-
         # collect
         y = {
             # stem
@@ -463,25 +359,7 @@ class SimpleConvNet(nn.Module):
             # 'stem_size': y_stem_siz,
             'stem_sm_size': y_stem_sm_siz,
             'stem_sl_size': y_stem_sl_siz,
-            
-            # # iloop
-            # 'iloop_on': y_iloop_on,
-            # 'iloop_location_x': y_iloop_loc_x,
-            # 'iloop_location_y': y_iloop_loc_y,
-            # # 'iloop_size_x': y_iloop_siz_x,
-            # # 'iloop_size_y': y_iloop_siz_y,
-            # 'iloop_sm_size_x': y_iloop_sm_siz_x,
-            # 'iloop_sl_size_x': y_iloop_sl_siz_x,
-            # 'iloop_sm_size_y': y_iloop_sm_siz_y,
-            # 'iloop_sl_size_y': y_iloop_sl_siz_y,
-            #
-            # # hloop
-            # 'hloop_on': y_hloop_on,
-            # 'hloop_location_x': y_hloop_loc_x,
-            # 'hloop_location_y': y_hloop_loc_y,
-            # # 'hloop_size': y_hloop_siz,
-            # 'hloop_sm_size': y_hloop_sm_siz,
-            # 'hloop_sl_size': y_hloop_sl_siz,
+
         }
 
         return y
@@ -570,86 +448,7 @@ def masked_loss(x, y, m, maskw):
     loss_stem_sl_siz = masked_loss_e(_x, _y, _m2)
     logging.info("loss_stem_sl_siz: {}".format(loss_stem_sl_siz))
 
-    # # iloop
-    # # iloop on
-    # _x = x['iloop_on']
-    # _y = y['iloop_on']
-    # _m1 = m['iloop_on']
-    # if maskw > 0:
-    #     _m1[_m1 == 0] = maskw
-    # loss_iloop_on = masked_loss_b(_x, _y, _m1)
-    # logging.info("loss_iloop_on: {}".format(loss_iloop_on))
-    #
-    # # iloop location x & y
-    # _x = x['iloop_location_x']
-    # _y = y['iloop_location_x']
-    # _m2 = m['iloop_location_size']
-    # loss_iloop_loc_x = masked_loss_m(_x, _y, _m2)
-    # logging.info("loss_iloop_loc_x: {}".format(loss_iloop_loc_x))
-    # _x = x['iloop_location_y']
-    # _y = y['iloop_location_y']
-    # loss_iloop_loc_y = masked_loss_m(_x, _y, _m2)
-    # logging.info("loss_iloop_loc_y: {}".format(loss_iloop_loc_y))
-    #
-    # # iloop size, softmax
-    # _x = x['iloop_sm_size_x']
-    # _y = y['iloop_sm_size_x']
-    # loss_iloop_sm_siz_x = masked_loss_m(_x, _y, _m2)
-    # logging.info("loss_iloop_sm_siz_x: {}".format(loss_iloop_sm_siz_x))
-    # _x = x['iloop_sm_size_y']
-    # _y = y['iloop_sm_size_y']
-    # loss_iloop_sm_siz_y = masked_loss_m(_x, _y, _m2)
-    # logging.info("loss_iloop_sm_siz_y: {}".format(loss_iloop_sm_siz_y))
-    #
-    # # iloop size, scalar
-    # _x = x['iloop_sl_size_x']
-    # _y = y['iloop_sl_size_x']
-    # loss_iloop_sl_siz_x = masked_loss_e(_x, _y, _m2)
-    # logging.info("loss_iloop_sl_siz_x: {}".format(loss_iloop_sl_siz_x))
-    # _x = x['iloop_sl_size_y']
-    # _y = y['iloop_sl_size_y']
-    # loss_iloop_sl_siz_y = masked_loss_e(_x, _y, _m2)
-    # logging.info("loss_iloop_sl_siz_y: {}".format(loss_iloop_sl_siz_y))
-    #
-    # # hloop
-    # # hloop on
-    # _x = x['hloop_on']
-    # _y = y['hloop_on']
-    # _m1 = m['hloop_on']
-    # if maskw > 0:
-    #     _m1[_m1 == 0] = maskw
-    # loss_hloop_on = masked_loss_b(_x, _y, _m1)
-    # logging.info("loss_hloop_on: {}".format(loss_hloop_on))
-    #
-    # # hloop location x & y
-    # _x = x['hloop_location_x']
-    # _y = y['hloop_location_x']
-    # _m2 = m['hloop_location_size']
-    # loss_hloop_loc_x = masked_loss_m(_x, _y, _m2)
-    # logging.info("loss_hloop_loc_x: {}".format(loss_hloop_loc_x))
-    # _x = x['hloop_location_y']
-    # _y = y['hloop_location_y']
-    # loss_hloop_loc_y = masked_loss_m(_x, _y, _m2)
-    # logging.info("loss_hloop_loc_y: {}".format(loss_hloop_loc_y))
-    #
-    # # hloop size, softmax
-    # _x = x['hloop_sm_size']
-    # _y = y['hloop_sm_size']
-    # loss_hloop_sm_siz = masked_loss_m(_x, _y, _m2)
-    # logging.info("loss_hloop_sm_siz: {}".format(loss_hloop_sm_siz))
-    #
-    # # hloop size, scalar
-    # _x = x['hloop_sl_size']
-    # _y = y['hloop_sl_size']
-    # loss_hloop_sl_siz = masked_loss_e(_x, _y, _m2)
-    # logging.info("loss_hloop_sl_siz: {}".format(loss_hloop_sl_siz))
-
-    # TODO scale down the MSE portion?
     return loss_stem_on + loss_stem_loc_x + loss_stem_loc_y + loss_stem_sm_siz + loss_stem_sl_siz
-    # return loss_stem_on + loss_stem_loc_x + loss_stem_loc_y + loss_stem_sm_siz + loss_stem_sl_siz + \
-    #        loss_iloop_on + loss_iloop_loc_x + loss_iloop_loc_y + \
-    #        loss_iloop_sm_siz_x + loss_iloop_sm_siz_y + loss_iloop_sl_siz_x + loss_iloop_sl_siz_y + \
-    #        loss_hloop_on + loss_hloop_loc_x + loss_hloop_loc_y + loss_hloop_sm_siz + loss_hloop_sl_siz
 
 
 def to_device(x, y, m, device):
@@ -690,57 +489,7 @@ class EvalMetric(object):
             'stem_sl_size': {
                 'diff': [],
             },
-            
-            # # iloop
-            # 'iloop_on': {
-            #     'auroc': [],
-            #     'auprc': [],
-            # },
-            # 'iloop_location_x': {
-            #     'accuracy': [],
-            # },
-            # 'iloop_location_y': {
-            #     'accuracy': [],
-            # },
-            # # 'iloop_size_x': {
-            # #     'accuracy': [],
-            # # },
-            # # 'iloop_size_y': {
-            # #     'accuracy': [],
-            # # },
-            # 'iloop_sm_size_x': {
-            #     'accuracy': [],
-            # },
-            # 'iloop_sm_size_y': {
-            #     'accuracy': [],
-            # },
-            # 'iloop_sl_size_x': {
-            #     'diff': [],
-            # },
-            # 'iloop_sl_size_y': {
-            #     'diff': [],
-            # },
-            #
-            # # hloop
-            # 'hloop_on': {
-            #     'auroc': [],
-            #     'auprc': [],
-            # },
-            # 'hloop_location_x': {
-            #     'accuracy': [],
-            # },
-            # 'hloop_location_y': {
-            #     'accuracy': [],
-            # },
-            # # 'hloop_size': {
-            # #     'accuracy': [],
-            # # },
-            # 'hloop_sm_size': {
-            #     'accuracy': [],
-            # },
-            # 'hloop_sl_size': {
-            #     'diff': [],
-            # },
+
         }
 
     def add_val(self, output, metric, val):
@@ -844,46 +593,6 @@ def compute_metrics(x, y, m):
         # stem size, scalar
         evalm.add_val(output='stem_sl_size', metric='diff',
                       val=_diff(key_target='stem_sl_size', key_mask='stem_location_size'))
-        
-        # # iloop
-        # # iloop on
-        # roc, prc = _roc_prc(key_target='iloop_on', key_mask='iloop_on')
-        # evalm.add_val(output='iloop_on', metric='auroc', val=roc)
-        # evalm.add_val(output='iloop_on', metric='auprc', val=prc)
-        # # iloop location x & y
-        # evalm.add_val(output='iloop_location_x', metric='accuracy',
-        #               val=_accuracy(key_target='iloop_location_x', key_mask='iloop_location_size'))
-        # evalm.add_val(output='iloop_location_y', metric='accuracy',
-        #               val=_accuracy(key_target='iloop_location_y', key_mask='iloop_location_size'))
-        # # iloop size x, softmax
-        # evalm.add_val(output='iloop_sm_size_x', metric='accuracy',
-        #               val=_accuracy(key_target='iloop_sm_size_x', key_mask='iloop_location_size'))
-        # # iloop size y, softmax
-        # evalm.add_val(output='iloop_sm_size_y', metric='accuracy',
-        #               val=_accuracy(key_target='iloop_sm_size_y', key_mask='iloop_location_size'))
-        # # iloop size x, scalar
-        # evalm.add_val(output='iloop_sl_size_x', metric='diff',
-        #               val=_diff(key_target='iloop_sl_size_x', key_mask='iloop_location_size'))
-        # # iloop size y, scalar
-        # evalm.add_val(output='iloop_sl_size_y', metric='diff',
-        #               val=_diff(key_target='iloop_sl_size_y', key_mask='iloop_location_size'))
-        #
-        # # hloop
-        # # stem on
-        # roc, prc = _roc_prc(key_target='hloop_on', key_mask='hloop_on')
-        # evalm.add_val(output='hloop_on', metric='auroc', val=roc)
-        # evalm.add_val(output='hloop_on', metric='auprc', val=prc)
-        # # hloop location x & y
-        # evalm.add_val(output='hloop_location_x', metric='accuracy',
-        #               val=_accuracy(key_target='hloop_location_x', key_mask='hloop_location_size'))
-        # evalm.add_val(output='hloop_location_y', metric='accuracy',
-        #               val=_accuracy(key_target='hloop_location_y', key_mask='hloop_location_size'))
-        # # hloop size, softmax
-        # evalm.add_val(output='hloop_sm_size', metric='accuracy',
-        #               val=_accuracy(key_target='hloop_sm_size', key_mask='hloop_location_size'))
-        # # hloop size, softmax
-        # evalm.add_val(output='hloop_sl_size', metric='diff',
-        #               val=_diff(key_target='hloop_sl_size', key_mask='hloop_location_size'))
 
     return evalm
 
@@ -953,44 +662,6 @@ def main(path_data, num_filters, filter_width, hid_shared, hid_output,
                                 shuffle=True, num_workers=n_cpu,
                                 collate_fn=PadCollate2D())
 
-    # # naive guess is the mean of training target value
-    # yp_naive = torch.mean(torch.stack([torch.mean(y) for _, y, _ in data_loader_tr]))
-    # logging.info("Naive guess: {}".format(yp_naive))
-    # # calculate loss using naive guess
-    # logging.info("Naive guess performance")
-    #
-    # with torch.set_grad_enabled(False):
-    #     # training
-    #     loss_naive_tr = []
-    #     auroc_naive_tr = []
-    #     auprc_naive_tr = []
-    #     for x, y, m in data_loader_tr:
-    #         x, y, m = to_device(x, y, m, device)
-    #         yp = torch.ones_like(y) * yp_naive
-    #         # loss_naive_tr.append(masked_loss(yp, y, m).detach().cpu().numpy())
-    #         loss_naive_tr.append(masked_loss(yp, y, m).item())
-    #         _r, _p = compute_metrics(y, yp, m)
-    #         auroc_naive_tr.extend(_r)
-    #         auprc_naive_tr.extend(_p)
-    #     logging.info("Training: loss {} au-ROC {} au-PRC {}".format(np.mean(np.stack(loss_naive_tr)),
-    #                                                                 np.mean(np.stack(auroc_naive_tr)),
-    #                                                                 np.mean(np.stack(auprc_naive_tr))))
-    #     # validation
-    #     loss_naive_va = []
-    #     auroc_naive_va = []
-    #     auprc_naive_va = []
-    #     for x, y, m in data_loader_va:
-    #         x, y, m = to_device(x, y, m, device)
-    #         yp = torch.ones_like(y) * yp_naive
-    #         # loss_naive_va.append(masked_loss(yp, y, m).detach().cpu().numpy())
-    #         loss_naive_va.append(masked_loss(yp, y, m).item())
-    #         _r, _p = compute_metrics(y, yp, m)
-    #         auroc_naive_va.extend(_r)
-    #         auprc_naive_va.extend(_p)
-    #     logging.info("Validation: loss {} au-ROC {} au-PRC {}".format(np.mean(np.stack(loss_naive_va)),
-    #                                                                   np.mean(np.stack(auroc_naive_va)),
-    #                                                                   np.mean(np.stack(auprc_naive_va))))
-
     # csv file for logging metrics
     out_metric_csv = os.path.join(out_dir, 'metrics.csv')
     METRIC_CSV_CREATED = False
@@ -1043,36 +714,11 @@ def main(path_data, num_filters, filter_width, hid_shared, hid_output,
             df_metrics = df_metrics[METRIC_CSV_COLS]
             df_metrics.to_csv(out_metric_csv, index=False, header=None, mode="a")
 
-        # save model
-        _model_path = os.path.join(out_dir, 'model_ckpt_ep_{}.pth'.format(epoch))
-        torch.save(model.state_dict(), _model_path)
-        logging.info("Model checkpoint saved at: {}".format(_model_path))
-
-        # # save the last minibatch prediction
-        # df_pred = []
-        # num_examples = y[list(y.keys())[0]].shape[0]   # wlog, check batch dimension using first output key
-        # for i in range(num_examples):
-        #     row = {'subset': 'training'}
-        #     # store metadata
-        #     row.update(md[i])
-        #     for k in y.keys():
-        #         #  batch x channel x H x W
-        #         _y = y[k][i, :, :, :].detach().cpu().numpy()
-        #         _yp = yp[k][i, :, :, :].detach().cpu().numpy()
-        #         row.update({'target_{}'.format(k): _y,
-        #                     'pred_{}'.format(k): _yp,
-        #                     })
-        #     df_pred.append(row)
-        #
-        # # # report training loss
-        # # logging.info(
-        # #     "Epoch {}/{}, training loss (running) {}, au-ROC {}, au-PRC {}".format(epoch, n_epoch,
-        # #                                                                            np.mean(
-        # #                                                                                np.stack(running_loss_tr)),
-        # #                                                                            np.mean(np.stack(running_auroc_tr)),
-        # #                                                                            np.mean(np.stack(running_auprc_tr))))
-        # logging.info(
-        #     "Epoch {}/{}, training loss (running) {}".format(epoch, n_epoch,np.mean(np.stack(running_loss_tr))))
+        # save model every (n_epoch/10)-th epoch
+        if (epoch + 1) % max(1, n_epoch//10) == 0:
+            _model_path = os.path.join(out_dir, 'model_ckpt_ep_{}.pth'.format(epoch))
+            torch.save(model.state_dict(), _model_path)
+            logging.info("Model checkpoint saved at: {}".format(_model_path))
 
         with torch.set_grad_enabled(False):
             # report validation loss
@@ -1093,11 +739,6 @@ def main(path_data, num_filters, filter_width, hid_shared, hid_output,
                 # running_auroc_va.extend(_r)
                 # running_auprc_va.extend(_p)
             logging.info(evalm_tr.aggregate(method=np.nanmean))
-            # logging.info(
-            #     "Epoch {}/{}, validation loss {}, au-ROC {}, au-PRC {}".format(epoch, n_epoch,
-            #                                                                    np.mean(np.stack(running_loss_va)),
-            #                                                                    np.mean(np.stack(running_auroc_va)),
-            #                                                                    np.mean(np.stack(running_auprc_va))))
 
             # to csv file
             df_metrics = evalm_tr.agg_and_flattern(method=np.nanmean)
@@ -1116,27 +757,6 @@ def main(path_data, num_filters, filter_width, hid_shared, hid_output,
             logging.info(
                 "Epoch {}/{}, validation loss {}".format(epoch, n_epoch, np.mean(np.stack(running_loss_va))))
 
-        #     # save the last minibatch prediction
-        #     num_examples = y[list(y.keys())[0]].shape[0]  # wlog, check batch dimension using first output key
-        #     for i in range(num_examples):
-        #         row = {'subset': 'validation'}
-        #         # store metadata
-        #         row.update(md[i])
-        #         for k in y.keys():
-        #             #  batch x channel x H x W
-        #             _y = y[k][i, :, :, :].detach().cpu().numpy()
-        #             _yp = yp[k][i, :, :, :].detach().cpu().numpy()
-        #             row.update({'target_{}'.format(k): _y,
-        #                         'pred_{}'.format(k): _yp,
-        #                         })
-        #         df_pred.append(row)
-        #
-        # # end pf epoch
-        # # export prediction
-        # out_file = os.path.join(out_dir, 'pred_ep_{}.pkl.gz'.format(epoch))
-        # df_pred = pd.DataFrame(df_pred)
-        # df_pred.to_pickle(out_file, compression='gzip')
-        # logging.info("Exported prediction (one minibatch) to: {}".format(out_file))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
