@@ -94,7 +94,11 @@ def sample_structures(seq, n_samples, remove_dup=False):
         raise Exception(msg)
     # parse output
     lines = stdout.splitlines()
-    assert len(lines) == n_samples + 1
+    # num generated might be < n_samples, if we only sample non-dup
+    if remove_dup:
+        pass
+    else:
+        assert len(lines) == n_samples + 1
     lines = lines[1:]
     # convert to idx array
     all_vals = []
