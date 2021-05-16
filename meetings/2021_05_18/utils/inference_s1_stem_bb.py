@@ -449,20 +449,334 @@ class Predictor(object):
 
         return uniq_stem
 
-    def predict_bb(self, seq, threshold, seq2=None, mask=None):
+    @staticmethod
+    def filter_non_standard_stem(df, seq):
+        # filter out stems with nonstandard base pairing
+        # df: df_stem
+        # 'bb_x', 'bb_y', 'siz_x', 'siz_y', 'prob', 'bl_x', 'bl_y'
+        allowed_pairs = ['AT', 'AU', 'TA', 'UA',
+                         'GC', 'CG',
+                         'GT', 'TG', 'GU', 'UG']
+        df_new = []
+        for _, row in df.iterrows():
+            bb_x = row['bb_x']
+            bb_y = row['bb_y']
+            siz_x = row['siz_x']
+            siz_y = row['siz_y']
+            seq_x = seq[bb_x:bb_x + siz_x]
+            seq_y = seq[bb_y - siz_y + 1:bb_y + 1][::-1]
+            pairs = ['{}{}'.format(x, y) for x, y in zip(seq_x, seq_y)]
+            if all([x in allowed_pairs for x in pairs]):
+                df_new.append(row)
+        df_new = pd.DataFrame(df_new)
+        return df_new
 
-        # if seq2 specified, predict bb for RNA-RNA
-        if seq2:
-            de = SeqPairEncoder(seq, seq2)
-        else:
-            de = DataEncoder(seq)
+    @staticmethod
+    def filter_diagonal_stem(df):
+        # for stem, we need the bb bottom left corner to be in the upper triangular (exclude diagonal), i.e.i < j
+        df_new = []
+        for _, row in df.iterrows():
+            bb_x = row['bb_x']
+            bb_y = row['bb_y']
+            siz_x = row['siz_x']
+            siz_y = row['siz_y']
+            assert siz_x == siz_y
+
+            bl_x = bb_x + siz_x - 1
+            bl_y = bb_y - siz_y + 1
+
+            if bl_x < bl_y:
+                df_new.append(row)
+            else:
+                # debug
+                print("Skip stem {}-{} size {}".format(bb_x, bb_y, siz_x))
+        df_new = pd.DataFrame(df_new)
+        return df_new
+
+    @staticmethod
+    def filter_out_of_range_bb(df, l):
+        # filter out invalid bounding box that falls out of range
+        df_new = []
+        for _, row in df.iterrows():
+            bb_x = row['bb_x']
+            bb_y = row['bb_y']
+            siz_x = row['siz_x']
+            siz_y = row['siz_y']
+            if (0 <= bb_x < l) and (0 <= bb_x + siz_x - 1 < l) and (0 <= bb_y < l) and (0 <= bb_y - siz_y + 1 < l):
+                df_new.append(row)
+        df_new = pd.DataFrame(df_new)
+        return df_new
+
+    def predict_bb(self, seq, threshold, filter_valid=True):
+
+        # # if seq2 specified, predict bb for RNA-RNA
+        # if seq2:
+        #     de = SeqPairEncoder(seq, seq2)
+        # else:
+        #     de = DataEncoder(seq)
         # yp = self.model(torch.tensor(de.x_torch))
+        de = DataEncoder(seq)
         yp = self.model(de.x_torch.clone().detach())
         # single example, remove batch dimension
         yp = {k: v.detach().cpu().numpy()[0, :, :, :] for k, v in yp.items()}
 
         yp, pred_bb_stem, pred_box_stem = self._nn_pred_to_bb(
-            seq, yp, threshold, mask)
+            seq, yp, threshold, mask=None)
 
         uniq_stem = self._unique_bbs(pred_bb_stem)
-        return uniq_stem
+        df_stem = pd.DataFrame(uniq_stem)
+
+        # filter out invalid ones
+        if filter_valid:
+            df_stem = self.filter_out_of_range_bb(df_stem, len(seq))
+            df_stem = self.filter_diagonal_stem(df_stem)
+            df_stem = self.filter_non_standard_stem(df_stem, seq)
+
+        return df_stem
+
+
+class Evaluator(object):
+
+    def __init__(self, predictor):
+        if predictor is None:
+            print("Initializing evaluator without predictor")  # some class methods can still be used
+        else:
+            assert isinstance(predictor, Predictor)
+        self.predictor = predictor
+        # hold on to data for one example, for convenience
+        self.data_encoder = None
+        # predictions
+        self.yp = None
+        self.pred_bb_stem = None
+
+    @staticmethod
+    def make_target_bb_df(target_bb, convert_tl_to_tr=False):
+        # convert_tl_to_tr: if set to True, target_bb has top left corner, will be converted to top right corner
+        df_target_stem = []
+        for (bb_x, bb_y), (siz_x, siz_y), bb_type in target_bb:
+            if convert_tl_to_tr:
+                bb_y = bb_y + siz_y - 1
+            row = {
+                'bb_x': bb_x,
+                'bb_y': bb_y,
+                'siz_x': siz_x,
+                'siz_y': siz_y,
+            }
+            if bb_type == 'stem':
+                df_target_stem.append(row)
+        if len(df_target_stem) > 0:
+            df_target_stem = pd.DataFrame(df_target_stem)
+
+        return df_target_stem
+
+    @staticmethod
+    def _calculate_bb_metrics(df_target, df_pred):
+
+        def is_identical(bb1, bb2):
+            return bb1 == bb2  # this should work? FIXME
+            # bb1_x, bb1_y, siz1_x, siz1_y = bb1
+            # bb2_x, bb2_y, siz2_x, siz2_y = bb2
+            # # FIXME debug! any off-by-1 error?
+            # return abs(bb1_x-bb2_x)<=1 and abs(bb1_y-bb2_y)<=1 and abs(siz1_x-siz2_x)<=1 and abs(siz1_y-siz2_y)<=1
+
+        def is_local_shift(bb1, bb2):
+            """check if bb1 and bb2 are local shift/expand version of each other
+            max diff <= 1, include case where bb1 == bb2"""
+            bb1_x, bb1_y, siz1_x, siz1_y = bb1
+            bb2_x, bb2_y, siz2_x, siz2_y = bb2
+            max_diff = max(abs(bb1_x - bb2_x), abs(bb1_y - bb2_y), abs(siz1_x - siz2_x), abs(siz1_y - siz2_y))
+            if max_diff <= 1:
+                return True
+            else:
+                return False
+
+        def area_overlap(bb1, bb2):
+            bb1_x, bb1_y, siz1_x, siz1_y = bb1
+            bb2_x, bb2_y, siz2_x, siz2_y = bb2
+            # calculate overlap rectangle, check to see if it's empty
+            x0 = max(bb1_x, bb2_x)
+            x1 = min(bb1_x + siz1_x - 1, bb2_x + siz2_x - 1)  # note this is closed end
+            y0 = max(bb1_y - siz1_y + 1, bb2_y - siz2_y + 1)  # closed end
+            y1 = min(bb1_y, bb2_y)
+            if x1 >= x0 and y1 >= y0:
+                # return area of overlapping rectangle
+                return (x1 - x0 + 1) * (y1 - y0 + 1)
+            else:
+                return 0
+
+        assert set(df_target.columns) == {'bb_x', 'bb_y', 'siz_x', 'siz_y'}
+        assert set(df_pred.columns) == {'bb_x', 'bb_y', 'siz_x', 'siz_y'}
+
+        # make sure all rows are unique
+        assert not df_target.duplicated().any()
+        assert not df_pred.duplicated().any()
+
+        # w.r.t. target
+        n_target_total = len(df_target)
+        n_target_local = 0
+        n_target_identical = 0
+        n_target_overlap = 0
+        n_target_nohit = 0
+        for _, row1 in df_target.iterrows():
+            bb1 = (row1['bb_x'], row1['bb_y'], row1['siz_x'], row1['siz_y'])
+            found_identical = False
+            found_local_shift = False
+            found_overlapping = False
+            best_area_overlap = 0
+            best_bb_overlap = None
+            for _, row2 in df_pred.iterrows():
+                bb2 = (row2['bb_x'], row2['bb_y'], row2['siz_x'], row2['siz_y'])
+                if is_identical(bb1, bb2):
+                    found_identical = True
+                elif is_local_shift(bb1, bb2): # note this is overlapping but NOT local shift due to "elif"
+                    found_local_shift = True
+                elif area_overlap(bb1, bb2) > 0:  # note this is overlapping but NOT identical or local shift due to "elif"
+                    found_overlapping = True
+                    this_area = area_overlap(bb1, bb2)
+                    if this_area > best_area_overlap:
+                        best_area_overlap = this_area
+                        best_bb_overlap = bb2
+                else:
+                    pass
+            if found_identical:
+                n_target_identical += 1
+            elif found_local_shift:
+                n_target_local += 1
+            elif found_overlapping:
+                n_target_overlap += 1
+                # debug print closest pred bb
+                print("target bb: {}".format(bb1))
+                print("best overlapping bb: {}".format(best_bb_overlap))
+                print("best overlapping area: {}".format(best_area_overlap))
+            else:
+                n_target_nohit += 1
+
+        # FIXME there is some wasted comparison here (can be combined with last step)
+        # w.r.t. pred
+        n_pred_total = len(df_pred)
+        n_pred_local = 0
+        n_pred_identical = 0
+        n_pred_overlap = 0
+        n_pred_nohit = 0
+        for _, row1 in df_pred.iterrows():
+            bb1 = (row1['bb_x'], row1['bb_y'], row1['siz_x'], row1['siz_y'])
+            found_identical = False
+            found_local_shift = False
+            found_overlapping = False
+            for _, row2 in df_target.iterrows():
+                bb2 = (row2['bb_x'], row2['bb_y'], row2['siz_x'], row2['siz_y'])
+                if is_identical(bb1, bb2):
+                    found_identical = True
+                elif is_local_shift(bb1, bb2): # note this is overlapping but NOT local shift due to "elif"
+                    found_local_shift = True
+                elif area_overlap(bb1, bb2) > 0:  # note this is overlapping but NOT identical or local shift due to "elif"
+                    found_overlapping = True
+                else:
+                    pass
+            if found_identical:
+                n_pred_identical += 1
+            elif found_local_shift:
+                n_pred_local += 1
+            elif found_overlapping:
+                n_pred_overlap += 1
+            else:
+                n_pred_nohit += 1
+        result = {
+            'n_target_total': n_target_total,
+            'n_target_local': n_target_local,
+            'n_target_identical': n_target_identical,
+            'n_target_overlap': n_target_overlap,
+            'n_target_nohit': n_target_nohit,
+            'n_pred_total': n_pred_total,
+            'n_pred_local': n_pred_local,
+            'n_pred_identical': n_pred_identical,
+            'n_pred_overlap': n_pred_overlap,
+            'n_pred_nohit': n_pred_nohit,
+        }
+        return result
+
+    def calculate_bb_metrics(self, df_target, df_pred):
+        if (df_target is None or len(df_target) == 0) and (df_pred is None or len(df_pred) == 0):
+            return {
+                'n_target_total': 0,
+                'n_target_local': 0,
+                'n_target_identical': 0,
+                'n_target_overlap': 0,
+                'n_target_nohit': 0,
+                'n_pred_total': 0,
+                'n_pred_local': 0,
+                'n_pred_identical': 0,
+                'n_pred_overlap': 0,
+                'n_pred_nohit': 0,
+            }
+
+        elif df_target is None or len(df_target) == 0:
+            return {
+                'n_target_total': 0,
+                'n_target_local': 0,
+                'n_target_identical': 0,
+                'n_target_overlap': 0,
+                'n_target_nohit': 0,
+                'n_pred_total': len(df_pred),
+                'n_pred_local': 0,
+                'n_pred_identical': 0,
+                'n_pred_overlap': 0,
+                'n_pred_nohit': 0,
+            }
+        elif df_pred is None or len(df_pred) == 0:
+            return {
+                'n_target_total': len(df_target),
+                'n_target_local': 0,
+                'n_target_identical': 0,
+                'n_target_overlap': 0,
+                'n_target_nohit': 0,
+                'n_pred_total': 0,
+                'n_pred_local': 0,
+                'n_pred_identical': 0,
+                'n_pred_overlap': 0,
+                'n_pred_nohit': 0,
+            }
+        else:
+            return self._calculate_bb_metrics(df_target, df_pred)
+
+    def stem_bb_to_arr(self, df_bb, seq_len):
+        # TODO hard mask? (no need?) remove invalid bb?
+        arr = np.zeros((seq_len, seq_len))
+        for _, row in df_bb.iterrows():
+            bb_x, bb_y, siz_x, siz_y = row['bb_x'], row['bb_y'], row['siz_x'], row['siz_y']
+            assert siz_x == siz_y
+            for offset in range(siz_x):
+                i = bb_x + offset
+                j = bb_y - offset
+                # ignore out-of-bound ones TODO should prune bb before hand!
+                if not (0<=i<seq_len and 0<=j<seq_len):
+                    continue
+                arr[i, j] = 1
+        return arr
+
+
+    def calculate_bp_metrics(self, df_target, df_pred, seq_len):
+        # base pair metrics
+        arr_target = self.stem_bb_to_arr(df_target, seq_len)
+        arr_pred = self.stem_bb_to_arr(df_pred, seq_len)
+        sensitivity = np.sum(arr_target * arr_pred)/np.sum(arr_target)
+        return sensitivity
+
+    @staticmethod
+    def sensitivity_specificity(target_on, pred_box, hard_mask):
+        sensitivity = np.sum((pred_box * target_on) * hard_mask) / np.sum(target_on * hard_mask)
+        specificity = np.sum((1 - pred_box) * (1 - target_on) * hard_mask) / np.sum((1 - target_on) * hard_mask)
+        return sensitivity, specificity
+
+    @staticmethod
+    def bb_unique(bb):
+        # convert list of bb to unique bb
+        # input:
+        # [{'bb_x': 0, 'bb_y': 16, 'siz_x': 3, 'siz_y': 3, 'prob': 0.1654079953181778},
+        # {'bb_x': 0, 'bb_y': 72, 'siz_x': 8, 'siz_y': 8, 'prob': 0.11180505377843244}, ...]
+        if len(bb) > 0:
+            df_tmp = pd.DataFrame(bb)
+            df_tmp = df_tmp[['bb_x', 'bb_y', 'siz_x', 'siz_y']].drop_duplicates()
+            return df_tmp.to_dict('records')
+        else:
+            return bb
