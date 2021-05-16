@@ -51,11 +51,57 @@ def compute_metric_summary(df, model_params, threhsold):
 
 
 model_params_all = [
-    dict(model_ckpt='../2021_05_18/s1_training/result/run_28/model_ckpt_ep_199.pth',
+dict(model_ckpt='../2021_05_18/s1_training/result/run_25/model_ckpt_ep_49.pth',
+         num_filters=[128, 128],
+         filter_width=[9, 9],
+         hid_shared=[50, 50, 50],
+         hid_output=[20], dropout=0),
+
+
+dict(model_ckpt='../2021_05_18/s1_training/result/run_26/model_ckpt_ep_199.pth',
          num_filters=[128, 128],
          filter_width=[9, 9],
          hid_shared=[64, 64, 64, 128, 128, 128],
          hid_output=[20], dropout=0),
+
+dict(model_ckpt='../2021_05_18/s1_training/result/run_27/model_ckpt_ep_399.pth',
+         num_filters=[512],
+         filter_width=[21],
+         hid_shared=[64, 64, 64, 128, 128, 128],
+         hid_output=[32], dropout=0),
+
+dict(model_ckpt='../2021_05_18/s1_training/result/run_28/model_ckpt_ep_199.pth',
+         num_filters=[128, 128],
+         filter_width=[9, 9],
+         hid_shared=[64, 64, 64, 128, 128, 128],
+         hid_output=[20], dropout=0),
+
+
+dict(model_ckpt='../2021_05_18/s1_training/result/run_29/model_ckpt_ep_199.pth',
+         num_filters=[128, 128, 128],
+         filter_width=[9, 9, 9],
+         hid_shared=[64, 64, 64, 128, 128, 128],
+         hid_output=[20], dropout=0),
+
+dict(model_ckpt='../2021_05_18/s1_training/result/run_30/model_ckpt_ep_199.pth',
+         num_filters=[64, 64, 128, 128, 128],
+         filter_width=[5, 5, 5, 5, 5],
+         hid_shared=[64, 64, 64, 128, 128, 128],
+         hid_output=[20], dropout=0),
+
+dict(model_ckpt='../2021_05_18/s1_training/result/run_31/model_ckpt_ep_199.pth',
+         num_filters=[64, 64, 128, 128, 256, 256],
+         filter_width=[3, 3, 5, 5, 7, 7],
+         hid_shared=[64, 64, 64, 128, 128, 128],
+         hid_output=[20], dropout=0),
+
+# still running, using epoch 44
+dict(model_ckpt='../2021_05_18/s1_training/result/run_32/model_ckpt_ep_44.pth',
+         num_filters=[128, 128, 256, 256, 512, 512],
+         filter_width=[3, 3, 5, 5, 7, 7],
+         hid_shared=[128, 128, 128, 256, 256, 256],
+         hid_output=[64], dropout=0),
+
 ]
 
 
