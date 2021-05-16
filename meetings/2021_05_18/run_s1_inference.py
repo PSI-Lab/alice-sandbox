@@ -50,18 +50,31 @@ def compute_metric_summary(df, model_params, threhsold):
     return metric_summary
 
 
+model_params_all = [
+    dict(model_ckpt='../2021_05_18/s1_training/result/run_28/model_ckpt_ep_199.pth',
+         num_filters=[128, 128],
+         filter_width=[9, 9],
+         hid_shared=[64, 64, 64, 128, 128, 128],
+         hid_output=[20], dropout=0),
+]
+
+
 def main(in_file, threshold, out_file):
     df = pd.read_pickle(in_file)
 
-    model_params = dict(model_ckpt='../2021_05_18/s1_training/result/run_28/model_ckpt_ep_199.pth',
-                          num_filters=[128, 128],
-                          filter_width=[9, 9],
-                          hid_shared=[64, 64, 64, 128, 128, 128],
-                          hid_output=[20], dropout=0)
+    # model_params = dict(model_ckpt='../2021_05_18/s1_training/result/run_28/model_ckpt_ep_199.pth',
+    #                       num_filters=[128, 128],
+    #                       filter_width=[9, 9],
+    #                       hid_shared=[64, 64, 64, 128, 128, 128],
+    #                       hid_output=[20], dropout=0)
 
-    metric_summary = compute_metric_summary(df, model_params, threshold)
+    all_metrics = []
+    for model_params in model_params_all:
+        metric_summary = compute_metric_summary(df, model_params, threshold)
+        all_metrics.append(metric_summary)
 
-    metric_summary.to_csv(out_file, index=False)
+    all_metrics = pd.concat(all_metrics)
+    all_metrics.to_csv(out_file, index=False)
 
 
 if __name__ == "__main__":
