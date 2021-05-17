@@ -109,7 +109,7 @@ def main(in_file, out_file, model_path, threshold_on,
         df_target = process_bb_old_to_new(bounding_boxes)
 
         # threshold on p_on
-        df_stem = predictor.predict_bb(seq=seq, threshold=threshold_on, topk=1, perc_cutoff=0)
+        df_stem = predictor.predict_bb(seq=seq, threshold=threshold_on)
 
         # skip if no predicted bb
         if len(df_stem) == 0:
