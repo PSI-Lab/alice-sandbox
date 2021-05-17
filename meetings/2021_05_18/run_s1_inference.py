@@ -95,8 +95,8 @@ dict(model_ckpt='../2021_05_18/s1_training/result/run_31/model_ckpt_ep_199.pth',
          hid_shared=[64, 64, 64, 128, 128, 128],
          hid_output=[20], dropout=0),
 
-# still running, using epoch 44
-dict(model_ckpt='../2021_05_18/s1_training/result/run_32/model_ckpt_ep_44.pth',
+# still running, using epoch 79
+dict(model_ckpt='../2021_05_18/s1_training/result/run_32/model_ckpt_ep_79.pth',
          num_filters=[128, 128, 256, 256, 512, 512],
          filter_width=[3, 3, 5, 5, 7, 7],
          hid_shared=[128, 128, 128, 256, 256, 256],
