@@ -87,7 +87,7 @@ def stem_bb_to_bp(bb_x, bb_y, siz_x, siz_y):
 
 
 def main(in_file, out_file, model_path, threshold_on,
-         compute_feature=False, include_all=False):
+         compute_feature=False, include_all=False, num=None):
     # df = pd.read_pickle('../2021_03_23/data/debug_training_len20_200_100.pkl.gz')
     df = pd.read_pickle(in_file)
 
@@ -102,6 +102,11 @@ def main(in_file, out_file, model_path, threshold_on,
 
     df_bps = []
     for idx, row in df.iterrows():
+        # for debug use
+        if num is not None and idx >= num:
+            print("[debug] terminate parsing at idx {}".format(idx))
+            break
+
         #     print(idx)
         seq = row['seq']
         one_idx = row['one_idx']
@@ -212,6 +217,7 @@ if __name__ == "__main__":
     # parser.add_argument('--threshold_n', type=float, default=-1,
     #                     help='threshold for stem n_proposal, default is to ignore this inference method')
     parser.add_argument('--model', type=str, help='Path to pytorch model params')
+    parser.add_argument('--num', type=int, default=None, help='[debug use] max number of example to parse')
     parser.add_argument('--out_file', type=str, help='Path to output csv pickle')
     parser.add_argument('--features', action='store_true',
                         help='Specify this to compute s1 pred feature for each bp. For now only support inference method 1 using threshold_p')
@@ -226,4 +232,4 @@ if __name__ == "__main__":
     # if args.features:
     #     assert args.threshold_n == -1
     main(args.data, args.out_file, args.model, threshold_on=args.threshold_p,
-         compute_feature=args.features, include_all=args.include_all)
+         compute_feature=args.features, include_all=args.include_all, num=args.num)
