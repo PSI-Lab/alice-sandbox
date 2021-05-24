@@ -49,7 +49,7 @@ def compute_metric_summary(df, threhsold):
     return metric_summary
 
 
-def main(in_file, threshold, out_file):
+def main(in_file, threshold):
     df = pd.read_pickle(in_file)
 
     metric_summary = compute_metric_summary(df, threshold)
