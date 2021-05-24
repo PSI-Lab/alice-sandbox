@@ -49,8 +49,13 @@ def compute_metric_summary(df, threhsold):
     return metric_summary
 
 
-def main(in_file, threshold):
+def main(in_file, threshold, num=None):
     df = pd.read_pickle(in_file)
+
+    # for debug use
+    if num is not None:
+        print("[debug] subset to df rows up to {}".format(num))
+        df = df[:num]
 
     metric_summary = compute_metric_summary(df, threshold)
     print(metric_summary)
@@ -60,10 +65,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--data', type=str, help='test dataset to evaluate')
     parser.add_argument('--threshold', type=float, help='s1 inference threshold for p_on')
+    parser.add_argument('--num', type=int, default=None, help='[debug use] max number of example to parse')
     # parser.add_argument('--out', type=str, help='output file')
     args = parser.parse_args()
     assert 0 <= args.threshold <= 1
-    main(args.data, args.threshold)
+    main(args.data, args.threshold, args.num)
 
 
 
