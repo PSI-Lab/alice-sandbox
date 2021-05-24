@@ -63,7 +63,7 @@ if __name__ == "__main__":
     # parser.add_argument('--out', type=str, help='output file')
     args = parser.parse_args()
     assert 0 <= args.threshold <= 1
-    main(args.data, args.threshold, args.out)
+    main(args.data, args.threshold)
 
 
 
