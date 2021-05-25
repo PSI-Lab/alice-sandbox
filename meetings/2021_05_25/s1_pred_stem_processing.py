@@ -87,7 +87,7 @@ def stem_bb_to_bp(bb_x, bb_y, siz_x, siz_y):
 
 
 def main(in_file, out_file, model_path, threshold_on,
-         compute_feature=False, include_all=False, num=None):
+         compute_feature=False, num=None):
     # df = pd.read_pickle('../2021_03_23/data/debug_training_len20_200_100.pkl.gz')
     df = pd.read_pickle(in_file)
 
@@ -232,4 +232,4 @@ if __name__ == "__main__":
     # if args.features:
     #     assert args.threshold_n == -1
     main(args.data, args.out_file, args.model, threshold_on=args.threshold_p,
-         compute_feature=args.features, include_all=args.include_all, num=args.num)
+         compute_feature=args.features, num=args.num)
