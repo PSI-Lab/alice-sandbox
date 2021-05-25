@@ -107,7 +107,7 @@ def main(in_file, out_file, model_path, threshold_on,
             print("[debug] terminate parsing at idx {}".format(idx))
             break
 
-        #     print(idx)
+        print(idx)
         seq = row['seq']
         one_idx = row['one_idx']
         bounding_boxes = row['bounding_boxes']
