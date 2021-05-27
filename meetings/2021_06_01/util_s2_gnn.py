@@ -74,11 +74,15 @@ class GATEConv(MessagePassing):
         return self.lin2(x_j) * alpha.unsqueeze(-1)
 
 
-def compute_auc_f1(x, y, m):
-    # true, score, mask
-    mask_bool = m.eq(1)
-    _x2 = x.masked_select(mask_bool).flatten().detach().cpu().numpy()
-    _y2 = y.masked_select(mask_bool).flatten().detach().cpu().numpy()
+def compute_auc_f1(x, y, m=None):
+    if m is not None:
+        # true, score, mask
+        mask_bool = m.eq(1)
+        _x2 = x.masked_select(mask_bool).flatten().detach().cpu().numpy()
+        _y2 = y.masked_select(mask_bool).flatten().detach().cpu().numpy()
+    else:
+        _x2 = x.flatten().detach().cpu().numpy()
+        _y2 = y.flatten().detach().cpu().numpy()
     # do not compute if empty (e.g. when all elements are being masked)
     # do not compute if there's only one class
     if len(_x2) > 0 and not np.all(_x2 == _x2[0]):

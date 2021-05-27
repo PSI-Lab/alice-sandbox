@@ -134,9 +134,9 @@ def main(input_data, training_proportion, learning_rate, num_hids, epochs, batch
 
         # training dataset
         loss_all = []
-        # auroc_all = []
-        # auprc_all = []
-        # f1s_all = []
+        auroc_all = []
+        auprc_all = []
+        f1s_all = []
         model.train()
 
         # batching - thanks Andrew!
@@ -150,10 +150,10 @@ def main(input_data, training_proportion, learning_rate, num_hids, epochs, batch
             pred = model(data)
             # this should work (see gradient_check.ipynb)
             loss += loss_bce(pred, y)
-            # auc, prc, f1s = compute_auc_f1(y, pred.detach(), m)
-            # auroc_all.append(auc)
-            # auprc_all.append(prc)
-            # f1s_all.append(f1s)
+            auc, prc, f1s = compute_auc_f1(y, pred.detach())
+            auroc_all.append(auc)
+            auprc_all.append(prc)
+            f1s_all.append(f1s)
 
             if (data_idx + 1) % batch_size == 0:  # TODO deal with last batch
                 loss /= batch_size
@@ -163,18 +163,18 @@ def main(input_data, training_proportion, learning_rate, num_hids, epochs, batch
                 loss_all.append(loss.item())
                 loss = 0
 
-        # logger.info("Epoch {}, training, mean loss {}, mean auROC {}, mean auPRC {}, mean f1 {}".format(epoch, np.nanmean(loss_all),
-        #                                                                                     np.nanmean(auroc_all),
-        #                                                                                     np.nanmean(auprc_all),
-        #                                                                                     np.nanmean(f1s_all,
-        #                                                                                                axis=0)))
-        logger.info("Epoch {}, training, mean loss {}".format(epoch, np.nanmean(loss_all)))
+        logger.info("Epoch {}, training, mean loss {}, mean auROC {}, mean auPRC {}, mean f1 {}".format(epoch, np.nanmean(loss_all),
+                                                                                            np.nanmean(auroc_all),
+                                                                                            np.nanmean(auprc_all),
+                                                                                            np.nanmean(f1s_all,
+                                                                                                       axis=0)))
+        # logger.info("Epoch {}, training, mean loss {}".format(epoch, np.nanmean(loss_all)))
 
         # validation dataset
         loss_all = []
-        # auroc_all = []
-        # auprc_all = []
-        # f1s_all = []
+        auroc_all = []
+        auprc_all = []
+        f1s_all = []
         # data_debug = []
         model.eval()
         for data in data_list_va:
@@ -184,10 +184,10 @@ def main(input_data, training_proportion, learning_rate, num_hids, epochs, batch
             pred = model(data)
             loss = loss_bce(pred, y)
             loss_all.append(loss.item())
-            # auc, prc, f1s = compute_auc_f1(y, pred, m)
-            # auroc_all.append(auc)
-            # auprc_all.append(prc)
-            # f1s_all.append(f1s)
+            auc, prc, f1s = compute_auc_f1(y, pred)
+            auroc_all.append(auc)
+            auprc_all.append(prc)
+            f1s_all.append(f1s)
 
             # data_debug.append({
             #     'x': data.x.detach().numpy(),
@@ -198,17 +198,17 @@ def main(input_data, training_proportion, learning_rate, num_hids, epochs, batch
             #     'yp': pred.detach().numpy(),
             # })
 
-        # logger.info("Epoch {}, validation, mean loss {}, mean auROC {}, mean auPRC {}, mean f1 {}".format(epoch,
-        #                                                                                                 np.nanmean(
-        #                                                                                                     loss_all),
-        #                                                                                                 np.nanmean(
-        #                                                                                                     auroc_all),
-        #                                                                                                 np.nanmean(
-        #                                                                                                     auprc_all),
-        #                                                                                                 np.nanmean(
-        #                                                                                                     f1s_all,
-        #                                                                                                     axis=0)))
-        logger.info("Epoch {}, validation, mean loss {}".format(epoch, np.nanmean(loss_all)))
+        logger.info("Epoch {}, validation, mean loss {}, mean auROC {}, mean auPRC {}, mean f1 {}".format(epoch,
+                                                                                                        np.nanmean(
+                                                                                                            loss_all),
+                                                                                                        np.nanmean(
+                                                                                                            auroc_all),
+                                                                                                        np.nanmean(
+                                                                                                            auprc_all),
+                                                                                                        np.nanmean(
+                                                                                                            f1s_all,
+                                                                                                            axis=0)))
+        # logger.info("Epoch {}, validation, mean loss {}".format(epoch, np.nanmean(loss_all)))
 
         # FIXME hacky way to save model
         if (epoch + 1) % (max(1, epochs//10)) == 0:
