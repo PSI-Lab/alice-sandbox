@@ -152,8 +152,17 @@ def make_edge_target(edge_index, stem_bb_bps, one_idx):
     return y, m
 
 
+def make_node_target(seq, one_idx):
+    y = np.zeros(len(seq))
+    # set idx to 1
+    idx = one_idx[0] + one_idx[1]
+    y[list(set(idx))] = 1  # in case (i, j) and (j, i) are both present
+    return y
+
+
 def make_dataset(df, fn_make_target, fn_encode_seq=one_hot_single_base, edge_feature='binary',
-                 fn_make_target_edge=make_edge_target, include_s1_feature=False, s1_feature_dim=None):
+                 fn_make_target_edge=make_edge_target, fn_make_target_node=make_node_target,
+                 include_s1_feature=False, s1_feature_dim=None):
     data_list = []
 
     for _, row in df.iterrows():
@@ -227,10 +236,12 @@ def make_dataset(df, fn_make_target, fn_encode_seq=one_hot_single_base, edge_fea
         y, m = fn_make_target(seq, stem_bb_bps, one_idx)
         # equivalent edge-leve 1D target and mask
         ye, me = fn_make_target_edge(edge_index, stem_bb_bps, one_idx)
+        # node target (1D)
+        yn = fn_make_target_node(seq, one_idx)
 
         # make data point
         data = Data(x=node_features, edge_index=edge_index, edge_attr=edge_attr,
-                    y=y, m=m, y_edge=ye, m_edge=me)
+                    y=y, m=m, y_edge=ye, m_edge=me, y_node=yn)
 
         data_list.append(data)
     return data_list
