@@ -301,6 +301,8 @@ Experimenting with short sequences (and small number of bbs), trying out brute-f
 
 ![plot/s2_comb_3.png](plot/s2_comb_3.png)
 
+Produced by [tmp_enumerate_search_space_short_seq.ipynb](tmp_enumerate_search_space_short_seq.ipynb)
+
 
 
 
