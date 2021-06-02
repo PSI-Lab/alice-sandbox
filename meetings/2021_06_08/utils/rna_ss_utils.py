@@ -79,6 +79,36 @@ def get_fe_struct(seq):
     return idxes, fe, mfe_freq, ens_div
 
 
+def compute_fe(seq, struct):
+    # use RNAeval from ViennaRNA package to compute FE
+    # struct in dot-bracket format
+    # checks
+    assert len(seq) == len(struct)
+    # call RNAeval
+    p = Popen(['RNAeval'], stdin=PIPE,
+              stdout=PIPE, stderr=PIPE, universal_newlines=True)
+    stdout, stderr = p.communicate(input="{}\n{}".format(seq, struct))
+    rc = p.returncode
+    if rc != 0:
+        msg = 'RNAeval returned error code %d\nstdout:\n%s\nstderr:\n%s\n' % (
+            rc, stdout, stderr)
+        # # raise Exception(msg)
+        # if verbose:
+        #     logging.warning(msg)
+        return np.nan
+    # parse output
+    lines = stdout.splitlines()
+    assert len(lines) == 2
+    try:
+        val = float(re.match(pattern=r".*\( *(-*\d+\.\d+)\)$", string=lines[1]).group(1))
+    except AttributeError as e:
+        # # debug
+        # if verbose:
+        #     print(lines)
+        return np.nan
+    return val
+
+
 def sample_structures(seq, n_samples, remove_dup=False):
     if remove_dup:
         p = Popen(['RNAsubopt', '-p', str(n_samples), '-N'], stdin=PIPE,
