@@ -140,22 +140,23 @@ class MyDataSet(Dataset):
 
 class ScoreNetwork(nn.Module):
 
-    def __init__(self):
+    def __init__(self, num_filters, filter_width, pooling_size):
         super(ScoreNetwork, self).__init__()
-        self.score_network = nn.Sequential(
-            nn.Conv2d(9, 16, kernel_size=5, stride=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
-            nn.Conv2d(16, 32, kernel_size=5, stride=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
-            nn.Conv2d(32, 32, kernel_size=5, stride=1),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
-            nn.AdaptiveAvgPool2d(output_size=(1, 1)),  # chx1x1
-            # FC along channel dimension
-            nn.Conv2d(32, 1, kernel_size=1, stride=1),
-        )
+
+        num_filters = [9] + num_filters
+        filter_width = [None] + filter_width
+        pooling_size = [None] + pooling_size
+        cnn_layers = []
+        for i, (nf, fw, psize) in enumerate(zip(num_filters[1:], filter_width[1:], pooling_size[1:])):
+            cnn_layers.append(nn.Conv2d(num_filters[i], nf, kernel_size=fw, stride=1))
+            cnn_layers.append(nn.BatchNorm2d(nf))
+            cnn_layers.append(nn.ReLU())
+            cnn_layers.append(nn.MaxPool2d(psize))
+        # extra layers
+        cnn_layers.append(nn.AdaptiveAvgPool2d(output_size=(1, 1)))
+        cnn_layers.append(nn.Conv2d(num_filters[-1], 1, kernel_size=1, stride=1))
+        self.score_network = nn.Sequential(*cnn_layers)
+
         self.out = nn.Sigmoid()
 
     def forward_single(self, x):
@@ -177,18 +178,18 @@ class ScoreNetwork(nn.Module):
 loss_b = torch.nn.BCELoss()
 
 
-def main(path_data, out_dir, n_cpu):
+def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_rate, batch_size, out_dir, n_cpu):
     df = pd.read_pickle(path_data, compression='gzip')
 
-    model = ScoreNetwork()
+    model = ScoreNetwork(num_filters, filter_width, pooling_size)
 
     # device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
 
-    learning_rate = 0.002
-    batch_size = 10
-    n_epoch = 20
+    # learning_rate = 0.002
+    # batch_size = 10
+    # n_epoch = 20
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     # split into training+validation
@@ -227,6 +228,15 @@ if __name__ == "__main__":
                         help='Path to training data file, should be in pkl.gz format')
     parser.add_argument('--result', type=str, help='Path to output result')
     parser.add_argument('--cpu', type=int, help='Number of CPU workers per data loader')
+    parser.add_argument('--num_filters', nargs='*', type=int, help='Number of conv filters for each layer.')
+    parser.add_argument('--filter_width', nargs='*', type=int, help='Filter width for each layer.')
+    parser.add_argument('--pooling_size', nargs='*', type=int, help='Pooling size for each layer.')
+    parser.add_argument('--epoch', type=int, help='Number of epochs')
+    parser.add_argument('--lr', type=float, default=0.0001, help='learning rate')
+    parser.add_argument('--batch_size', type=int, help='Mini batch size')
+
     args = parser.parse_args()
 
-    main(args.data, args.result, args.cpu)
+    main(args.data, args.num_filters, args.filter_width, args.pooling_size,
+         args.epoch, args.lr, args.batch_size,
+         args.result, args.cpu)
