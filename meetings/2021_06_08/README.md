@@ -3,12 +3,10 @@ Last week:
 - Direct application of GNN to solve S2 problem seem to have hit a bottleneck
 
 
+## Is max bps a good heuristic for global free enerygy?
 
+### Generate dataset
 
-
-## S2 scoring network
-
-- training in a siamease setting with tied weights
 
 - for now focus on short seq with fewer bb proposals (before we implement efficient search)
 
@@ -52,18 +50,14 @@ python process_dataset_for_scoring_network_training.py
 
 output: `data/data_len40_1000_s1_stem_bb_le10_combos.pkl.gz`
 
-- loss function? do not penalize if p(x1) > p(x0)?
 
-## Is max bps a good heuristic for global free enerygy?
-
-- using data from last section `data/data_len40_1000_s1_stem_bb_le10_combos.pkl.gz`
+### Compare MFE with best from top 10
 
 - for each valid stem bb combination, using `RNAeval` to compute its free energy
 
 - some combos have FE > 0 (pseudoknot? I thought RNAeval returns a super large number? no? did they update?)
 (see example ID 18 max bp struct)
 
-### Compare MFE with best from top 10
 
 ![plot/mfe_vs_top_10.png](plot/mfe_vs_top_10.png)
 
@@ -82,8 +76,23 @@ output: `data/data_len40_1000_s1_stem_bb_le10_combos.pkl.gz`
 ![plot/rank_by_bps_examples.png](plot/rank_by_bps_examples.png)
 
 
-Produced by TODO
+Produced by [num_bps_vs_fe.ipynb](num_bps_vs_fe.ipynb)
 
+
+
+
+
+## S2 scoring network
+
+
+- training in a siamease setting with tied weights
+
+### Dataset
+
+
+
+
+- loss function? do not penalize if p(x1) > p(x0)?
 
 
 ## S2 binary tree search with constraints
