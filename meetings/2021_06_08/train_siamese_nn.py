@@ -215,8 +215,9 @@ def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_r
             x1 = x1.to(device)
             x2 = x2.to(device)
             y = y.to(device)
-            yp = model.forward_pair(x1, x2)
-
+            yp = model.forward_pair(x1, x2)  # nbx1
+            # sue to: Using a target size (torch.Size([10, 1])) that is different to the input size (torch.Size([10])) is deprecated. Please ensure they have the same size.
+            yp = torch.squeeze(yp)
             loss = loss_b(yp, y)
             loss_all.append(loss.item())
         print(epoch, np.mean(loss_all))
