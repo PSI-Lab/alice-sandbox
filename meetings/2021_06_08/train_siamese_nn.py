@@ -220,6 +220,10 @@ def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_r
             y = torch.squeeze(y)
             loss = loss_b(yp, y)
             loss_all.append(loss.item())
+            # backprop
+            model.zero_grad()
+            loss.backward()
+            optimizer.step()
         print(epoch, np.mean(loss_all))
 
 
