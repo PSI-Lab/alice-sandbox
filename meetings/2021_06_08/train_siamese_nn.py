@@ -4,10 +4,9 @@ import argparse
 import numpy as np
 import pandas as pd
 from collections import namedtuple
-sys.path.insert(0, '../utils/')  # FIXME hacky
-from misc import add_column
-from util_global_struct import process_bb_old_to_new
-from rna_ss_utils import arr2db, one_idx2arr
+from utils.misc import add_column
+from utils.util_global_struct import process_bb_old_to_new
+from utils.rna_ss_utils import arr2db, one_idx2arr
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
@@ -43,9 +42,14 @@ class MyDataSet(Dataset):
 
         x1 = np.concatenate([x, bp_arr_best], axis=2)
         x2 = np.concatenate([x, bp_arr_other], axis=2)
-        y = [1]  # always hard-coded, since we'd like score1 > score2
+        y = np.asarray([1])  # always hard-coded, since we'd like score1 > score2
 
-        return torch.from_numpy(x1).float(), torch.from_numpy(x2).float(), torch.from_numpy(y).float()
+        # we want this: channel x H x W
+        x1, x2, y = torch.from_numpy(x1).float(), torch.from_numpy(x2).float(), torch.from_numpy(y).float()
+        x1 = x1.permute(2, 0, 1)
+        x2 = x2.permute(2, 0, 1)
+
+        return x1, x2, y
 
 
     def __len__(self):
@@ -139,18 +143,18 @@ class ScoreNetwork(nn.Module):
     def __init__(self):
         super(ScoreNetwork, self).__init__()
         self.score_network = nn.Sequential(
-            nn.Conv2d(32, 5, kernel_size=5, stride=1),
+            nn.Conv2d(9, 16, kernel_size=5, stride=1),
             nn.ReLU(),
             nn.MaxPool2d(2),
-            nn.Conv2d(32, 5, kernel_size=5, stride=1),
+            nn.Conv2d(16, 32, kernel_size=5, stride=1),
             nn.ReLU(),
             nn.MaxPool2d(2),
-            nn.Conv2d(32, 5, kernel_size=5, stride=1),
+            nn.Conv2d(32, 32, kernel_size=5, stride=1),
             nn.ReLU(),
             nn.MaxPool2d(2),
-            # TODO add a FC layer?
-            nn.AdaptiveAvgPool2d(output_size=(1, 1)),
-            # TODO reshape?
+            nn.AdaptiveAvgPool2d(output_size=(1, 1)),  # chx1x1
+            # FC along channel dimension
+            nn.Conv2d(32, 1, kernel_size=1, stride=1),
         )
         self.out = nn.Sigmoid()
 
@@ -161,6 +165,10 @@ class ScoreNetwork(nn.Module):
     def forward_pair(self, x1, x2):
         x1 = self.forward_single(x1)
         x2 = self.forward_single(x2)
+        x1 = torch.squeeze(x1)
+        x2 = torch.squeeze(x2)
+        # print(x1, x2)
+
         out = self.out(x1 - x2)
         return out
 
@@ -178,9 +186,9 @@ def main(path_data, out_dir, n_cpu):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
 
-    learning_rate = 0.01
+    learning_rate = 0.002
     batch_size = 10
-    n_epoch = 2
+    n_epoch = 20
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     # split into training+validation
@@ -201,6 +209,7 @@ def main(path_data, out_dir, n_cpu):
                                 shuffle=True, num_workers=n_cpu)
 
     for epoch in range(n_epoch):
+        loss_all = []
         for x1, x2, y in data_loader_tr:
             x1 = x1.to(device)
             x2 = x2.to(device)
@@ -208,8 +217,8 @@ def main(path_data, out_dir, n_cpu):
             yp = model.forward_pair(x1, x2)
 
             loss = loss_b(yp, y)
-
-            print(loss)
+            loss_all.append(loss.item())
+        print(epoch, np.mean(loss_all))
 
 
 if __name__ == "__main__":
