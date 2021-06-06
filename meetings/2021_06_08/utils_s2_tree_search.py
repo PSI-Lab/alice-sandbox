@@ -37,10 +37,9 @@ def check_bb_compatibility(bb_assignment, bb_idx_to_add, bb_conf_arr):
 
 class Node:
 
-    def __init__(self, bb_idx, bb_assignment, tree_depth):
+    def __init__(self, bb_idx, bb_assignment):
         self.bb_idx = bb_idx  # current bb idx
         self.bb_assignment = bb_assignment  # dict of bb assignment (including assignment of current one)
-        self.tree_depth = tree_depth  # = total number of bbs
         self.left = None
         self.right = None
 
@@ -65,13 +64,13 @@ class StemBbTree:
     def tree_init(self):
         # make the root node
         bb_assignment = np.zeros(len(self.bbs))
-        root_node = Node(bb_idx=-1, bb_assignment=bb_assignment, tree_depth=self.tree_depth)  # a dummy node
+        root_node = Node(bb_idx=-1, bb_assignment=bb_assignment)  # a dummy node
         # right node: assign 0 to node 0
-        root_node.right = Node(bb_idx=0, bb_assignment=bb_assignment, tree_depth=self.tree_depth)
+        root_node.right = Node(bb_idx=0, bb_assignment=bb_assignment)
         # left: assign 1 to node 0
         new_bb_assignment = bb_assignment.copy()
         new_bb_assignment[0] = 1
-        root_node.left = Node(bb_idx=0, bb_assignment=new_bb_assignment, tree_depth=self.tree_depth)
+        root_node.left = Node(bb_idx=0, bb_assignment=new_bb_assignment)
         return root_node
 
     def grow_node(self, node):
@@ -79,7 +78,7 @@ class StemBbTree:
         # otherwise the child node with conflict will be set to None
 
         # if we're already at the leaf, set both children to None
-        if node.bb_idx == node.tree_depth - 1:
+        if node.bb_idx == self.tree_depth - 1:
             node.left = None
             node.right = None
         else:
@@ -90,11 +89,11 @@ class StemBbTree:
             if check_bb_compatibility(node.bb_assignment, new_bb_idx, self.bb_conf_arr):
                 new_bb_assignment = node.bb_assignment.copy()
                 new_bb_assignment[new_bb_idx] = 1
-                new_node = Node(new_bb_idx, new_bb_assignment, node.tree_depth)
+                new_node = Node(new_bb_idx, new_bb_assignment)
                 node.left = new_node
             # right: we'll be set bb with bb_idx+1 to 0, this is always doable
             new_bb_assignment = node.bb_assignment.copy()
-            new_node = Node(new_bb_idx, new_bb_assignment, node.tree_depth)
+            new_node = Node(new_bb_idx, new_bb_assignment)
             node.right = new_node
         return node
 
