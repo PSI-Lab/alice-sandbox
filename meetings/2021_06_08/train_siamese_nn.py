@@ -178,6 +178,13 @@ class ScoreNetwork(nn.Module):
 loss_b = torch.nn.BCELoss()
 
 
+def compute_accuracy(yp, y, threshold=0.5):
+    yp = yp.detach().numpy()
+    y = y.detach().numpy()  # in fact this is all 1's
+    yp = (yp >= threshold).astype(np.float16)
+    return np.sum(yp == y)/len(y)
+
+
 def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_rate, batch_size, out_dir, n_cpu):
     df = pd.read_pickle(path_data, compression='gzip')
 
@@ -211,6 +218,7 @@ def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_r
 
     for epoch in range(n_epoch):
         loss_all = []
+        acc_all = []
         for x1, x2, y in data_loader_tr:
             x1 = x1.to(device)
             x2 = x2.to(device)
@@ -220,14 +228,16 @@ def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_r
             y = torch.squeeze(y)
             loss = loss_b(yp, y)
             loss_all.append(loss.item())
+            acc_all.append(compute_accuracy(yp, y))
             # backprop
             model.zero_grad()
             loss.backward()
             optimizer.step()
-        print(epoch, 'training', np.mean(loss_all))
+        print(f"Epoch {epoch}/{n_epoch}, training, loss {np.mean(loss_all)}, accuracy {np.mean(acc_all)}")
 
         with torch.set_grad_enabled(False):
             loss_all = []
+            acc_all = []
             for x1, x2, y in data_loader_va:
                 x1 = x1.to(device)
                 x2 = x2.to(device)
@@ -237,7 +247,8 @@ def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_r
                 y = torch.squeeze(y)
                 loss = loss_b(yp, y)
                 loss_all.append(loss.item())
-        print(epoch, 'validation', np.mean(loss_all))
+                acc_all.append(compute_accuracy(yp, y))
+                print(f"Epoch {epoch}/{n_epoch}, validation, loss {np.mean(loss_all)}, accuracy {np.mean(acc_all)}")
 
 
 if __name__ == "__main__":
