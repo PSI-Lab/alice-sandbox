@@ -20,8 +20,8 @@ class MyDataSet(Dataset):
                                [0, 0, 0, 1]])
     BoundingBox = namedtuple("BoundingBox", ['bb_x', 'bb_y', 'siz_x', 'siz_y'])
 
-    def __init__(self, df):
-        df = self.process_data(df)
+    def __init__(self, df, top_bps_negative=0):
+        df = self.process_data(df, top_bps_negative)
         self.len = len(df)
         self.df = df
 
@@ -88,7 +88,7 @@ class MyDataSet(Dataset):
         x2 = np.repeat(x2, l, axis=0)
         return np.concatenate([x1, x2], axis=2)
 
-    def process_data(self, df):
+    def process_data(self, df, top_bps_negative):
         data = []
         for _, row in df.iterrows():
             seq = row.seq
@@ -128,7 +128,11 @@ class MyDataSet(Dataset):
             assert len(df_valid_combos[df_valid_combos['is_mfe']]) == 1
 
             bp_arr_best = df_valid_combos[df_valid_combos['is_mfe']].iloc[0]['bp_arr']
-            bp_arrs_other = df_valid_combos[~df_valid_combos['is_mfe']]['bp_arr'].tolist()
+            if top_bps_negative:
+                bp_arrs_other = df_valid_combos[~df_valid_combos['is_mfe']].sort_values(by=['total_bps'], ascending=False)[:top_bps_negative]['bp_arr'].tolist()
+
+            else:
+                bp_arrs_other = df_valid_combos[~df_valid_combos['is_mfe']]['bp_arr'].tolist()
 
             data.append({
                 'seq': seq,
@@ -185,7 +189,7 @@ def compute_accuracy(yp, y, threshold=0.5):
     return np.sum(yp == y)/len(y)
 
 
-def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_rate, batch_size, out_dir, n_cpu):
+def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_rate, batch_size, top_bps_negative, out_dir, n_cpu):
     df = pd.read_pickle(path_data, compression='gzip')
 
     model = ScoreNetwork(num_filters, filter_width, pooling_size)
@@ -209,10 +213,10 @@ def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_r
     logging.info("Using {} data for training and {} for validation".format(_n_tr, len(df) - _n_tr))
     df_tr = df[:_n_tr]
     df_va = df[_n_tr:]
-    data_loader_tr = DataLoader(MyDataSet(df_tr),
+    data_loader_tr = DataLoader(MyDataSet(df_tr, top_bps_negative),
                                 batch_size=batch_size,
                                 shuffle=True, num_workers=n_cpu)
-    data_loader_va = DataLoader(MyDataSet(df_va),
+    data_loader_va = DataLoader(MyDataSet(df_va, top_bps_negative),
                                 batch_size=batch_size,
                                 shuffle=True, num_workers=n_cpu)
 
@@ -263,9 +267,10 @@ if __name__ == "__main__":
     parser.add_argument('--epoch', type=int, help='Number of epochs')
     parser.add_argument('--lr', type=float, default=0.0001, help='learning rate')
     parser.add_argument('--batch_size', type=int, help='Mini batch size')
+    parser.add_argument('--top_bps_negative', type=int, default=0, help='if set, second structure in the pair will be sampled from difficult ones with large number of total bps (top rows sorted by total_bps in the df of valid stem bb combinations)')
 
     args = parser.parse_args()
 
     main(args.data, args.num_filters, args.filter_width, args.pooling_size,
          args.epoch, args.lr, args.batch_size,
-         args.result, args.cpu)
+         args.top_bps_negative, args.result, args.cpu)
