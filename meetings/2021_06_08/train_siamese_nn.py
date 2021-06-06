@@ -203,8 +203,8 @@ def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_r
     # shuffle rows
     df = df.sample(frac=1, random_state=5555).reset_index(drop=True)  # fixed rand seed
     # subset
-    tr_prop = 0.95
-    # tr_prop = 0.8
+    # tr_prop = 0.95
+    tr_prop = 0.8
     _n_tr = int(len(df) * tr_prop)
     logging.info("Using {} data for training and {} for validation".format(_n_tr, len(df) - _n_tr))
     df_tr = df[:_n_tr]
