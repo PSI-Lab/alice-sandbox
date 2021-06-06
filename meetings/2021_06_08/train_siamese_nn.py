@@ -248,7 +248,7 @@ def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_r
                 loss = loss_b(yp, y)
                 loss_all.append(loss.item())
                 acc_all.append(compute_accuracy(yp, y))
-                print(f"Epoch {epoch}/{n_epoch}, validation, loss {np.mean(loss_all)}, accuracy {np.mean(acc_all)}")
+            print(f"Epoch {epoch}/{n_epoch}, validation, loss {np.mean(loss_all)}, accuracy {np.mean(acc_all)}")
 
 
 if __name__ == "__main__":
