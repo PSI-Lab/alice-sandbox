@@ -71,6 +71,9 @@ output: `data/data_len40_1000_s1_stem_bb_le10_combos.pkl.gz`
 
     2. a perfect search procedure that can give us top-k
 
+- observation: sequence having lower FE tend to have their
+MFE = best_in_top_10
+
 ### Visualize a few examples
 
 ![plot/rank_by_bps_examples.png](plot/rank_by_bps_examples.png)
@@ -82,17 +85,180 @@ Produced by [num_bps_vs_fe.ipynb](num_bps_vs_fe.ipynb)
 
 
 
-## S2 scoring network
+## S2 scoring network - CNN
 
 
-- training in a siamease setting with tied weights
+- training in a siamese setting with tied weights
+
+- shall we leave out pesudoknot structures for now?
+Based on the current setup, they would be considered as worse than other structures
+(since the 'best' is always the RNAfold MFE one), but in reality they might not.
+We could be giving the NN a hard time learning the actual relative energy if we
+include those as negative examples.
+
+- caveat: we're using short fixed length sequence for now,
+the trained model might not generalize
+
+
 
 ### Dataset
 
+- at training time, each 'example' consists of a pair of structures of the same sequence,
+one being the MFE structure, the other being one of the non-MFE structures (any valid stem bb combination)
+
+- each epoch we randomly sample a non-MFE structure per sequence
+
+- each sequence+structure is encoded as LxLx9 array, where 9 channels are from
+outer concatenation of 1-hot encoding (8 chs) and 1 channel of base pairing feature
+
+- both LxLx9 arrays are passed through the same scoring network
 
 
+### Training
 
-- loss function? do not penalize if p(x1) > p(x0)?
+- scoring network consists:
+
+    - multiple layers of 2D conv, Relu, BatchNorm and 2D pooling
+
+    - 2D Global average pooling
+
+    - FC along channel dimension
+
+- siamese network:
+
+    - 2 copies of the scoring network, outputs y1 and y2
+
+    - sigmoid(y1 - y2)
+
+- due to the way we construct the training example pairs,
+ target label is always 1 for the siamese network.
+ Ideally we would use a loss function that only penalize if siamese network output < 0.5,
+ but for now we're being lazy so we use the binary cross entropy directly
+ (which always encourage a big gap between y1 and y2).
+
+
+debug:
+
+```
+python train_siamese_nn.py --data data/data_len40_1000_s1_stem_bb_le10_combos.pkl.gz \
+--num_filters 16 32 --filter_width 5 5 --pooling_size 2 2 \
+--epoch 2 --lr 0.01 --batch_size 10 --cpu 1
+```
+
+training:
+
+
+```
+CUDA_VISIBLE_DEVICES=1 taskset --cpu-list 11,12,13,14 python train_siamese_nn.py --data data/data_len40_1000_s1_stem_bb_le10_combos.pkl.gz \
+--num_filters 16 32 32 --filter_width 5 5 5 --pooling_size 2 2 2 \
+--epoch 100 --lr 0.001 --batch_size 20 --cpu 4
+```
+
+
+```
+CUDA_VISIBLE_DEVICES=1 taskset --cpu-list 11,12,13,14 python train_siamese_nn.py --data data/data_len40_1000_s1_stem_bb_le10_combos.pkl.gz \
+--num_filters 16 16 32 32 64 --filter_width 3 3 3 3 3 --pooling_size 1 1 2 2 2 \
+--epoch 200 --lr 0.001 --batch_size 20 --cpu 4
+```
+
+Result (some variability exist due to sampling of the a different x2 per example in each epoch):
+
+```
+Epoch 191/200, training, loss 9.195406442432028e-05, accuracy 1.0
+Epoch 191/200, validation, loss 0.017489025078248233, accuracy 0.9916666666666667
+Epoch 192/200, training, loss 0.00014824492228356014, accuracy 1.0
+Epoch 192/200, validation, loss 0.17132017657907758, accuracy 0.9666666666666667
+Epoch 193/200, training, loss 0.00022066570242410913, accuracy 1.0
+Epoch 193/200, validation, loss 0.013750523600416878, accuracy 1.0
+Epoch 194/200, training, loss 0.00015041776819116204, accuracy 1.0
+Epoch 194/200, validation, loss 0.0708746289613676, accuracy 0.9750000000000001
+Epoch 195/200, training, loss 0.00029027424883073155, accuracy 1.0
+Epoch 195/200, validation, loss 0.040629656662834655, accuracy 0.9916666666666667
+Epoch 196/200, training, loss 0.00029275031255473376, accuracy 1.0
+Epoch 196/200, validation, loss 0.04313411534773574, accuracy 0.9833333333333334
+Epoch 197/200, training, loss 0.00011829329945845486, accuracy 1.0
+Epoch 197/200, validation, loss 0.03416939794260543, accuracy 0.9833333333333334
+Epoch 198/200, training, loss 8.659864678996936e-05, accuracy 1.0
+Epoch 198/200, validation, loss 0.07024196327256504, accuracy 0.9583333333333334
+Epoch 199/200, training, loss 5.404166326375811e-05, accuracy 1.0
+Epoch 199/200, validation, loss 0.13684896282696477, accuracy 0.9333333333333332
+```
+
+- focus on more difficult examples (top 100 rows sorted by total_bps) as the second in pair
+
+```
+CUDA_VISIBLE_DEVICES=1 taskset --cpu-list 11,12,13,14 python train_siamese_nn.py --data data/data_len40_1000_s1_stem_bb_le10_combos.pkl.gz \
+--num_filters 16 16 32 32 64 --filter_width 3 3 3 3 3 --pooling_size 1 1 2 2 2 \
+--epoch 200 --lr 0.001 --batch_size 20 --cpu 4 --top_bps_negative 100
+```
+
+Result:
+
+```
+Epoch 191/200, training, loss 6.196074402472125e-05, accuracy 1.0
+Epoch 191/200, validation, loss 0.24673992046155035, accuracy 0.9333333333333332
+Epoch 192/200, training, loss 0.0003079393919544297, accuracy 1.0
+Epoch 192/200, validation, loss 0.11335775087354705, accuracy 0.975
+Epoch 193/200, training, loss 0.00030579138184466935, accuracy 1.0
+Epoch 193/200, validation, loss 0.16569800985356173, accuracy 0.9583333333333334
+Epoch 194/200, training, loss 0.00012603603153409147, accuracy 1.0
+Epoch 194/200, validation, loss 0.37529122286165756, accuracy 0.85
+Epoch 195/200, training, loss 0.00011689527288386412, accuracy 1.0
+Epoch 195/200, validation, loss 0.08637037345518668, accuracy 0.9916666666666667
+Epoch 196/200, training, loss 7.234924774141269e-05, accuracy 1.0
+Epoch 196/200, validation, loss 0.09039298769857851, accuracy 0.9583333333333334
+Epoch 197/200, training, loss 0.0002227490178634233, accuracy 1.0
+Epoch 197/200, validation, loss 0.1891506847096025, accuracy 0.9416666666666668
+Epoch 198/200, training, loss 0.00027129283803752795, accuracy 1.0
+Epoch 198/200, validation, loss 0.37893882805171114, accuracy 0.9416666666666665
+Epoch 199/200, training, loss 0.0005937063324036476, accuracy 1.0
+Epoch 199/200, validation, loss 0.5210146643221378, accuracy 0.7666666666666667
+```
+
+
+- increase difficulty: focus on more difficult examples (top 10 rows sorted by total_bps) as the second in pair
+
+```
+CUDA_VISIBLE_DEVICES=1 taskset --cpu-list 11,12,13,14 python train_siamese_nn.py --data data/data_len40_1000_s1_stem_bb_le10_combos.pkl.gz \
+--num_filters 16 16 32 32 64 --filter_width 3 3 3 3 3 --pooling_size 1 1 2 2 2 \
+--epoch 200 --lr 0.001 --batch_size 20 --cpu 4 --top_bps_negative 10
+```
+
+Result:
+
+```
+Epoch 191/200, training, loss 0.0006471005122182847, accuracy 1.0
+Epoch 191/200, validation, loss 0.12869562945949534, accuracy 0.9416666666666665
+Epoch 192/200, training, loss 0.0008982494660553389, accuracy 1.0
+Epoch 192/200, validation, loss 0.11933280217150848, accuracy 0.975
+Epoch 193/200, training, loss 0.00047537701985198683, accuracy 1.0
+Epoch 193/200, validation, loss 0.5822154503936569, accuracy 0.8833333333333334
+Epoch 194/200, training, loss 0.0004976102035081047, accuracy 1.0
+Epoch 194/200, validation, loss 0.20043927273945883, accuracy 0.9083333333333332
+Epoch 195/200, training, loss 0.0014954052711843922, accuracy 1.0
+Epoch 195/200, validation, loss 0.18025470214585462, accuracy 0.9416666666666668
+Epoch 196/200, training, loss 0.0008549933933993868, accuracy 1.0
+Epoch 196/200, validation, loss 0.1767099618058031, accuracy 0.9249999999999999
+Epoch 197/200, training, loss 0.0004553604754359445, accuracy 1.0
+Epoch 197/200, validation, loss 0.8594377257298523, accuracy 0.8166666666666668
+Epoch 198/200, training, loss 0.0005472850746064935, accuracy 1.0
+Epoch 198/200, validation, loss 0.06827679579146206, accuracy 0.975
+Epoch 199/200, training, loss 0.0007195991602202412, accuracy 1.0
+Epoch 199/200, validation, loss 0.11356006702408195, accuracy 0.9500000000000001
+```
+
+
+- Conclusion: TODO
+
+TODO: evaluate on all pairs, on an independent dataset
+
+
+## S2 scoring network - GNN
+
+- might make more sense to use 'super node'
+
+- for a given structure, we can add one super node per 'sub structure',
+including stem, iloop, hloop, multi-branch loop
 
 
 ## S2 binary tree search with constraints
