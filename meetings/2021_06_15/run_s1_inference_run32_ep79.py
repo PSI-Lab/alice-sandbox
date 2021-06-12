@@ -16,25 +16,38 @@ def pred_and_metric(df, threhsold):
 
     df_data = []
 
-    for _, row in df.iterrows():
+    for example_id, row in df.iterrows():
+        print(example_id)  # for debug
         seq = row['seq']
         bounding_boxes = row['bounding_boxes']
         df_target_stem = evaluator.make_target_bb_df(bounding_boxes, convert_tl_to_tr=True)
         df_pred = predictor.predict_bb(seq=seq, threshold=threhsold, filter_valid=True)
-        m = evaluator.calculate_bb_metrics(df_target_stem, df_pred[['bb_x', 'bb_y', 'siz_x', 'siz_y']])
-        s_bp = evaluator.calculate_bp_metrics(df_target_stem, df_pred, len(seq))
-        s1 = m['n_target_identical'] / m['n_target_total']
-        s2 = (m['n_target_identical'] + m['n_target_local'] + m['n_target_overlap']) / m['n_target_total']
-        #     print(s1, s2)
-        df_data.append({
-            'bb_identical': s1,
-            'bb_overlap': s2,
-            'bp': s_bp,
-            # 'num_bb_ratio': len(df_pred) / len(df_target_stem),
-            'seq': seq,
-            'bounding_boxes': bounding_boxes,
-            'pred_stem_bb': df_pred[['bb_x', 'bb_y', 'siz_x', 'siz_y']].to_dict(orient='list'),
-        })
+
+        # handle cases where no bb is being predicted
+        if len(df_pred) == 0:
+            df_data.append({
+                'bb_identical': 0,
+                'bb_overlap': 0,
+                'bp': 0,
+                'seq': seq,
+                'bounding_boxes': bounding_boxes,
+                'pred_stem_bb': [],
+            })
+        else:
+            m = evaluator.calculate_bb_metrics(df_target_stem, df_pred[['bb_x', 'bb_y', 'siz_x', 'siz_y']])
+            s_bp = evaluator.calculate_bp_metrics(df_target_stem, df_pred, len(seq))
+            s1 = m['n_target_identical'] / m['n_target_total']
+            s2 = (m['n_target_identical'] + m['n_target_local'] + m['n_target_overlap']) / m['n_target_total']
+            #     print(s1, s2)
+            df_data.append({
+                'bb_identical': s1,
+                'bb_overlap': s2,
+                'bp': s_bp,
+                # 'num_bb_ratio': len(df_pred) / len(df_target_stem),
+                'seq': seq,
+                'bounding_boxes': bounding_boxes,
+                'pred_stem_bb': df_pred[['bb_x', 'bb_y', 'siz_x', 'siz_y']].to_dict(orient='list'),
+            })
 
     df_data = pd.DataFrame(df_data)
 
