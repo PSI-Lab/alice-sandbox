@@ -1,3 +1,4 @@
+import os
 import sys
 import logging
 import argparse
@@ -12,6 +13,22 @@ import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 
 
+def set_up_logging(path_result):
+    # make result dir if non existing
+    if not os.path.isdir(path_result):
+        os.makedirs(path_result)
+
+    log_format = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)
+    file_logger = logging.FileHandler(os.path.join(path_result, 'run.log'))
+    file_logger.setFormatter(log_format)
+    root_logger.addHandler(file_logger)
+    console_logger = logging.StreamHandler()
+    console_logger.setFormatter(log_format)
+    root_logger.addHandler(console_logger)
+
+
 class MyDataSet(Dataset):
     DNA_ENCODING = np.asarray([[0, 0, 0, 0],
                                [1, 0, 0, 0],
@@ -20,7 +37,7 @@ class MyDataSet(Dataset):
                                [0, 0, 0, 1]])
     BoundingBox = namedtuple("BoundingBox", ['bb_x', 'bb_y', 'siz_x', 'siz_y'])
 
-    def __init__(self, df, top_bps_negative=0):
+    def __init__(self, df, top_bps_negative=100):
         df = self.process_data(df, top_bps_negative)
         self.len = len(df)
         self.df = df
@@ -117,6 +134,7 @@ class MyDataSet(Dataset):
             # get rid of no structure
             df_valid_combos = df_valid_combos[df_valid_combos['total_bps'] > 0]
 
+            # TODO to speed up, we can filter by top_bps_negative here
             df_valid_combos = add_column(df_valid_combos, 'bp_arr', ['bb_inc'],
                                          lambda bb_idx: self.stem_bbs2arr([bbs[i] for i in bb_idx], len(seq)))
 
@@ -208,7 +226,7 @@ def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_r
     df = df.sample(frac=1, random_state=5555).reset_index(drop=True)  # fixed rand seed
     # subset
     # tr_prop = 0.95
-    tr_prop = 0.8
+    tr_prop = 0.8   # FIXME hard-coded
     _n_tr = int(len(df) * tr_prop)
     logging.info("Using {} data for training and {} for validation".format(_n_tr, len(df) - _n_tr))
     df_tr = df[:_n_tr]
@@ -237,7 +255,13 @@ def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_r
             model.zero_grad()
             loss.backward()
             optimizer.step()
-        print(f"Epoch {epoch}/{n_epoch}, training, loss {np.mean(loss_all)}, accuracy {np.mean(acc_all)}")
+        logging.info(f"Epoch {epoch}/{n_epoch}, training, loss {np.mean(loss_all)}, accuracy {np.mean(acc_all)}")
+
+        # save model every (n_epoch/10)-th epoch
+        if (epoch + 1) % max(1, n_epoch//10) == 0:
+            _model_path = os.path.join(out_dir, 'model_ckpt_ep_{}.pth'.format(epoch))
+            torch.save(model.state_dict(), _model_path)
+            logging.info("Model checkpoint saved at: {}".format(_model_path))
 
         with torch.set_grad_enabled(False):
             loss_all = []
@@ -252,7 +276,7 @@ def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_r
                 loss = loss_b(yp, y)
                 loss_all.append(loss.item())
                 acc_all.append(compute_accuracy(yp, y))
-            print(f"Epoch {epoch}/{n_epoch}, validation, loss {np.mean(loss_all)}, accuracy {np.mean(acc_all)}")
+            logging.info(f"Epoch {epoch}/{n_epoch}, validation, loss {np.mean(loss_all)}, accuracy {np.mean(acc_all)}")
 
 
 if __name__ == "__main__":
@@ -267,9 +291,10 @@ if __name__ == "__main__":
     parser.add_argument('--epoch', type=int, help='Number of epochs')
     parser.add_argument('--lr', type=float, default=0.0001, help='learning rate')
     parser.add_argument('--batch_size', type=int, help='Mini batch size')
-    parser.add_argument('--top_bps_negative', type=int, default=0, help='if set, second structure in the pair will be sampled from difficult ones with large number of total bps (top rows sorted by total_bps in the df of valid stem bb combinations)')
+    parser.add_argument('--top_bps_negative', type=int, default=100, help='if set, second structure in the pair will be sampled from difficult ones with large number of total bps (top rows sorted by total_bps in the df of valid stem bb combinations)')
 
     args = parser.parse_args()
+    set_up_logging(args.result)
 
     main(args.data, args.num_filters, args.filter_width, args.pooling_size,
          args.epoch, args.lr, args.batch_size,
