@@ -21,56 +21,62 @@ def main(in_file, out_file):
         df_stem = pd.DataFrame(row.pred_stem_bb)
         print(example_idx, len(df_stem))
 
-        # we use df index, make sure it's contiguous
-        assert df_stem.iloc[-1].name == len(df_stem) - 1
-
-        bbs = {}
-        for idx, r in df_stem.iterrows():
-            bbs[idx] = BoundingBox(bb_x=r['bb_x'],
-                                   bb_y=r['bb_y'],
-                                   siz_x=r['siz_x'],
-                                   siz_y=r['siz_y'])
-
-        bb_conf_arr = np.zeros((len(bbs), len(bbs)))
-        for i in bbs.keys():
-            bb1 = bbs[i]
-            for j in bbs.keys():
-                bb2 = bbs[j]
-                # TODO only need to compute half
-                bb_conf_arr[i, j] = bb_conflict(bb1, bb2)
-        assert np.all(bb_conf_arr.T == bb_conf_arr)
-
-        bb_tree = StemBbTree(bbs, bb_conf_arr)
-
-        # find the target bb combo (might not be in the list of valid combo of pred bbs)
-        df_target = process_bb_old_to_new(row.bounding_boxes)
-        df_target = df_target[df_target['bb_type'] == 'stem']
-        bb_idx_tgt = []
-        tgt_in_pred_combo = True
-        for _, r in df_target.iterrows():
-            tgt_bb = BoundingBox(bb_x=r['bb_x'],
-                                 bb_y=r['bb_y'],
-                                 siz_x=r['siz_x'],
-                                 siz_y=r['siz_y'])
-            try:
-                tgt_idx = next(i for i, bb in bbs.items() if bb == tgt_bb)
-                bb_idx_tgt.append(tgt_idx)
-            except StopIteration:
-                tgt_in_pred_combo = False
-        if tgt_in_pred_combo:
-            bb_idx_tgt = set(bb_idx_tgt)
+        # do not parse example with no bbs
+        if len(df_stem) == 0:
+            bb_combos = []
+            tgt_in_pred_combo = False
         else:
-            bb_idx_tgt = None
 
-        bb_combos = []
-        for leaf in bb_tree.leaves:
-            bb_inc = np.where(leaf.bb_assignment)[0].tolist()
-            num_bps = get_total_bp(bb_inc, bbs)
+            # we use df index, make sure it's contiguous
+            assert df_stem.iloc[-1].name == len(df_stem) - 1
+
+            bbs = {}
+            for idx, r in df_stem.iterrows():
+                bbs[idx] = BoundingBox(bb_x=r['bb_x'],
+                                       bb_y=r['bb_y'],
+                                       siz_x=r['siz_x'],
+                                       siz_y=r['siz_y'])
+
+            bb_conf_arr = np.zeros((len(bbs), len(bbs)))
+            for i in bbs.keys():
+                bb1 = bbs[i]
+                for j in bbs.keys():
+                    bb2 = bbs[j]
+                    # TODO only need to compute half
+                    bb_conf_arr[i, j] = bb_conflict(bb1, bb2)
+            assert np.all(bb_conf_arr.T == bb_conf_arr)
+
+            bb_tree = StemBbTree(bbs, bb_conf_arr)
+
+            # find the target bb combo (might not be in the list of valid combo of pred bbs)
+            df_target = process_bb_old_to_new(row.bounding_boxes)
+            df_target = df_target[df_target['bb_type'] == 'stem']
+            bb_idx_tgt = []
+            tgt_in_pred_combo = True
+            for _, r in df_target.iterrows():
+                tgt_bb = BoundingBox(bb_x=r['bb_x'],
+                                     bb_y=r['bb_y'],
+                                     siz_x=r['siz_x'],
+                                     siz_y=r['siz_y'])
+                try:
+                    tgt_idx = next(i for i, bb in bbs.items() if bb == tgt_bb)
+                    bb_idx_tgt.append(tgt_idx)
+                except StopIteration:
+                    tgt_in_pred_combo = False
             if tgt_in_pred_combo:
-                is_target = set(bb_inc) == bb_idx_tgt
+                bb_idx_tgt = set(bb_idx_tgt)
             else:
-                is_target = False
-            bb_combos.append({'bb_inc': bb_inc, 'num_bps': num_bps, 'is_target': is_target})
+                bb_idx_tgt = None
+
+            bb_combos = []
+            for leaf in bb_tree.leaves:
+                bb_inc = np.where(leaf.bb_assignment)[0].tolist()
+                num_bps = get_total_bp(bb_inc, bbs)
+                if tgt_in_pred_combo:
+                    is_target = set(bb_inc) == bb_idx_tgt
+                else:
+                    is_target = False
+                bb_combos.append({'bb_inc': bb_inc, 'num_bps': num_bps, 'is_target': is_target})
 
         row_new = row.copy()
         row_new['num_bb_combos'] = len(bb_combos)
