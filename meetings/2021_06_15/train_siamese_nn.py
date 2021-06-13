@@ -130,9 +130,9 @@ class MyDataSet(Dataset):
                                               siz_x=r['siz_x'],
                                               siz_y=r['siz_y']))
 
-            df_valid_combos = pd.DataFrame(row.valid_combos)
+            df_valid_combos = pd.DataFrame(row['bb_combos'])
             # get rid of no structure
-            df_valid_combos = df_valid_combos[df_valid_combos['total_bps'] > 0]
+            df_valid_combos = df_valid_combos[df_valid_combos['num_bps'] > 0]
 
             # TODO to speed up, we can filter by top_bps_negative here
             df_valid_combos = add_column(df_valid_combos, 'bp_arr', ['bb_inc'],
@@ -147,7 +147,7 @@ class MyDataSet(Dataset):
 
             bp_arr_best = df_valid_combos[df_valid_combos['is_mfe']].iloc[0]['bp_arr']
             if top_bps_negative:
-                bp_arrs_other = df_valid_combos[~df_valid_combos['is_mfe']].sort_values(by=['total_bps'], ascending=False)[:top_bps_negative]['bp_arr'].tolist()
+                bp_arrs_other = df_valid_combos[~df_valid_combos['is_mfe']].sort_values(by=['num_bps'], ascending=False)[:top_bps_negative]['bp_arr'].tolist()
 
             else:
                 bp_arrs_other = df_valid_combos[~df_valid_combos['is_mfe']]['bp_arr'].tolist()
