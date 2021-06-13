@@ -47,7 +47,7 @@ class MyDataSet(Dataset):
         seq = row['seq']
         bp_arr_best = row['bp_arr_best']
         # randomly sample a suboptimal one
-        # TODO we should ski[ pseudoknot ones?
+        # TODO we should skip pseudoknot ones?
         idx = np.random.randint(0, len(row['bp_arrs_other']))
         bp_arr_other = row['bp_arrs_other'][idx]
 
@@ -151,6 +151,11 @@ class MyDataSet(Dataset):
 
             else:
                 bp_arrs_other = df_valid_combos[~df_valid_combos['is_mfe']]['bp_arr'].tolist()
+
+            # handle corner case where there's no 'other' combos
+            if len(bp_arrs_other) == 0:
+                logging.warning(f"Skipping example seq={seq} with len(bp_arrs_other)={len(bp_arrs_other)}")
+                continue
 
             data.append({
                 'seq': seq,
