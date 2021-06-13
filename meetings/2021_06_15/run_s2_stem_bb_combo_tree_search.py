@@ -56,7 +56,7 @@ def main(in_file, out_file):
                 tgt_idx = next(i for i, bb in bbs.items() if bb == tgt_bb)
             except StopIteration:
                 tgt_in_pred_combo = False
-            bb_idx_tgt.append(tgt_idx)
+                bb_idx_tgt.append(tgt_idx)
         if tgt_in_pred_combo:
             bb_idx_tgt = set(bb_idx_tgt)
         else:
