@@ -216,7 +216,8 @@ def compute_accuracy(yp, y, threshold=0.5):
     return np.sum(yp == y)/len(y)
 
 
-def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_rate, batch_size, top_bps_negative, out_dir, n_cpu):
+def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_rate, batch_size,
+         top_bps_negative, out_dir, n_cpu, path_tdata=None):
     df = pd.read_pickle(path_data, compression='gzip')
 
     model = ScoreNetwork(num_filters, filter_width, pooling_size)
@@ -247,6 +248,14 @@ def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_r
     data_loader_va = DataLoader(MyDataSet(df_va, top_bps_negative),
                                 batch_size=batch_size,
                                 shuffle=True, num_workers=n_cpu)
+    if path_tdata:
+        dfts = pd.read_pickle(path_tdata, compression='gzip')
+        data_loader_ts = DataLoader(MyDataSet(dfts, top_bps_negative),
+                                    batch_size=batch_size,
+                                    shuffle=True, num_workers=n_cpu
+                                    )
+    else:
+        data_loader_ts = None
 
     for epoch in range(n_epoch):
         loss_all = []
@@ -298,6 +307,29 @@ def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_r
             logging.info("Validation set prediction on one mini batch:")
             yp = model.forward_pair(x1, x2, verbose=True)
 
+        # debug use
+        if data_loader_ts:
+            with torch.set_grad_enabled(False):
+                loss_all = []
+                acc_all = []
+                for x1, x2, y in data_loader_ts:
+                    x1 = x1.to(device)
+                    x2 = x2.to(device)
+                    y = y.to(device)
+                    yp = model.forward_pair(x1, x2)  # nbx1
+                    # sue to: Using a target size (torch.Size([10, 1])) that is different to the input size (torch.Size([10])) is deprecated. Please ensure they have the same size.
+                    y = torch.squeeze(y)
+                    loss = loss_b(yp, y)
+                    loss_all.append(loss.item())
+                    acc_all.append(compute_accuracy(yp, y))
+                logging.info(
+                    f"Epoch {epoch}/{n_epoch}, test, loss {np.mean(loss_all)}, accuracy {np.mean(acc_all)}")
+
+            # debug, print the last mini batch
+            with torch.set_grad_enabled(False):
+                logging.info("Test set prediction on one mini batch:")
+                yp = model.forward_pair(x1, x2, verbose=True)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -312,10 +344,12 @@ if __name__ == "__main__":
     parser.add_argument('--lr', type=float, default=0.0001, help='learning rate')
     parser.add_argument('--batch_size', type=int, help='Mini batch size')
     parser.add_argument('--top_bps_negative', type=int, default=100, help='if set, second structure in the pair will be sampled from difficult ones with large number of total bps (top rows sorted by total_bps in the df of valid stem bb combinations)')
+    parser.add_argument('--tdata', type=str, default=None,
+                        help='debug use, separate test set')
 
     args = parser.parse_args()
     set_up_logging(args.result)
 
     main(args.data, args.num_filters, args.filter_width, args.pooling_size,
          args.epoch, args.lr, args.batch_size,
-         args.top_bps_negative, args.result, args.cpu)
+         args.top_bps_negative, args.result, args.cpu, args.tdata)
