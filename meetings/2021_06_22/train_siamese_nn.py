@@ -190,14 +190,18 @@ class ScoreNetwork(nn.Module):
         x = self.score_network(x)
         return x
 
-    def forward_pair(self, x1, x2):
+    def forward_pair(self, x1, x2, verbose=False):
         x1 = self.forward_single(x1)
         x2 = self.forward_single(x2)
         x1 = torch.squeeze(x1)
         x2 = torch.squeeze(x2)
-        print(x1, x2)
 
         out = self.out(x1 - x2)
+
+        if verbose:
+            logging.info(x1)
+            logging.info(x2)
+            logging.info(out)
         return out
 
 
@@ -236,6 +240,7 @@ def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_r
     logging.info("Using {} data for training and {} for validation".format(_n_tr, len(df) - _n_tr))
     df_tr = df[:_n_tr]
     df_va = df[_n_tr:]
+    logging.info("Initializing data loader...")
     data_loader_tr = DataLoader(MyDataSet(df_tr, top_bps_negative),
                                 batch_size=batch_size,
                                 shuffle=True, num_workers=n_cpu)
@@ -262,6 +267,11 @@ def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_r
             optimizer.step()
         logging.info(f"Epoch {epoch}/{n_epoch}, training, loss {np.mean(loss_all)}, accuracy {np.mean(acc_all)}")
 
+        # debug, print the last mini batch
+        with torch.set_grad_enabled(False):
+            logging.info("Traning set prediction on one mini batch:")
+            yp = model.forward_pair(x1, x2, verbose=True)
+
         # save model every (n_epoch/10)-th epoch
         if (epoch + 1) % max(1, n_epoch//10) == 0:
             _model_path = os.path.join(out_dir, 'model_ckpt_ep_{}.pth'.format(epoch))
@@ -282,6 +292,11 @@ def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_r
                 loss_all.append(loss.item())
                 acc_all.append(compute_accuracy(yp, y))
             logging.info(f"Epoch {epoch}/{n_epoch}, validation, loss {np.mean(loss_all)}, accuracy {np.mean(acc_all)}")
+
+        # debug, print the last mini batch
+        with torch.set_grad_enabled(False):
+            logging.info("Validation set prediction on one mini batch:")
+            yp = model.forward_pair(x1, x2, verbose=True)
 
 
 if __name__ == "__main__":
