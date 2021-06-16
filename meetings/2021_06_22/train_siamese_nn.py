@@ -195,7 +195,7 @@ class ScoreNetwork(nn.Module):
         x2 = self.forward_single(x2)
         x1 = torch.squeeze(x1)
         x2 = torch.squeeze(x2)
-        # print(x1, x2)
+        print(x1, x2)
 
         out = self.out(x1 - x2)
         return out
