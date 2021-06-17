@@ -270,7 +270,8 @@ def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_r
                                 shuffle=True, num_workers=n_cpu)
     if path_tdata:
         dfts = pd.read_pickle(path_tdata, compression='gzip')
-        data_loader_ts = DataLoader(MyDataSet(dfts, top_bps_negative),
+        test_dataset = MyDataSet(dfts, top_bps_negative)
+        data_loader_ts = DataLoader(test_dataset,
                                     batch_size=batch_size,
                                     shuffle=True, num_workers=n_cpu
                                     )
@@ -351,7 +352,7 @@ def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_r
                 yp = model.forward_pair(x1, x2, verbose=True)
 
                 logging.info("Test set prediction on all structures of one example:")
-                x = data_loader_ts.get_all_bp_arrs(0)  # TODO use 0 for now
+                x = test_dataset.get_all_bp_arrs(0)  # TODO use 0 for now
                 x = x.to(device)
                 yp = model.forward_single(x)
                 logging.info(yp)
