@@ -355,7 +355,7 @@ def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_r
                 x = test_dataset.get_all_bp_arrs(0)  # TODO use 0 for now
                 x = x.to(device)
                 yp = model.forward_single(x)
-                logging.info(yp)
+                logging.info(yp.squeeze())
 
 
 if __name__ == "__main__":
