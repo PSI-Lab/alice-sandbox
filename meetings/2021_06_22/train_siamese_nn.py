@@ -68,6 +68,26 @@ class MyDataSet(Dataset):
 
         return x1, x2, y
 
+    def get_all_bp_arrs(self, index):
+        # both bp_arr_best and all of bp_arrs_other of an example
+        row = self.df.iloc[index]
+        seq = row['seq']
+        bp_arr_best = row['bp_arr_best']
+        bp_arrs_other = row['bp_arrs_other']
+
+        x = self._encode_seq(seq)
+        x = self.tile_and_stack(x)
+
+        # we want this: batch x channel x H x W
+        arrs = []
+        for bp_arr in [bp_arr_best] + bp_arrs_other:
+            bp_arr = bp_arr[:, :, np.newaxis]
+            bp_arr = np.concatenate([x, bp_arr], axis=2)
+            bp_arr = np.transpose(bp_arr, [2, 0, 1])
+            arrs.append(bp_arr)
+        arrs = np.asarray(arrs)
+        arrs = torch.from_numpy(arrs).float()
+        return arrs
 
     def __len__(self):
         return self.len
@@ -329,6 +349,12 @@ def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_r
             with torch.set_grad_enabled(False):
                 logging.info("Test set prediction on one mini batch:")
                 yp = model.forward_pair(x1, x2, verbose=True)
+
+                logging.info("Test set prediction on all structures of one example:")
+                x = data_loader_ts.get_all_bp_arrs[0]  # TODO use 0 for now
+                x = x.to(device)
+                yp = model.forward_single(x)
+                logging.info(yp)
 
 
 if __name__ == "__main__":
