@@ -351,7 +351,7 @@ def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_r
                 yp = model.forward_pair(x1, x2, verbose=True)
 
                 logging.info("Test set prediction on all structures of one example:")
-                x = data_loader_ts.get_all_bp_arrs[0]  # TODO use 0 for now
+                x = data_loader_ts.get_all_bp_arrs(0)  # TODO use 0 for now
                 x = x.to(device)
                 yp = model.forward_single(x)
                 logging.info(yp)
