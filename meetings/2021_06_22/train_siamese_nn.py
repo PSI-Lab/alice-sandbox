@@ -363,6 +363,18 @@ def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_r
                 yp = model.forward_single(x)
                 logging.info(yp.squeeze())
 
+                logging.info("Test set prediction on pair selected from all structures of one example (from dataset):")
+                x1 = x[0, :, :, :]
+                x2 = x[1, :, :, :]
+                x1 = x1.to(device)
+                x2 = x2.to(device)
+                yp = model.forward_pair(torch.unsqueeze(x1, 0), torch.unsqueeze(x2, 0), verbose=True)
+
+                logging.info("Test set prediction on single struct, iterate from from all structures of one example (from dataset):")
+                for k in x.shape[0]:
+                    yp = model.forward_single(x[k, :, :, :])
+                    logging.info(k, yp.squeeze())
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
