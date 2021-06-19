@@ -393,7 +393,7 @@ def main(path_data, num_filters, filter_width, pooling_size, in_size, n_epoch, l
                     logging.info(f"{k}: {yp.squeeze()}")
 
                 logging.info("Test set prediction on pair selected using forward_single (from dataset):")
-                yp = model.forward_single(torch.unsqueeze(x[:2, :, :, :], 0))
+                yp = model.forward_single(x[:2, :, :, :], 0)
                 logging.info(f"{k}: {yp.squeeze()}")
 
 
