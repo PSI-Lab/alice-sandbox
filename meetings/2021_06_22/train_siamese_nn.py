@@ -348,10 +348,16 @@ def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_r
 
             # debug, print the last mini batch
             with torch.set_grad_enabled(False):
-                logging.info("Test set prediction on one mini batch:")
+                logging.info("Test set prediction on one mini batch (from data loader):")
                 yp = model.forward_pair(x1, x2, verbose=True)
 
-                logging.info("Test set prediction on all structures of one example:")
+                logging.info("Test set prediction on one pair of one example (from dataset):")
+                x1, x2, y = test_dataset[0]   # TODO use 0 for now
+                x1 = x1.to(device)
+                x2 = x2.to(device)
+                yp = model.forward_pair(torch.unsqueeze(x1, 0), torch.unsqueeze(x2, 0), verbose=True)
+
+                logging.info("Test set prediction on all structures of one example (from dataset):")
                 x = test_dataset.get_all_bp_arrs(0)  # TODO use 0 for now
                 x = x.to(device)
                 yp = model.forward_single(x)
