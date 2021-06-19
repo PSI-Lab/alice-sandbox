@@ -209,13 +209,20 @@ class ScoreNetwork(nn.Module):
         logging.warning("hard-coded global pooling kernel size for now")
         cnn_layers.append(nn.AvgPool2d(kernel_size=5))
 
-        cnn_layers.append(nn.Conv2d(num_filters[-1], 1, kernel_size=1, stride=1))
-        self.score_network = nn.Sequential(*cnn_layers)
+        # cnn_layers.append(nn.Conv2d(num_filters[-1], 1, kernel_size=1, stride=1))
+
+        self.cnn = nn.Sequential(*cnn_layers)
+
+        self.fc = nn.Linear(num_filters[-1], 1)
 
         self.out = nn.Sigmoid()
 
     def forward_single(self, x):
-        x = self.score_network(x)
+        # x = self.score_network(x)
+        x = self.cnn(x)
+        x = x.reshape(x.size(0), -1)
+        x = self.fc(x)
+
         return x
 
     def forward_pair(self, x1, x2, verbose=False):
