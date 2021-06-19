@@ -204,7 +204,10 @@ class ScoreNetwork(nn.Module):
         # cnn_layers.append(nn.AdaptiveAvgPool2d(output_size=(1, 1))) # FIXME this is wrong in batch mode?
 
         # TODO this only works with fixed length for now!
-        cnn_layers.append(nn.AvgPool2d(kernel_size=in_size))  # kernel size == input size, global pooling
+        # cnn_layers.append(nn.AvgPool2d(kernel_size=in_size))  # kernel size == input size (to this layer), global pooling
+        # FIXME hard-coded now! TODO compute from in_size and pooling_size
+        logging.warning("hard-coded global pooling kernel size for now")
+        cnn_layers.append(nn.AvgPool2d(kernel_size=5))
 
         cnn_layers.append(nn.Conv2d(num_filters[-1], 1, kernel_size=1, stride=1))
         self.score_network = nn.Sequential(*cnn_layers)
