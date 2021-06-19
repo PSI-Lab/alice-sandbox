@@ -187,7 +187,7 @@ class MyDataSet(Dataset):
 
 class ScoreNetwork(nn.Module):
 
-    def __init__(self, num_filters, filter_width, pooling_size):
+    def __init__(self, num_filters, filter_width, pooling_size, in_size):
         super(ScoreNetwork, self).__init__()
 
         num_filters = [9] + num_filters
@@ -200,7 +200,12 @@ class ScoreNetwork(nn.Module):
             cnn_layers.append(nn.ReLU())
             cnn_layers.append(nn.MaxPool2d(psize))
         # extra layers
-        cnn_layers.append(nn.AdaptiveAvgPool2d(output_size=(1, 1)))
+
+        # cnn_layers.append(nn.AdaptiveAvgPool2d(output_size=(1, 1))) # FIXME this is wrong in batch mode?
+
+        # TODO this only works with fixed length for now!
+        cnn_layers.append(nn.AvgPool2d(kernel_size=in_size))  # kernel size == input size, global pooling
+
         cnn_layers.append(nn.Conv2d(num_filters[-1], 1, kernel_size=1, stride=1))
         self.score_network = nn.Sequential(*cnn_layers)
 
@@ -236,11 +241,13 @@ def compute_accuracy(yp, y, threshold=0.5):
     return np.sum(yp == y)/len(y)
 
 
-def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_rate, batch_size,
+def main(path_data, num_filters, filter_width, pooling_size, in_size, n_epoch, learning_rate, batch_size,
          top_bps_negative, out_dir, n_cpu, path_tdata=None):
     df = pd.read_pickle(path_data, compression='gzip')
 
-    model = ScoreNetwork(num_filters, filter_width, pooling_size)
+    # TODO for now global pooling only works with fixed length input, verify df with in_size!
+
+    model = ScoreNetwork(num_filters, filter_width, pooling_size, in_size)
 
     # device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -385,6 +392,7 @@ if __name__ == "__main__":
     parser.add_argument('--num_filters', nargs='*', type=int, help='Number of conv filters for each layer.')
     parser.add_argument('--filter_width', nargs='*', type=int, help='Filter width for each layer.')
     parser.add_argument('--pooling_size', nargs='*', type=int, help='Pooling size for each layer.')
+    parser.add_argument('--in_size', type=int, help='Input sequence length. Fixed length for now until we figure out proper global pooling.')
     parser.add_argument('--epoch', type=int, help='Number of epochs')
     parser.add_argument('--lr', type=float, default=0.0001, help='learning rate')
     parser.add_argument('--batch_size', type=int, help='Mini batch size')
@@ -395,6 +403,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     set_up_logging(args.result)
 
-    main(args.data, args.num_filters, args.filter_width, args.pooling_size,
+    main(args.data, args.num_filters, args.filter_width, args.pooling_size, args.in_size,
          args.epoch, args.lr, args.batch_size,
          args.top_bps_negative, args.result, args.cpu, args.tdata)
