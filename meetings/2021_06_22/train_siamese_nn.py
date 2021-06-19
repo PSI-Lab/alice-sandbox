@@ -371,7 +371,7 @@ def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_r
                 yp = model.forward_pair(torch.unsqueeze(x1, 0), torch.unsqueeze(x2, 0), verbose=True)
 
                 logging.info("Test set prediction on single struct, iterate from from all structures of one example (from dataset):")
-                for k in x.shape[0]:
+                for k in range(x.shape[0]):
                     yp = model.forward_single(x[k, :, :, :])
                     logging.info(k, yp.squeeze())
 
