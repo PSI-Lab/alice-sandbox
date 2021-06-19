@@ -387,10 +387,14 @@ def main(path_data, num_filters, filter_width, pooling_size, in_size, n_epoch, l
                 x2 = x2.to(device)
                 yp = model.forward_pair(torch.unsqueeze(x1, 0), torch.unsqueeze(x2, 0), verbose=True)
 
-                logging.info("Test set prediction on single struct, iterate from from all structures of one example (from dataset):")
-                for k in range(x.shape[0]):
+                logging.info("Test set prediction on single struct, iterate subet from from all structures of one example (from dataset):")
+                for k in range(x.shape[0])[:5]:
                     yp = model.forward_single(torch.unsqueeze(x[k, :, :, :], 0))
                     logging.info(f"{k}: {yp.squeeze()}")
+
+                logging.info("Test set prediction on pair selected using forward_single (from dataset):")
+                yp = model.forward_single(torch.unsqueeze(x[:2, :, :, :], 0))
+                logging.info(f"{k}: {yp.squeeze()}")
 
 
 if __name__ == "__main__":
