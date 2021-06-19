@@ -373,7 +373,7 @@ def main(path_data, num_filters, filter_width, pooling_size, n_epoch, learning_r
                 logging.info("Test set prediction on single struct, iterate from from all structures of one example (from dataset):")
                 for k in range(x.shape[0]):
                     yp = model.forward_single(torch.unsqueeze(x[k, :, :, :], 0))
-                    logging.info(k, yp.squeeze())
+                    logging.info(f"{k}: {yp.squeeze()}")
 
 
 if __name__ == "__main__":
