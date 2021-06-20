@@ -196,7 +196,7 @@ class ScoreNetwork(nn.Module):
         cnn_layers = []
         for i, (nf, fw, psize) in enumerate(zip(num_filters[1:], filter_width[1:], pooling_size[1:])):
             cnn_layers.append(nn.Conv2d(num_filters[i], nf, kernel_size=fw, stride=1))
-            cnn_layers.append(nn.BatchNorm2d(nf))
+            # cnn_layers.append(nn.BatchNorm2d(nf))
             cnn_layers.append(nn.ReLU())
             cnn_layers.append(nn.MaxPool2d(psize))
         # extra layers
