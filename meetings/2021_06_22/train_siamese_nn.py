@@ -37,8 +37,8 @@ class MyDataSet(Dataset):
                                [0, 0, 0, 1]])
     BoundingBox = namedtuple("BoundingBox", ['bb_x', 'bb_y', 'siz_x', 'siz_y'])
 
-    def __init__(self, df, top_bps_negative=100):
-        df = self.process_data(df, top_bps_negative)
+    def __init__(self, df, perc_bps_negative=0.8):
+        df = self.process_data(df, perc_bps_negative)
         self.len = len(df)
         self.df = df
 
@@ -125,7 +125,7 @@ class MyDataSet(Dataset):
         x2 = np.repeat(x2, l, axis=0)
         return np.concatenate([x1, x2], axis=2)
 
-    def process_data(self, df, top_bps_negative):
+    def process_data(self, df, perc_bps_negative):
         data = []
         for _, row in df.iterrows():
             seq = row.seq
@@ -166,9 +166,10 @@ class MyDataSet(Dataset):
             assert len(df_valid_combos[df_valid_combos['is_mfe']]) == 1
 
             bp_arr_best = df_valid_combos[df_valid_combos['is_mfe']].iloc[0]['bp_arr']
-            if top_bps_negative:
-                bp_arrs_other = df_valid_combos[~df_valid_combos['is_mfe']].sort_values(by=['num_bps'], ascending=False)[:top_bps_negative]['bp_arr'].tolist()
-
+            num_bps_tgt = df_valid_combos[df_valid_combos['is_mfe']].iloc[0]['num_bps']
+            if perc_bps_negative:
+                # bp_arrs_other = df_valid_combos[~df_valid_combos['is_mfe']].sort_values(by=['num_bps'], ascending=False)[:top_bps_negative]['bp_arr'].tolist()
+                bp_arrs_other = df_valid_combos[(~df_valid_combos['is_mfe']) & (df_valid_combos['num_bps'] >= perc_bps_negative * num_bps_tgt)]['bp_arr'].tolist()
             else:
                 bp_arrs_other = df_valid_combos[~df_valid_combos['is_mfe']]['bp_arr'].tolist()
 
@@ -252,7 +253,7 @@ def compute_accuracy(yp, y, threshold=0.5):
 
 
 def main(path_data, num_filters, filter_width, pooling_size, in_size, n_epoch, learning_rate, batch_size,
-         top_bps_negative, out_dir, n_cpu, path_tdata=None):
+         perc_bps_negative, out_dir, n_cpu, path_tdata=None):
     df = pd.read_pickle(path_data, compression='gzip')
 
     # TODO for now global pooling only works with fixed length input, verify df with in_size!
@@ -279,15 +280,15 @@ def main(path_data, num_filters, filter_width, pooling_size, in_size, n_epoch, l
     df_tr = df[:_n_tr]
     df_va = df[_n_tr:]
     logging.info("Initializing data loader...")
-    data_loader_tr = DataLoader(MyDataSet(df_tr, top_bps_negative),
+    data_loader_tr = DataLoader(MyDataSet(df_tr, perc_bps_negative),
                                 batch_size=batch_size,
                                 shuffle=True, num_workers=n_cpu)
-    data_loader_va = DataLoader(MyDataSet(df_va, top_bps_negative),
+    data_loader_va = DataLoader(MyDataSet(df_va, perc_bps_negative),
                                 batch_size=batch_size,
                                 shuffle=True, num_workers=n_cpu)
     if path_tdata:
         dfts = pd.read_pickle(path_tdata, compression='gzip')
-        test_dataset = MyDataSet(dfts, top_bps_negative)
+        test_dataset = MyDataSet(dfts, perc_bps_negative)
         data_loader_ts = DataLoader(test_dataset,
                                     batch_size=batch_size,
                                     shuffle=True, num_workers=n_cpu
@@ -410,7 +411,7 @@ if __name__ == "__main__":
     parser.add_argument('--epoch', type=int, help='Number of epochs')
     parser.add_argument('--lr', type=float, default=0.0001, help='learning rate')
     parser.add_argument('--batch_size', type=int, help='Mini batch size')
-    parser.add_argument('--top_bps_negative', type=int, default=100, help='if set, second structure in the pair will be sampled from difficult ones with large number of total bps (top rows sorted by total_bps in the df of valid stem bb combinations)')
+    parser.add_argument('--perc_bps_negative', type=float, default=0.8, help='if set, second structure in the pair will be sampled from difficult ones with large number of total bps (perc * num_bps_target)')
     parser.add_argument('--tdata', type=str, default=None,
                         help='debug use, separate test set')
 
@@ -419,4 +420,4 @@ if __name__ == "__main__":
 
     main(args.data, args.num_filters, args.filter_width, args.pooling_size, args.in_size,
          args.epoch, args.lr, args.batch_size,
-         args.top_bps_negative, args.result, args.cpu, args.tdata)
+         args.perc_bps_negative, args.result, args.cpu, args.tdata)
