@@ -169,7 +169,10 @@ class MyDataSet(Dataset):
             num_bps_tgt = df_valid_combos[df_valid_combos['is_mfe']].iloc[0]['num_bps']
             if perc_bps_negative:
                 # bp_arrs_other = df_valid_combos[~df_valid_combos['is_mfe']].sort_values(by=['num_bps'], ascending=False)[:top_bps_negative]['bp_arr'].tolist()
-                bp_arrs_other = df_valid_combos[(~df_valid_combos['is_mfe']) & (df_valid_combos['num_bps'] >= perc_bps_negative * num_bps_tgt)]['bp_arr'].tolist()
+                df_tmp = df_valid_combos[(~df_valid_combos['is_mfe']) & (df_valid_combos['num_bps'] >= perc_bps_negative * num_bps_tgt)]
+                # subsample  FIXME hard-coded
+                df_tmp = df_tmp.sample(n=min(100, len(df_tmp)))
+                bp_arrs_other = df_tmp['bp_arr'].tolist()
             else:
                 bp_arrs_other = df_valid_combos[~df_valid_combos['is_mfe']]['bp_arr'].tolist()
 
