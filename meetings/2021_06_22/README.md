@@ -384,7 +384,7 @@ CUDA_VISIBLE_DEVICES=1 taskset --cpu-list 11,12,13,14 python train_siamese_nn.py
 
 FIXED!!!!!
 
-
+See jamboard: https://jamboard.google.com/d/14s_ifSCpKViYqhr24WaEUlthkpcWPbd0iqvXjgypDV4/viewer?f=0
 
 
 ## S2 scoring network improvement
@@ -412,6 +412,8 @@ CUDA_VISIBLE_DEVICES=1 taskset --cpu-list 11,12,13,14 python train_siamese_nn.py
 ```
 
 
+WIP
+
 ### Check correlation between FE and predicted score
 
 
@@ -428,4 +430,4 @@ CUDA_VISIBLE_DEVICES=1 taskset --cpu-list 11,12,13,14 python train_siamese_nn.py
 
 ## TODOs
 
-- score network is unnormalized, raw score can all be very hgh/low
+- score network is unnormalized, raw score can all be very high/low
