@@ -174,6 +174,7 @@ class MyDataSet(Dataset):
                 # TODO to speed up, we can compute this later
                 df_tmp = add_column(df_tmp, 'bp_arr', ['bb_inc'],
                                              lambda bb_idx: self.stem_bbs2arr([bbs[i] for i in bb_idx], len(seq)))
+                bp_arr_best = df_tmp[df_tmp['is_mfe']].iloc[0]['bp_arr']
 
                 # # subsample  FIXME hard-coded
                 # df_tmp = df_tmp.sample(n=min(100, len(df_tmp)))
@@ -200,9 +201,12 @@ class MyDataSet(Dataset):
 
                 # bp_arrs_other = df_tmp['bp_arr'].tolist()
             else:
+                df_valid_combos = add_column(df_valid_combos, 'bp_arr', ['bb_inc'],
+                                             lambda bb_idx: self.stem_bbs2arr([bbs[i] for i in bb_idx], len(seq)))
+                bp_arr_best = df_valid_combos[df_valid_combos['is_mfe']].iloc[0]['bp_arr']
                 bp_arrs_other = df_valid_combos[~df_valid_combos['is_mfe']]['bp_arr'].tolist()
 
-            bp_arr_best = df_valid_combos[df_valid_combos['is_mfe']].iloc[0]['bp_arr']
+
 
             # handle corner case where there's no 'other' combos
             if len(bp_arrs_other) == 0:
