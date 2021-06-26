@@ -165,7 +165,7 @@ class MyDataSet(Dataset):
             df_valid_combos = add_column(df_valid_combos, 'is_mfe', ['bb_inc'], lambda x: x == target_bb_inc)
             assert len(df_valid_combos[df_valid_combos['is_mfe']]) == 1
 
-            bp_arr_best = df_valid_combos[df_valid_combos['is_mfe']].iloc[0]['bp_arr']
+            # bp_arr_best = df_valid_combos[df_valid_combos['is_mfe']].iloc[0]['bp_arr']
             num_bps_tgt = df_valid_combos[df_valid_combos['is_mfe']].iloc[0]['num_bps']
             if perc_bps_negative:
                 # bp_arrs_other = df_valid_combos[~df_valid_combos['is_mfe']].sort_values(by=['num_bps'], ascending=False)[:top_bps_negative]['bp_arr'].tolist()
@@ -201,6 +201,8 @@ class MyDataSet(Dataset):
                 # bp_arrs_other = df_tmp['bp_arr'].tolist()
             else:
                 bp_arrs_other = df_valid_combos[~df_valid_combos['is_mfe']]['bp_arr'].tolist()
+
+            bp_arr_best = df_valid_combos[df_valid_combos['is_mfe']].iloc[0]['bp_arr']
 
             # handle corner case where there's no 'other' combos
             if len(bp_arrs_other) == 0:
