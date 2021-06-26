@@ -171,10 +171,14 @@ class MyDataSet(Dataset):
                 # bp_arrs_other = df_valid_combos[~df_valid_combos['is_mfe']].sort_values(by=['num_bps'], ascending=False)[:top_bps_negative]['bp_arr'].tolist()
                 df_tmp = df_valid_combos[(~df_valid_combos['is_mfe']) & (df_valid_combos['num_bps'] >= perc_bps_negative * num_bps_tgt)]
 
-                # TODO to speed up, we can compute this later
+                # TODO to speed up, we can compute this after subsampling
                 df_tmp = add_column(df_tmp, 'bp_arr', ['bb_inc'],
                                              lambda bb_idx: self.stem_bbs2arr([bbs[i] for i in bb_idx], len(seq)))
-                bp_arr_best = df_tmp[df_tmp['is_mfe']].iloc[0]['bp_arr']
+
+                df_tgt = df_valid_combos[df_valid_combos['is_mfe']]
+                df_tgt = add_column(df_tgt, 'bp_arr', ['bb_inc'],
+                                    lambda bb_idx: self.stem_bbs2arr([bbs[i] for i in bb_idx], len(seq)))
+                bp_arr_best = df_tgt[df_tgt['is_mfe']].iloc[0]['bp_arr']
 
                 # # subsample  FIXME hard-coded
                 # df_tmp = df_tmp.sample(n=min(100, len(df_tmp)))
