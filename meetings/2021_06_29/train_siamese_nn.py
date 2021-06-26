@@ -199,9 +199,10 @@ class MyDataSet(Dataset):
                 # rest
                 n_left = 100 - len(bp_arrs_other)  # FIXME hard-coded numbers
                 df_tmp3 = df_tmp[(df_tmp['num_bps'] > num_bps_tgt+1) | (df_tmp['num_bps'] < num_bps_tgt-1)]
-                assert len(df_tmp3) > 0
-                df_tmp3 = df_tmp3.sample(n=min(len(df_tmp3), n_left))
-                bp_arrs_other.extend(df_tmp3['bp_arr'].tolist())
+                # len(df_tmp3) == 0 is rare but can happen, e.g. for short seq
+                if len(df_tmp3) > 0:
+                    df_tmp3 = df_tmp3.sample(n=min(len(df_tmp3), n_left))
+                    bp_arrs_other.extend(df_tmp3['bp_arr'].tolist())
 
                 # bp_arrs_other = df_tmp['bp_arr'].tolist()
             else:
