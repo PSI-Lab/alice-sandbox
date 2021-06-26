@@ -154,9 +154,9 @@ class MyDataSet(Dataset):
             # get rid of no structure
             df_valid_combos = df_valid_combos[df_valid_combos['num_bps'] > 0]
 
-            # TODO to speed up, we can filter by top_bps_negative here
-            df_valid_combos = add_column(df_valid_combos, 'bp_arr', ['bb_inc'],
-                                         lambda bb_idx: self.stem_bbs2arr([bbs[i] for i in bb_idx], len(seq)))
+            # # TODO to speed up, we can filter by top_bps_negative here
+            # df_valid_combos = add_column(df_valid_combos, 'bp_arr', ['bb_inc'],
+            #                              lambda bb_idx: self.stem_bbs2arr([bbs[i] for i in bb_idx], len(seq)))
 
             target_bb_inc = [next(i for i, bb in bbs.items() if bb == target_bb) for target_bb in target_bbs]
             target_bb_inc = set(target_bb_inc)
@@ -170,9 +170,35 @@ class MyDataSet(Dataset):
             if perc_bps_negative:
                 # bp_arrs_other = df_valid_combos[~df_valid_combos['is_mfe']].sort_values(by=['num_bps'], ascending=False)[:top_bps_negative]['bp_arr'].tolist()
                 df_tmp = df_valid_combos[(~df_valid_combos['is_mfe']) & (df_valid_combos['num_bps'] >= perc_bps_negative * num_bps_tgt)]
-                # subsample  FIXME hard-coded
-                df_tmp = df_tmp.sample(n=min(100, len(df_tmp)))
-                bp_arrs_other = df_tmp['bp_arr'].tolist()
+
+                # TODO to speed up, we can compute this later
+                df_tmp = add_column(df_tmp, 'bp_arr', ['bb_inc'],
+                                             lambda bb_idx: self.stem_bbs2arr([bbs[i] for i in bb_idx], len(seq)))
+
+                # # subsample  FIXME hard-coded
+                # df_tmp = df_tmp.sample(n=min(100, len(df_tmp)))
+
+                # subsample from different parts:
+                # - from those with n_bps == tgt
+                # - from those with n_bps very close (+/-1) to tgt (to increase chance we compare with these)
+                # - the rest
+                bp_arrs_other = []
+                df_tmp1 = df_tmp[(df_tmp['num_bps'] == num_bps_tgt)]
+                if len(df_tmp1) > 0:
+                    df_tmp1 = df_tmp1.sample(n=min(len(df_tmp1), 30)) # FIXME hard-coded numbers
+                    bp_arrs_other.extend(df_tmp1['bp_arr'].tolist())
+                df_tmp2 = df_tmp[(df_tmp['num_bps'] != num_bps_tgt) & (df_tmp['num_bps'] >= num_bps_tgt-1) & (df_tmp['num_bps'] <= num_bps_tgt+1)]
+                if len(df_tmp2) > 0 :
+                    df_tmp2 = df_tmp2.sample(n=min(len(df_tmp2), 30))  # FIXME hard-coded numbers
+                    bp_arrs_other.extend(df_tmp2['bp_arr'].tolist())
+                # rest
+                n_left = 100 - len(bp_arrs_other)  # FIXME hard-coded numbers
+                df_tmp3 = df_tmp[(df_tmp['num_bps'] > num_bps_tgt+1) | (df_tmp['num_bps'] < num_bps_tgt-1)]
+                assert len(df_tmp3) > 0
+                df_tmp3 = df_tmp3.sample(n=min(len(df_tmp3), n_left))
+                bp_arrs_other.extend(df_tmp3['bp_arr'].tolist())
+
+                # bp_arrs_other = df_tmp['bp_arr'].tolist()
             else:
                 bp_arrs_other = df_valid_combos[~df_valid_combos['is_mfe']]['bp_arr'].tolist()
 
