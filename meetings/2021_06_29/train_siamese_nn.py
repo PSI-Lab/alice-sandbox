@@ -355,10 +355,10 @@ def main(path_data, num_filters, filter_width, pooling_size, in_size, n_epoch, l
             optimizer.step()
         logging.info(f"Epoch {epoch}/{n_epoch}, training, loss {np.mean(loss_all)}, accuracy {np.mean(acc_all)}")
 
-        # debug, print the last mini batch
-        with torch.set_grad_enabled(False):
-            logging.info("Traning set prediction on one mini batch:")
-            yp = model.forward_pair(x1, x2, verbose=True)
+        # # debug, print the last mini batch
+        # with torch.set_grad_enabled(False):
+        #     logging.info("Traning set prediction on one mini batch:")
+        #     yp = model.forward_pair(x1, x2, verbose=True)
 
         # save model every (n_epoch/10)-th epoch
         if (epoch + 1) % max(1, n_epoch//10) == 0:
@@ -381,10 +381,10 @@ def main(path_data, num_filters, filter_width, pooling_size, in_size, n_epoch, l
                 acc_all.append(compute_accuracy(yp, y))
             logging.info(f"Epoch {epoch}/{n_epoch}, validation, loss {np.mean(loss_all)}, accuracy {np.mean(acc_all)}")
 
-        # debug, print the last mini batch
-        with torch.set_grad_enabled(False):
-            logging.info("Validation set prediction on one mini batch:")
-            yp = model.forward_pair(x1, x2, verbose=True)
+        # # debug, print the last mini batch
+        # with torch.set_grad_enabled(False):
+        #     logging.info("Validation set prediction on one mini batch:")
+        #     yp = model.forward_pair(x1, x2, verbose=True)
 
         # debug use
         if data_loader_ts:
