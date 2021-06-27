@@ -190,14 +190,14 @@ class MyDataSet(Dataset):
                 bp_arrs_other = []
                 df_tmp1 = df_tmp[(df_tmp['num_bps'] == num_bps_tgt)]
                 if len(df_tmp1) > 0:
-                    df_tmp1 = df_tmp1.sample(n=min(len(df_tmp1), 30)) # FIXME hard-coded numbers
+                    df_tmp1 = df_tmp1.sample(n=min(len(df_tmp1), 8)) # FIXME hard-coded numbers
                     bp_arrs_other.extend(df_tmp1['bp_arr'].tolist())
                 df_tmp2 = df_tmp[(df_tmp['num_bps'] != num_bps_tgt) & (df_tmp['num_bps'] >= num_bps_tgt-1) & (df_tmp['num_bps'] <= num_bps_tgt+1)]
                 if len(df_tmp2) > 0 :
-                    df_tmp2 = df_tmp2.sample(n=min(len(df_tmp2), 30))  # FIXME hard-coded numbers
+                    df_tmp2 = df_tmp2.sample(n=min(len(df_tmp2), 8))  # FIXME hard-coded numbers
                     bp_arrs_other.extend(df_tmp2['bp_arr'].tolist())
                 # rest
-                n_left = 100 - len(bp_arrs_other)  # FIXME hard-coded numbers
+                n_left = 30 - len(bp_arrs_other)  # FIXME hard-coded numbers
                 df_tmp3 = df_tmp[(df_tmp['num_bps'] > num_bps_tgt+1) | (df_tmp['num_bps'] < num_bps_tgt-1)]
                 # len(df_tmp3) == 0 is rare but can happen, e.g. for short seq
                 if len(df_tmp3) > 0:
