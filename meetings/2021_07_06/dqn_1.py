@@ -1,4 +1,9 @@
-
+"""
+adopted from https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
+"""
+import argparse
+import os
+import logging
 import numpy as np
 import pandas as pd
 import random
@@ -145,6 +150,7 @@ class ValueNetwork(nn.Module):
 
     def __init__(self, h=60, w=60):
         super(ValueNetwork, self).__init__()
+        # FIXME hard-coded for now
         self.conv1 = nn.Conv2d(10, 16, kernel_size=5, stride=2)  # input ch = 10 = 8 + 1 + 1
 #         self.bn1 = nn.BatchNorm2d(16)
         self.conv2 = nn.Conv2d(16, 32, kernel_size=5, stride=2)
@@ -191,22 +197,26 @@ def encode_all_actions(seq_arr, inc_bbs_arr, next_bbs_arrs, n_actions):
 
 # steps_done = 0
 
-def select_action(seq_arr, inc_bbs_arr, next_bbs_arrs):  # works on a single example
+def select_action(global_counter, policy_net, seq_arr, inc_bbs_arr, next_bbs_arrs):  # works on a single example
     # seq_arr: LxLx4
     # inc_bbs_arr: LxLx1
     # next_bbs_arrs: list of k items: LxLx1
     
     # TODO check dimensions
-    
+
+    # FIXME hard-coded
+    EPS_START = 0.9
+    EPS_END = 0.05
+    EPS_DECAY = 200
     
     n_actions = len(next_bbs_arrs)
     next_bbs_arrs = [x[np.newaxis, :, :, np.newaxis] for x in next_bbs_arrs]
     next_bbs_arrs = np.concatenate(next_bbs_arrs, axis=0)
     
-    global steps_done
+    # global steps_done
     sample = random.random()
-    eps_threshold = EPS_END + (EPS_START - EPS_END) *         np.exp(-1. * steps_done / EPS_DECAY)
-    steps_done += 1
+    eps_threshold = EPS_END + (EPS_START - EPS_END) * np.exp(-1. * global_counter.ct / EPS_DECAY)
+    global_counter.step()
     if sample > eps_threshold:
         with torch.no_grad():
             # predict on all actions as a batch
@@ -227,10 +237,15 @@ def select_action(seq_arr, inc_bbs_arr, next_bbs_arrs):  # works on a single exa
 
 
 
-def optimize_model():
-    if len(memory) < BATCH_SIZE:
+def optimize_model(optimizer, policy_net, target_net, all_data_examples, replay_memory, batch_size):
+
+    # FIXME hard-coded
+    # discount factor
+    GAMMA = 0.999
+
+    if len(replay_memory) < batch_size:
         return
-    transitions = memory.sample(BATCH_SIZE)  # list of transitions
+    transitions = replay_memory.sample(batch_size)  # list of transitions
     
     # Compute Q(s_t, a)
     # running all examples as a single batch, since we only need to evaluate one action per example
@@ -289,110 +304,149 @@ def optimize_model():
     for param in policy_net.parameters():
         param.grad.data.clamp_(-1, 1)  # TODO do we need clamping?
     optimizer.step()
-            
+
+
+class GlobalCounter():
+    def __init__(self):
+        self.ct = 0
+
+    def step(self):
+        """Increment the counter"""
+        self.ct += 1
+
+
+def main(path_data, num_episodes, lr, batch_size, memory_size):
+    # debug dataset
+    # df = pd.read_pickle('../2021_06_22/data/data_len60_test_1000_s1_stem_bb_combos_s1s100.pkl.gz')
+    df = pd.read_pickle(path_data)
+    # build examples
+    all_data_examples = AllDataExamples(df)
+
+    # # sequence encoder
+    # single_seq_enc = SingleSeqEncoder()
+
+    # initialize value network
+    policy_net = ValueNetwork(60, 60)  # FIXME hard-coded seq len
+    # make a copy for computing target value in the Bellman update
+    # this network will be updated once in a while
+    target_net = ValueNetwork(60, 60)
+    target_net.load_state_dict(policy_net.state_dict())
+    target_net.eval()
+
+    # optimizer and replay memory
+    optimizer = torch.optim.RMSprop(policy_net.parameters(), lr)
+    replay_memory = ReplayMemory(memory_size)
+
+    # constants
+    # batch_size = 4
+    # GAMMA = 0.999
+    # EPS_START = 0.9
+    # EPS_END = 0.05
+    # EPS_DECAY = 200
+    TARGET_UPDATE = 10  # FIXME hard-coded
+
+    # global counter
+    global_counter = GlobalCounter()
+
+    # num_episodes = 10  # debug
+    for i_episode in range(num_episodes):
+        # get one random example
+        example_id = np.random.randint(0, len(all_data_examples.data))
+        data_example = all_data_examples.data[example_id]
+
+        # init
+        bb_id_inc = []
+        inc_bbs_arr = np.zeros((len(data_example.seq), len(data_example.seq)))
+        valid_bb_ids = list(data_example.bbs.keys())
+        current_neg_fe = 0  # inital neg fe 0
+
+        for t in count():
+            # Select and perform an action
+            idx_action = select_action(global_counter, policy_net, data_example.seq_arr,
+                                   inc_bbs_arr, [data_example.bb_arrs[bb_id] for bb_id in valid_bb_ids])
+            next_bb_id = valid_bb_ids[idx_action]
+
+            # backup current state before update, so we can store in memory
+            old_bb_id_inc = bb_id_inc
+            old_inc_bbs_arr = inc_bbs_arr
+            old_valid_bb_ids = valid_bb_ids
+
+            # update
+            valid_bb_ids = find_valid_bb_ids(bb_id_inc,
+                                     next_bb_id,
+                                     valid_bb_ids,
+                                     data_example.bb_conflict)
+            bb_id_inc.append(next_bb_id)
+            inc_bbs_arr += data_example.bb_arrs[next_bb_id]
+
+            # fe & reward
+            bp_arr = stem_bbs2arr([data_example.bbs[bb_id] for bb_id in bb_id_inc], len(data_example.seq))
+            db_str, result_ambiguous = arr2db(bp_arr)  # TODO check
+            new_neg_fe = - compute_fe(data_example.seq, db_str)
+            reward = new_neg_fe - current_neg_fe
+
+            # update current fe
+            current_neg_fe = new_neg_fe + 0  # TODO copy?
+
+            # Store the transition in memory
+            replay_memory.push(example_id,
+                        old_bb_id_inc,
+                        old_inc_bbs_arr,
+                        old_valid_bb_ids,
+                        next_bb_id,
+                        reward)
+
+    #         _, reward, done, _ = env.step(action.item())
+    #         reward = torch.tensor([reward], device=device)
+
+            # Perform one step of the optimization (on the policy network)
+            optimize_model(optimizer, policy_net, target_net, all_data_examples, replay_memory, batch_size)
+
+            # check if we're at final state
+            if len(valid_bb_ids) == 0:
+                break
+
+    #         if done:
+    #             episode_durations.append(t + 1)
+    #             plot_durations()
+    #             break
+        # Update the target network, copying all weights and biases in DQN
+        if i_episode % TARGET_UPDATE == 0:
+            target_net.load_state_dict(policy_net.state_dict())
+
+    print('Complete')
+
+
+def set_up_logging(path_result):
+    # make result dir if non existing
+    if not os.path.isdir(path_result):
+        os.makedirs(path_result)
+
+    log_format = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)
+    file_logger = logging.FileHandler(os.path.join(path_result, 'run.log'))
+    file_logger.setFormatter(log_format)
+    root_logger.addHandler(file_logger)
+    console_logger = logging.StreamHandler()
+    console_logger.setFormatter(log_format)
+    root_logger.addHandler(console_logger)
+    root_logger.addHandler(console_logger)
     
-# debug dataset
-df = pd.read_pickle('../2021_06_22/data/data_len60_test_1000_s1_stem_bb_combos_s1s100.pkl.gz')
-# build examples
-all_data_examples = AllDataExamples(df)
-
-# # sequence encoder
-# single_seq_enc = SingleSeqEncoder()
-
-# initialize value network
-policy_net = ValueNetwork(60, 60)
-# make a copy for computing target value in the Bellman update
-# this network will be updated once in a while
-target_net = ValueNetwork(60, 60)
-target_net.load_state_dict(policy_net.state_dict())
-target_net.eval()
-
-# optimizer and replay memory
-optimizer = torch.optim.RMSprop(policy_net.parameters(), lr=0.0002)
-memory = ReplayMemory(100)
-
-# constants
-BATCH_SIZE = 4
-GAMMA = 0.999
-EPS_START = 0.9
-EPS_END = 0.05
-EPS_DECAY = 200
-TARGET_UPDATE = 10
-
-# global var
-steps_done = 0
-
-num_episodes = 10  # debug
-for i_episode in range(num_episodes):
-    # get one random example
-    example_id = np.random.randint(0, len(all_data_examples.data))
-    data_example = all_data_examples.data[example_id]
     
-    # init
-    bb_id_inc = []
-    inc_bbs_arr = np.zeros((len(data_example.seq), len(data_example.seq)))
-    valid_bb_ids = list(data_example.bbs.keys())
-    current_neg_fe = 0  # inital neg fe 0
-    
-    for t in count():
-        # Select and perform an action
-        idx_action = select_action(data_example.seq_arr,
-                               inc_bbs_arr, [data_example.bb_arrs[bb_id] for bb_id in valid_bb_ids])
-        next_bb_id = valid_bb_ids[idx_action]
-        
-        # backup current state before update, so we can store in memory
-        old_bb_id_inc = bb_id_inc
-        old_inc_bbs_arr = inc_bbs_arr
-        old_valid_bb_ids = valid_bb_ids
-        
-        # update
-        valid_bb_ids = find_valid_bb_ids(bb_id_inc, 
-                                 next_bb_id, 
-                                 valid_bb_ids, 
-                                 data_example.bb_conflict)
-        bb_id_inc.append(next_bb_id)
-        inc_bbs_arr += data_example.bb_arrs[next_bb_id]
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--data', type=str,
+                        help='Path to training data file, should be in pkl.gz format')
+    parser.add_argument('--result', type=str, help='Path to output result')
+    parser.add_argument('--episode', type=int, default=10, help='Number of episodes, each episode is one sequence')
+    parser.add_argument('--lr', type=float, default=0.0001, help='learning rate')
+    parser.add_argument('--batch_size', type=int, default=4, help='Mini batch size')
+    parser.add_argument('--memory_size', type=int, default=100, help='replay memory size')
 
-        # fe & reward
-        bp_arr = stem_bbs2arr([data_example.bbs[bb_id] for bb_id in bb_id_inc], len(data_example.seq))
-        db_str, result_ambiguous = arr2db(bp_arr)  # TODO check 
-        new_neg_fe = - compute_fe(data_example.seq, db_str)
-        reward = new_neg_fe - current_neg_fe
-        
-        # update current fe
-        current_neg_fe = new_neg_fe + 0  # TODO copy?
-        
-        # Store the transition in memory
-        memory.push(example_id,
-                    old_bb_id_inc, 
-                    old_inc_bbs_arr, 
-                    old_valid_bb_ids, 
-                    next_bb_id,
-                    reward)
-        
-#         _, reward, done, _ = env.step(action.item())
-#         reward = torch.tensor([reward], device=device)
+    args = parser.parse_args()
+    set_up_logging(args.result)
 
-        # Perform one step of the optimization (on the policy network)
-        optimize_model()
-        
-        # check if we're at final state
-        if len(valid_bb_ids) == 0:
-            break
-        
-#         if done:
-#             episode_durations.append(t + 1)
-#             plot_durations()
-#             break
-    # Update the target network, copying all weights and biases in DQN
-    if i_episode % TARGET_UPDATE == 0:
-        target_net.load_state_dict(policy_net.state_dict())
-
-print('Complete')
-    
-    
-
-
-
+    main(args.data, args.episode, args.lr, args.batch_size, args.memory_size)
 
 
