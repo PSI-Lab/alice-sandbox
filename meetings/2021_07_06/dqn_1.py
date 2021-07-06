@@ -294,6 +294,8 @@ def optimize_model(optimizer, policy_net, target_net, all_data_examples, replay_
     loss = criterion(state_action_values.squeeze(), expected_state_action_values)
 #     print(state_action_values.shape)
 #     print(expected_state_action_values.shape)
+    logging.debug(f"state_action_values: {state_action_values.squeeze().detach().numpy()}")
+    logging.debug(f"expected_state_action_values: {expected_state_action_values.detach().numpy()}")
     logging.info(f"loss: {loss.detach().numpy()}")
 
     # Optimize the model
