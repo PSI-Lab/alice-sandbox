@@ -10,8 +10,6 @@ import random
 from pprint import pprint
 from itertools import count
 from collections import namedtuple, deque
-from sklearn.metrics import f1_score
-from utils.util_global_struct import process_bb_old_to_new
 from utils.rna_ss_utils import arr2db, one_idx2arr, compute_fe
 from utils.inference_s2 import Predictor, process_row_bb_combo, stem_bbs2arr
 from utils_s2_tree_search import bb_conflict
@@ -33,8 +31,7 @@ Transition = namedtuple('Transition',
 
 
 
-def find_valid_bb_ids(bb_id_inc, bb_id_next, valid_bb_ids, bb_conflict):
-    # bb_id_inc: list of IDs included
+def find_valid_bb_ids(bb_id_next, valid_bb_ids, bb_conflict):
     # bb_id_next: ID of bb to be included next
     # valid_bb_ids: list of IDs, current list of valid bbs (contains bb_id_next)
     # bb_conflict: NxN binary matrix with 1 indicating conflit
@@ -58,11 +55,12 @@ class AllDataExamples(object):
         # reindex to make sure df idx is sequential
         df = df.reset_index(drop=True)
 
+        logging.info("Processing dataset...")
         for data_idx, row in df.iterrows():
             seq = row.seq
 
             if data_idx % 100 == 0:
-                print(data_idx)
+                logging.info(f"{data_idx}/{len(df)}")
 
             # bbs
             df_stem = pd.DataFrame(row.pred_stem_bb)
@@ -94,6 +92,7 @@ class AllDataExamples(object):
                                               bbs=bbs,
                                               bb_arrs=bb_arrs,
                                               bb_conflict=bb_conflict_arr)
+        logging.info("Done processing dataset.")
 
 
 class SingleSeqEncoder(object):
@@ -276,8 +275,7 @@ def optimize_model(optimizer, policy_net, target_net, all_data_examples, replay_
         bp_arr_t1 = transition.bbs_inc_arr + data_example.bb_arrs[transition.bb_id_next]
         # find all valid actions from t1 to t2
         bb_id_inc_t1 = transition.bb_id_inc + [transition.bb_id_next]
-        valid_bb_ids = find_valid_bb_ids(transition.bb_id_inc, 
-                                         transition.bb_id_next, 
+        valid_bb_ids = find_valid_bb_ids(transition.bb_id_next,
                                          transition.valid_bb_ids, 
                                          data_example.bb_conflict)
         if len(valid_bb_ids) == 0:  # no valid action after t+1, i.e. final state
@@ -296,7 +294,7 @@ def optimize_model(optimizer, policy_net, target_net, all_data_examples, replay_
     loss = criterion(state_action_values.squeeze(), expected_state_action_values)
 #     print(state_action_values.shape)
 #     print(expected_state_action_values.shape)
-    print(loss)
+    logging.info(f"loss: {loss.detach().numpy()}")
 
     # Optimize the model
     optimizer.zero_grad()
@@ -350,6 +348,7 @@ def main(path_data, num_episodes, lr, batch_size, memory_size):
 
     # num_episodes = 10  # debug
     for i_episode in range(num_episodes):
+        logging.info(f"Episode {i_episode} out of {num_episodes}")
         # get one random example
         example_id = np.random.randint(0, len(all_data_examples.data))
         data_example = all_data_examples.data[example_id]
@@ -372,8 +371,7 @@ def main(path_data, num_episodes, lr, batch_size, memory_size):
             old_valid_bb_ids = valid_bb_ids
 
             # update
-            valid_bb_ids = find_valid_bb_ids(bb_id_inc,
-                                     next_bb_id,
+            valid_bb_ids = find_valid_bb_ids(next_bb_id,
                                      valid_bb_ids,
                                      data_example.bb_conflict)
             bb_id_inc.append(next_bb_id)
@@ -414,7 +412,7 @@ def main(path_data, num_episodes, lr, batch_size, memory_size):
         if i_episode % TARGET_UPDATE == 0:
             target_net.load_state_dict(policy_net.state_dict())
 
-    print('Complete')
+    logging.info('All episodes completed.')
 
 
 def set_up_logging(path_result):
