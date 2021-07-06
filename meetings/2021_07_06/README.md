@@ -95,18 +95,87 @@ python eval_s2_full_test_set.py --run_id run_15 > result/eval_s2_log/run_15.txt
 ```
 
 
-visualize selected examples?
+## Investigate upper bound of performance
 
-TODO plot
+- given bbs predicted by S1,
+assume a perfect scoring model,
+calculate theoretical upper bound of overall performance
 
+- use RNAfold (RNAeval) to score all valid bb combinations
 
-
-
-todo: score network is unnormalized, raw score can all be very high/low
-
-todo: as a proof-of-concept, train score network on FE directly?
-
-theoretical upper bound given S2 model (use RNAeval, also use topk? but with a big k)
+- caveat: we'll still score the top k (since it's unrealistic to score all even using RNAfold),
+ but use a large value k
 
 
-Q learning
+```
+mkdir -p result/ub_s2_log
+python s2_score_upper_bound.py --topk 100 > result/ub_s2_log/k_100.txt
+taskset --cpu-list 11,12,13,14 python s2_score_upper_bound.py --topk 200 > result/ub_s2_log/k_200.txt
+taskset --cpu-list 11,12,13,14 python s2_score_upper_bound.py --topk 300 > result/ub_s2_log/k_300.txt
+taskset --cpu-list 11,12,13,14 python s2_score_upper_bound.py --topk 500 > result/ub_s2_log/k_500.txt
+taskset --cpu-list 11,12,13,14 python s2_score_upper_bound.py --topk 1000 > result/ub_s2_log/k_1000.txt
+taskset --cpu-list 15,16,17,18 python s2_score_upper_bound.py --topk 2000 > result/ub_s2_log/k_2000.txt
+```
+
+Result:
+
+| K    | f1_mean  | f1_median |
+|------|----------|-----------|
+| 100  | 0.460992 | 0.470588  |
+| 200  | 0.534921 | 0.607378  |
+| 300  | 0.569419 | 0.65942   |
+| 500  | 0.613301 | 0.72      |
+| 1000 | 0.669828 | 0.805405  |
+
+
+
+TODO debug: why is it always a superset? e.g.
+
+```
+FE equal but structure differ:
+target:
+[BoundingBox(bb_x=12, bb_y=58, siz_x=5, siz_y=5),
+ BoundingBox(bb_x=29, bb_y=53, siz_x=4, siz_y=4),
+ BoundingBox(bb_x=34, bb_y=48, siz_x=5, siz_y=5)]
+predicted:
+[BoundingBox(bb_x=3, bb_y=26, siz_x=3, siz_y=3),
+ BoundingBox(bb_x=12, bb_y=58, siz_x=5, siz_y=5),
+ BoundingBox(bb_x=29, bb_y=53, siz_x=4, siz_y=4),
+ BoundingBox(bb_x=34, bb_y=48, siz_x=5, siz_y=5)]
+Target FE -11.1, best in topk FE -11.1, f1=0.9032258064516129
+```
+
+
+
+## DQN prototyping
+
+
+Run on small dataset (use test set as an example):
+
+```
+python dqn_1.py --data ../2021_06_22/data/data_len60_test_1000_s1_stem_bb_combos_s1s100.pkl.gz \
+--result result/debug/ --episode 10 --lr 0.0001 --batch_size 4 --memory_size 100
+```
+
+Run on actual dataset:
+
+
+```
+taskset --cpu-list 11,12,13,14 python dqn_1.py \
+--data ../2021_06_15/data/data_len60_train_10000_s1_stem_bb_combos_s1s100.pkl.gz \
+--result result/dqn_1/ --episode 500 --lr 0.00002 --batch_size 50 --memory_size 200
+```
+
+TODO no need to subset to s1s100
+
+
+
+TODO add GPU
+
+
+
+
+
+TODO read paper: https://arxiv.org/abs/2105.02761
+
+
