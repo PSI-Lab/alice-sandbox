@@ -55,7 +55,7 @@ def eval_test_set(model):
     TOPK = 100
 
 
-    df = pd.read_pickle('../2021_06_15/data/data_len60_test_1000_s1_stem_bb_combos.pkl.gz')
+    df = pd.read_pickle('../2021_07_14/data/data_len60_test_1000_s1_stem_bb_combos.pkl.gz')
 
     # part 1: evaluate on subset where target is within TOPK
     print("part 1: evaluate on subset where target is within TOPK")
