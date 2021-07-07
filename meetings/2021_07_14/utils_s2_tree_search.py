@@ -16,9 +16,9 @@ def range_overlap(r1, r2):
 
 def bb_conflict(bb1, bb2):
     r11 = (bb1.bb_x, bb1.bb_x + bb1.siz_x)
-    r12 = (bb1.bb_y - bb1.siz_y, bb1.bb_y)
+    r12 = (bb1.bb_y - bb1.siz_y + 1, bb1.bb_y + 1)
     r21 = (bb2.bb_x, bb2.bb_x + bb2.siz_x)
-    r22 = (bb2.bb_y - bb2.siz_y, bb2.bb_y)
+    r22 = (bb2.bb_y - bb2.siz_y + 1, bb2.bb_y + 1)
     if range_overlap(r11, r21) or range_overlap(r11, r22) or range_overlap(r12, r21) or range_overlap(r12, r22):
         return True
     else:
