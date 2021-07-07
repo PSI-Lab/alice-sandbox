@@ -4,6 +4,7 @@ adopted from https://pytorch.org/tutorials/intermediate/reinforcement_q_learning
 import argparse
 import os
 import logging
+from copy import copy
 import numpy as np
 import pandas as pd
 import random
@@ -368,9 +369,9 @@ def main(path_data, num_episodes, lr, batch_size, memory_size):
             next_bb_id = valid_bb_ids[idx_action]
 
             # backup current state before update, so we can store in memory
-            old_bb_id_inc = bb_id_inc
-            old_inc_bbs_arr = inc_bbs_arr
-            old_valid_bb_ids = valid_bb_ids
+            old_bb_id_inc = copy(bb_id_inc)
+            old_inc_bbs_arr = copy(inc_bbs_arr)
+            old_valid_bb_ids = copy(valid_bb_ids)
 
             # update
             valid_bb_ids = find_valid_bb_ids(next_bb_id,
@@ -395,6 +396,7 @@ def main(path_data, num_episodes, lr, batch_size, memory_size):
                         old_valid_bb_ids,
                         next_bb_id,
                         reward)
+            logging.debug(f"Episode {i_episode}, step {t}, state {old_bb_id_inc}, action {next_bb_id}, old_score {current_neg_fe}, new_score {new_neg_fe}, reward {reward}")
 
     #         _, reward, done, _ = env.step(action.item())
     #         reward = torch.tensor([reward], device=device)
