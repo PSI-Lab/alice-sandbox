@@ -288,7 +288,7 @@ def optimize_model(optimizer, policy_net, target_net, all_data_examples, replay_
                                            len(valid_bb_ids))
             next_state_action_values = target_net(batch_data)
             next_state_value = next_state_action_values.max()
-            print(next_state_value, transition.reward)
+            # print(next_state_value, transition.reward)
             expected_state_action_values[idx_val] = (next_state_value * GAMMA) + transition.reward
     
     # Compute Huber loss
@@ -344,7 +344,8 @@ def main(path_data, num_episodes, lr, batch_size, memory_size):
 
     # optimizer and replay memory
     optimizer = torch.optim.RMSprop(policy_net.parameters(), lr)
-    replay_memory = ReplayMemory(memory_size)
+    replay_memory_final_state = ReplayMemory(memory_size)
+    replay_memory_other = ReplayMemory(memory_size)
 
     # constants
     # batch_size = 4
@@ -398,7 +399,8 @@ def main(path_data, num_episodes, lr, batch_size, memory_size):
             # reward = new_neg_fe - current_neg_fe
 
             # reward is 0 unless it's final state
-            if len(valid_bb_ids) == 0:
+            final_state = len(valid_bb_ids) == 0
+            if final_state:
                 reward = compute_score_neg_fe(data_example, bb_id_inc)
                 logging.info(f"step {t} (final), reward {reward}")
             else:
@@ -409,29 +411,31 @@ def main(path_data, num_episodes, lr, batch_size, memory_size):
             # # update current fe
             # current_neg_fe = new_neg_fe + 0  # TODO copy?
 
-            # # Store the transition in memory
-            # replay_memory.push(example_id,
-            #             old_bb_id_inc,
-            #             old_inc_bbs_arr,
-            #             old_valid_bb_ids,
-            #             next_bb_id,
-            #             reward)
-
-
-
             # Store the transition in memory
-            replay_memory.push(example_id,
-                               old_bb_id_inc,
-                               old_inc_bbs_arr,
-                               old_valid_bb_ids,
-                               next_bb_id,
-                               reward)
+            if final_state:
+                replay_memory_final_state.push(example_id,
+                                               old_bb_id_inc,
+                                               old_inc_bbs_arr,
+                                               old_valid_bb_ids,
+                                               next_bb_id,
+                                               reward)
+            else:
+                replay_memory_other.push(example_id,
+                                         old_bb_id_inc,
+                                         old_inc_bbs_arr,
+                                         old_valid_bb_ids,
+                                         next_bb_id,
+                                         reward)
 
     #         _, reward, done, _ = env.step(action.item())
     #         reward = torch.tensor([reward], device=device)
 
             # Perform one step of the optimization (on the policy network)
-            optimize_model(optimizer, policy_net, target_net, all_data_examples, replay_memory, batch_size)
+            logging.debug("replay_memory_final_state")
+            optimize_model(optimizer, policy_net, target_net, all_data_examples, replay_memory_final_state, batch_size)
+            logging.debug("replay_memory_other")
+            optimize_model(optimizer, policy_net, target_net, all_data_examples, replay_memory_other, batch_size)
+
 
             # check if we're at final state
             if len(valid_bb_ids) == 0:
