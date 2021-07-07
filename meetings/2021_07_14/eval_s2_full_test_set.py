@@ -38,6 +38,12 @@ def get_model(run_id):
                           num_filters=[64, 64, 128, 128, 256],
                              filter_width=[3, 3, 3, 3, 3],
                              pooling_size=[1, 1, 2, 2, 2])
+    elif run_id == 'run_16':
+        model_path = '../2021_07_14/result/run_16/model_ckpt_ep_49.pth'
+        model = Predictor(model_path,
+                          num_filters=[16, 16, 32, 32, 64],
+                          filter_width=[3, 3, 3, 3, 3],
+                          pooling_size=[1, 1, 2, 2, 2])
     else:
         raise ValueError
     return model
