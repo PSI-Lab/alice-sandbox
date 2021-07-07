@@ -239,7 +239,8 @@ def optimize_model(optimizer, policy_net, target_net, all_data_examples, replay_
 
     # FIXME hard-coded
     # discount factor
-    GAMMA = 0.999
+    # GAMMA = 0.999
+    GAMMA = 1.0
 
     if len(replay_memory) < batch_size:
         return
