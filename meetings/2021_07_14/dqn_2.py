@@ -132,7 +132,8 @@ class SingleSeqEncoder(object):
 
 class ReplayMemory(object):
 
-    def __init__(self, capacity):
+    def __init__(self, capacity, name):
+        self.name = name
         self.memory = deque([],maxlen=capacity)
 
     def push(self, *args):
@@ -298,7 +299,7 @@ def optimize_model(optimizer, policy_net, target_net, all_data_examples, replay_
 #     print(expected_state_action_values.shape)
     logging.debug(f"state_action_values: {state_action_values.squeeze().detach().numpy()}")
     logging.debug(f"expected_state_values: {expected_state_action_values.detach().numpy()}")
-    logging.info(f"loss: {loss.detach().numpy()}")
+    logging.info(f"loss ({replay_memory.name}): {loss.detach().numpy()}")
 
     # Optimize the model
     optimizer.zero_grad()
@@ -344,8 +345,8 @@ def main(path_data, num_episodes, lr, batch_size, memory_size):
 
     # optimizer and replay memory
     optimizer = torch.optim.RMSprop(policy_net.parameters(), lr)
-    replay_memory_final_state = ReplayMemory(memory_size)
-    replay_memory_other = ReplayMemory(memory_size)
+    replay_memory_final_state = ReplayMemory(memory_size, 'replay_memory_final_state')
+    replay_memory_other = ReplayMemory(memory_size, 'replay_memory_other')
 
     # constants
     # batch_size = 4
@@ -402,6 +403,10 @@ def main(path_data, num_episodes, lr, batch_size, memory_size):
             final_state = len(valid_bb_ids) == 0
             if final_state:
                 reward = compute_score_neg_fe(data_example, bb_id_inc)
+                # avoid RNAfold return extreme value for (pseudoknot) structures
+                # cap it
+                # FIXME hard-coded threshold
+                reward = max(-10, reward)
                 logging.info(f"step {t} (final), reward {reward}")
             else:
                 reward = 0
