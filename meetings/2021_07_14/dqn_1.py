@@ -167,8 +167,6 @@ class ValueNetwork(nn.Module):
         linear_input_size = convw * convh * 32
         self.out = nn.Linear(linear_input_size, 1)
 
-    # Called with either one element to determine next action, or a batch
-    # during optimization. Returns tensor([[left0exp,right0exp]...]).
     def forward(self, x):
 #         x = x.to(device)
         x = F.relu(self.conv1(x))
@@ -352,9 +350,11 @@ def main(path_data, num_episodes, lr, batch_size, memory_size):
     # num_episodes = 10  # debug
     for i_episode in range(num_episodes):
         logging.info(f"Episode {i_episode} out of {num_episodes}")
+
         # get one random example
         example_id = np.random.randint(0, len(all_data_examples.data))
         data_example = all_data_examples.data[example_id]
+        logging.debug(data_example.seq)
 
         # init
         bb_id_inc = []
@@ -383,9 +383,12 @@ def main(path_data, num_episodes, lr, batch_size, memory_size):
             # fe & reward
             bp_arr = stem_bbs2arr([data_example.bbs[bb_id] for bb_id in bb_id_inc], len(data_example.seq))
             db_str, result_ambiguous = arr2db(bp_arr)  # TODO check
+            # print(db_str)
             new_neg_fe = - compute_fe(data_example.seq, db_str)
             reward = new_neg_fe - current_neg_fe
 
+            logging.debug(
+                f"step {t}, state {old_bb_id_inc}, action space {old_valid_bb_ids}, action {next_bb_id}, old_score {current_neg_fe}, new_score {new_neg_fe}, reward {reward}")
             # update current fe
             current_neg_fe = new_neg_fe + 0  # TODO copy?
 
@@ -396,7 +399,6 @@ def main(path_data, num_episodes, lr, batch_size, memory_size):
                         old_valid_bb_ids,
                         next_bb_id,
                         reward)
-            logging.debug(f"Episode {i_episode}, step {t}, state {old_bb_id_inc}, action {next_bb_id}, old_score {current_neg_fe}, new_score {new_neg_fe}, reward {reward}")
 
     #         _, reward, done, _ = env.step(action.item())
     #         reward = torch.tensor([reward], device=device)
@@ -419,14 +421,17 @@ def main(path_data, num_episodes, lr, batch_size, memory_size):
     logging.info('All episodes completed.')
 
 
-def set_up_logging(path_result):
+def set_up_logging(path_result, verbose=False):
     # make result dir if non existing
     if not os.path.isdir(path_result):
         os.makedirs(path_result)
 
     log_format = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.DEBUG)
+    if verbose:
+        root_logger.setLevel(logging.DEBUG)
+    else:
+        root_logger.setLevel(logging.INFO)
     file_logger = logging.FileHandler(os.path.join(path_result, 'run.log'))
     file_logger.setFormatter(log_format)
     root_logger.addHandler(file_logger)
@@ -445,9 +450,10 @@ if __name__ == "__main__":
     parser.add_argument('--lr', type=float, default=0.0001, help='learning rate')
     parser.add_argument('--batch_size', type=int, default=4, help='Mini batch size')
     parser.add_argument('--memory_size', type=int, default=100, help='replay memory size')
+    parser.add_argument('--verbose', action='store_true', help='set this option to log at DEBUG level')
 
     args = parser.parse_args()
-    set_up_logging(args.result)
+    set_up_logging(args.result, args.verbose)
 
     main(args.data, args.episode, args.lr, args.batch_size, args.memory_size)
 
