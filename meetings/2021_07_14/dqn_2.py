@@ -8,13 +8,11 @@ from copy import copy
 import numpy as np
 import pandas as pd
 import random
-from pprint import pprint
 from itertools import count
 from collections import namedtuple, deque, defaultdict
-from utils.rna_ss_utils import arr2db, one_idx2arr, compute_fe
-from utils.inference_s2 import Predictor, process_row_bb_combo, stem_bbs2arr
+from utils.rna_ss_utils import arr2db, compute_fe
+from utils.inference_s2 import stem_bbs2arr
 from utils_s2_tree_search import bb_conflict
-from utils.misc import add_column
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -88,11 +86,11 @@ class AllDataExamples(object):
             seq_arr = self.single_seq_enc.encode_single(seq)
 
             # add to data
-            self.data[data_idx] = DataExample(seq=seq,
-                                              seq_arr=seq_arr,
-                                              bbs=bbs,
-                                              bb_arrs=bb_arrs,
-                                              bb_conflict=bb_conflict_arr)
+            self.data[data_idx] = DataExample(seq=seq,  # str
+                                              seq_arr=seq_arr,  # LxLx8
+                                              bbs=bbs,  # list of BoundingBox obj
+                                              bb_arrs=bb_arrs,  # list of LxL binary arrays
+                                              bb_conflict=bb_conflict_arr)  # NxN binary matrix (N = num_bbs)
         logging.info("Done processing dataset.")
 
 
@@ -177,6 +175,12 @@ class ValueNetwork(nn.Module):
 
 
 def encode_all_actions(seq_arr, inc_bbs_arr, next_bbs_arrs, n_actions):
+    # seq_arr:  LxLx8
+    # inc_bbs_arr: LxL
+    # next_bbs_arrs: list of LxL or LxLx1  FIXME unify format
+    # n_actions: int
+
+
     seq_arr = np.tile(seq_arr[np.newaxis, :, :, :], [n_actions, 1, 1, 1])  # kxLxLx8
     inc_bbs_arr = np.tile(inc_bbs_arr[np.newaxis, :, :, np.newaxis], [n_actions, 1, 1, 1])  # kxLxLx8
 
@@ -191,19 +195,17 @@ def encode_all_actions(seq_arr, inc_bbs_arr, next_bbs_arrs, n_actions):
 
     batch_data = np.concatenate([seq_arr, inc_bbs_arr, next_bbs_arrs], axis=3)  # kxLxLx10
     batch_data = torch.from_numpy(batch_data).float()
-    return batch_data.permute(0, 3, 1, 2)
+    return batch_data.permute(0, 3, 1, 2)  # for pytorch: batch x channel x h x w
 
-
-# steps_done = 0
 
 def select_action(global_counter, policy_net, seq_arr, inc_bbs_arr, next_bbs_arrs):  # works on a single example
-    # seq_arr: LxLx4
-    # inc_bbs_arr: LxLx1
-    # next_bbs_arrs: list of k items: LxLx1
-    
-    # TODO check dimensions
+    # seq_arr: LxLx8
+    # inc_bbs_arr: LxL
+    # next_bbs_arrs: list of k items: LxL
+
 
     # FIXME hard-coded
+    # schedule for epsilon-greedy
     EPS_START = 0.9
     EPS_END = 0.05
     EPS_DECAY = 200
@@ -211,29 +213,22 @@ def select_action(global_counter, policy_net, seq_arr, inc_bbs_arr, next_bbs_arr
     n_actions = len(next_bbs_arrs)
     next_bbs_arrs = [x[np.newaxis, :, :, np.newaxis] for x in next_bbs_arrs]
     next_bbs_arrs = np.concatenate(next_bbs_arrs, axis=0)
-    
-    # global steps_done
+
     sample = random.random()
     eps_threshold = EPS_END + (EPS_START - EPS_END) * np.exp(-1. * global_counter.ct / EPS_DECAY)
     global_counter.step()
     if sample > eps_threshold:
         with torch.no_grad():
             # predict on all actions as a batch
-            # kxLxLx8
+            # kxLxLx10
             batch_data = encode_all_actions(seq_arr, inc_bbs_arr, next_bbs_arrs, n_actions)
-            pred = policy_net(batch_data)  # TODO check dimension kx1?
+            pred = policy_net(batch_data)
             # index of action following greedy policy
             idx_action = pred.argmax(0)  # argmax along dim=0 (actions)
-            
-#             # t.max(1) will return largest column value of each row.
-#             # second column on max result is index of where max element was
-#             # found, so we pick action with the larger expected reward.
-#             return policy_net(state).max(1)[1].view(1, 1)
         return idx_action
     else:
+        # uniform sample action
         return np.random.randint(0, n_actions)  # [0, n_actions)
-#         return torch.tensor([[random.randrange(n_actions)]], device=device, dtype=torch.long)
-
 
 
 def optimize_model(optimizer, policy_net, target_net, all_data_examples, replay_memory, batch_size):
@@ -267,7 +262,7 @@ def optimize_model(optimizer, policy_net, target_net, all_data_examples, replay_
     # next state value: take max over all valid actions at t+2
     # runnin each example as their own batch, since we'll be evaluating all valid actions per example
     # in the future we can combine different examples and make it more efficient
-    # also deal with cases where t+1 is the final state, set to 0 otherwise
+    # also deal with cases where t+1 is the final state
     expected_state_action_values = torch.zeros(len(transitions))
     for idx_val, transition in enumerate(transitions):
         example_id = transition.example_id
@@ -280,7 +275,6 @@ def optimize_model(optimizer, policy_net, target_net, all_data_examples, replay_
                                          transition.valid_bb_ids, 
                                          data_example.bb_conflict)
         if len(valid_bb_ids) == 0:  # no valid action after t+1, i.e. final state
-            # pass  # default is 0 (we already included the score (neg FE) as reward at the final state)
             expected_state_action_values[idx_val] = transition.reward
         else:
             batch_data = encode_all_actions(seq_arr, 
@@ -289,14 +283,11 @@ def optimize_model(optimizer, policy_net, target_net, all_data_examples, replay_
                                            len(valid_bb_ids))
             next_state_action_values = target_net(batch_data)
             next_state_value = next_state_action_values.max()
-            # print(next_state_value, transition.reward)
             expected_state_action_values[idx_val] = (next_state_value * GAMMA) + transition.reward
     
     # Compute Huber loss
     criterion = nn.SmoothL1Loss()
     loss = criterion(state_action_values.squeeze(), expected_state_action_values)
-#     print(state_action_values.shape)
-#     print(expected_state_action_values.shape)
     logging.debug(f"state_action_values: {state_action_values.squeeze().detach().numpy()}")
     logging.debug(f"expected_state_values: {expected_state_action_values.detach().numpy()}")
     logging.info(f"loss ({replay_memory.name}): {loss.detach().numpy()}")
@@ -326,14 +317,9 @@ def compute_score_neg_fe(data_example, bb_id_inc):
 
 
 def main(path_data, num_episodes, lr, batch_size, memory_size):
-    # debug dataset
-    # df = pd.read_pickle('../2021_06_22/data/data_len60_test_1000_s1_stem_bb_combos_s1s100.pkl.gz')
     df = pd.read_pickle(path_data)
     # build examples
     all_data_examples = AllDataExamples(df)
-
-    # # sequence encoder
-    # single_seq_enc = SingleSeqEncoder()
 
     # initialize value network
     policy_net = ValueNetwork(60, 60)  # FIXME hard-coded seq len
@@ -348,21 +334,15 @@ def main(path_data, num_episodes, lr, batch_size, memory_size):
     replay_memory_final_state = ReplayMemory(memory_size, 'replay_memory_final_state')
     replay_memory_other = ReplayMemory(memory_size, 'replay_memory_other')
 
-    # constants
-    # batch_size = 4
-    # GAMMA = 0.999
-    # EPS_START = 0.9
-    # EPS_END = 0.05
-    # EPS_DECAY = 200
+    # how frequent to copy parameters from policy_net to target_net
     TARGET_UPDATE = 10  # FIXME hard-coded
 
-    # global counter
+    # global counter, used for epsilon schedule
     global_counter = GlobalCounter()
 
-    # for debug: keep track of reward for each example throughout the training process
+    # for debug: keep track of reward for each example (each time being visitied) throughout the training process
     example_reward_history = defaultdict(lambda: [])
 
-    # num_episodes = 10  # debug
     for i_episode in range(num_episodes):
         logging.info(f"Episode {i_episode} out of {num_episodes}")
 
@@ -375,7 +355,6 @@ def main(path_data, num_episodes, lr, batch_size, memory_size):
         bb_id_inc = []
         inc_bbs_arr = np.zeros((len(data_example.seq), len(data_example.seq)))
         valid_bb_ids = list(data_example.bbs.keys())
-        # current_neg_fe = 0  # inital neg fe 0
 
         for t in count():
             # Select and perform an action
@@ -395,13 +374,6 @@ def main(path_data, num_episodes, lr, batch_size, memory_size):
             bb_id_inc.append(next_bb_id)
             inc_bbs_arr += data_example.bb_arrs[next_bb_id]
 
-            # # fe & reward
-            # bp_arr = stem_bbs2arr([data_example.bbs[bb_id] for bb_id in bb_id_inc], len(data_example.seq))
-            # db_str, result_ambiguous = arr2db(bp_arr)  # TODO check
-            # # print(db_str)
-            # new_neg_fe = - compute_fe(data_example.seq, db_str)
-            # reward = new_neg_fe - current_neg_fe
-
             # reward is 0 unless it's final state
             final_state = len(valid_bb_ids) == 0
             if final_state:
@@ -418,8 +390,6 @@ def main(path_data, num_episodes, lr, batch_size, memory_size):
 
             logging.debug(
                 f"step {t}, state {old_bb_id_inc}, action space {old_valid_bb_ids}, action {next_bb_id}, reward {reward}")
-            # # update current fe
-            # current_neg_fe = new_neg_fe + 0  # TODO copy?
 
             # Store the transition in memory
             if final_state:
@@ -437,10 +407,7 @@ def main(path_data, num_episodes, lr, batch_size, memory_size):
                                          next_bb_id,
                                          reward)
 
-    #         _, reward, done, _ = env.step(action.item())
-    #         reward = torch.tensor([reward], device=device)
-
-            # Perform one step of the optimization (on the policy network)
+            # update policy network)
             logging.debug("replay_memory_final_state")
             optimize_model(optimizer, policy_net, target_net, all_data_examples, replay_memory_final_state, batch_size)
             logging.debug("replay_memory_other")
@@ -451,11 +418,7 @@ def main(path_data, num_episodes, lr, batch_size, memory_size):
             if len(valid_bb_ids) == 0:
                 break
 
-    #         if done:
-    #             episode_durations.append(t + 1)
-    #             plot_durations()
-    #             break
-        # Update the target network, copying all weights and biases in DQN
+        # Update the target network, copying parameters
         if i_episode % TARGET_UPDATE == 0:
             target_net.load_state_dict(policy_net.state_dict())
 
