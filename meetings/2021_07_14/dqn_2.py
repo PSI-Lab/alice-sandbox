@@ -10,7 +10,7 @@ import pandas as pd
 import random
 from pprint import pprint
 from itertools import count
-from collections import namedtuple, deque
+from collections import namedtuple, deque, defaultdict
 from utils.rna_ss_utils import arr2db, one_idx2arr, compute_fe
 from utils.inference_s2 import Predictor, process_row_bb_combo, stem_bbs2arr
 from utils_s2_tree_search import bb_conflict
@@ -359,6 +359,9 @@ def main(path_data, num_episodes, lr, batch_size, memory_size):
     # global counter
     global_counter = GlobalCounter()
 
+    # for debug: keep track of reward for each example throughout the training process
+    example_reward_history = defaultdict(lambda: [])
+
     # num_episodes = 10  # debug
     for i_episode in range(num_episodes):
         logging.info(f"Episode {i_episode} out of {num_episodes}")
@@ -407,7 +410,9 @@ def main(path_data, num_episodes, lr, batch_size, memory_size):
                 # cap it
                 # FIXME hard-coded threshold
                 reward = max(-10, reward)
-                logging.info(f"step {t} (final), reward {reward}")
+                logging.info(f"step {t} (final), reward {reward} (previous reward history: {example_reward_history[example_id]})")
+                # save this reward for debug
+                example_reward_history[example_id].append(reward)
             else:
                 reward = 0
 
