@@ -150,20 +150,21 @@ class ValueNetwork(nn.Module):
     def __init__(self, h=60, w=60):
         super(ValueNetwork, self).__init__()
         # FIXME hard-coded for now
-        self.conv1 = nn.Conv2d(10, 16, kernel_size=5, stride=2)  # input ch = 10 = 8 + 1 + 1
+        self.conv1 = nn.Conv2d(10, 64, kernel_size=5, stride=2)  # input ch = 10 = 8 + 1 + 1
 #         self.bn1 = nn.BatchNorm2d(16)
-        self.conv2 = nn.Conv2d(16, 32, kernel_size=5, stride=2)
+        self.conv2 = nn.Conv2d(64, 128, kernel_size=5, stride=2)
 #         self.bn2 = nn.BatchNorm2d(32)
-        self.conv3 = nn.Conv2d(32, 32, kernel_size=5, stride=2)
+        self.conv3 = nn.Conv2d(128, 256, kernel_size=5, stride=2)
 #         self.bn3 = nn.BatchNorm2d(32)
+        self.conv4 = nn.Conv2d(256, 512, kernel_size=5, stride=2)
 
         # Number of Linear input connections depends on output of conv2d layers
         # and therefore the input image size, so compute it.
         def conv2d_size_out(size, kernel_size = 5, stride = 2):
             return (size - (kernel_size - 1) - 1) // stride  + 1
-        convw = conv2d_size_out(conv2d_size_out(conv2d_size_out(w)))
-        convh = conv2d_size_out(conv2d_size_out(conv2d_size_out(h)))
-        linear_input_size = convw * convh * 32
+        convw = conv2d_size_out(conv2d_size_out(conv2d_size_out(conv2d_size_out(w))))
+        convh = conv2d_size_out(conv2d_size_out(conv2d_size_out(conv2d_size_out(h))))
+        linear_input_size = convw * convh * 512
         self.out = nn.Linear(linear_input_size, 1)
 
     def forward(self, x):
@@ -171,6 +172,7 @@ class ValueNetwork(nn.Module):
         x = F.relu(self.conv1(x))
         x = F.relu(self.conv2(x))
         x = F.relu(self.conv3(x))
+        x = F.relu(self.conv4(x))
         return self.out(x.view(x.size(0), -1))
 
 
