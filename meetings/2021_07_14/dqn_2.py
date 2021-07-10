@@ -243,7 +243,7 @@ def optimize_model(optimizer, policy_net, target_net, all_data_examples, replay_
     GAMMA = 1.0
 
     if len(replay_memory) < batch_size:
-        return
+        return None
     transitions = replay_memory.sample(batch_size)  # list of transitions
     
     # Compute Q(s_t, a)
@@ -303,6 +303,8 @@ def optimize_model(optimizer, policy_net, target_net, all_data_examples, replay_
         param.grad.data.clamp_(-1, 1)  # TODO do we need clamping?
     optimizer.step()
 
+    return loss.detach().numpy()
+
 
 class GlobalCounter():
     def __init__(self):
@@ -321,7 +323,7 @@ def compute_score_neg_fe(data_example, bb_id_inc):
 
 
 def main(path_data, num_filters, filter_width, pooling_size,
-         num_episodes, lr, batch_size, memory_size):
+         num_episodes, lr, batch_size, memory_size, out_dir):
     df = pd.read_pickle(path_data)
     # build examples
     all_data_examples = AllDataExamples(df)
@@ -347,6 +349,9 @@ def main(path_data, num_filters, filter_width, pooling_size,
 
     # for debug: keep track of reward for each example (each time being visitied) throughout the training process
     example_reward_history = defaultdict(lambda: [])
+
+    # keep track of loss values
+    data_loss = []
 
     for i_episode in range(num_episodes):
         logging.info(f"Episode {i_episode} out of {num_episodes}")
@@ -414,20 +419,36 @@ def main(path_data, num_filters, filter_width, pooling_size,
 
             # update policy network)
             logging.debug("replay_memory_final_state")
-            optimize_model(optimizer, policy_net, target_net, all_data_examples, replay_memory_final_state, batch_size)
+            loss_fs = optimize_model(optimizer, policy_net, target_net, all_data_examples, replay_memory_final_state, batch_size)
             logging.debug("replay_memory_other")
-            optimize_model(optimizer, policy_net, target_net, all_data_examples, replay_memory_other, batch_size)
-
+            loss_ot = optimize_model(optimizer, policy_net, target_net, all_data_examples, replay_memory_other, batch_size)
+            # add to report
+            data_loss.append({
+                'episode': i_episode,
+                'step': t,
+                'loss_final_state': loss_fs,
+                'loss_other': loss_ot,
+            })
 
             # check if we're at final state
             if len(valid_bb_ids) == 0:
                 break
+
+        # save model every (num_episodes/10)-th episode
+        if (i_episode + 1) % max(1, num_episodes//10) == 0:
+            _model_path = os.path.join(out_dir, 'model_ckpt_ep_{}.pth'.format(i_episode))
+            torch.save(policy_net.state_dict(), _model_path)
+            logging.info("Model checkpoint saved at: {}".format(_model_path))
 
         # Update the target network, copying parameters
         if i_episode % TARGET_UPDATE == 0:
             target_net.load_state_dict(policy_net.state_dict())
 
     logging.info('All episodes completed.')
+
+    # export report
+    data_loss = pd.DataFrame(data_loss)
+    data_loss.to_csv(os.path.join(out_dir, 'losses.csv'), index=False)
 
 
 def set_up_logging(path_result, verbose=False):
@@ -468,6 +489,6 @@ if __name__ == "__main__":
     set_up_logging(args.result, args.verbose)
 
     main(args.data, args.num_filters, args.filter_width, args.pooling_size,
-         args.episode, args.lr, args.batch_size, args.memory_size)
+         args.episode, args.lr, args.batch_size, args.memory_size, args.result)
 
 
