@@ -147,31 +147,35 @@ class ReplayMemory(object):
 
 class ValueNetwork(nn.Module):
 
-    def __init__(self, h=60, w=60):
-        super(ValueNetwork, self).__init__()
-        # FIXME hard-coded for now
-        self.conv1 = nn.Conv2d(10, 64, kernel_size=5, stride=2)  # input ch = 10 = 8 + 1 + 1
-#         self.bn1 = nn.BatchNorm2d(16)
-        self.conv2 = nn.Conv2d(64, 128, kernel_size=5, stride=2)
-#         self.bn2 = nn.BatchNorm2d(32)
-        self.conv3 = nn.Conv2d(128, 256, kernel_size=5, stride=2)
-#         self.bn3 = nn.BatchNorm2d(32)
+    @staticmethod
+    def conv2d_size_out(size, kernel_size, stride_size):
+        return (size - (kernel_size - 1) - 1) // stride_size + 1
 
-        # Number of Linear input connections depends on output of conv2d layers
-        # and therefore the input image size, so compute it.
-        def conv2d_size_out(size, kernel_size = 5, stride = 2):
-            return (size - (kernel_size - 1) - 1) // stride  + 1
-        convw = conv2d_size_out(conv2d_size_out(conv2d_size_out(w)))
-        convh = conv2d_size_out(conv2d_size_out(conv2d_size_out(h)))
-        linear_input_size = convw * convh * 256
-        self.out = nn.Linear(linear_input_size, 1)
+    def __init__(self, num_filters, filter_width, pooling_size, seq_len=60):
+        super(ValueNetwork, self).__init__()
+        assert len(num_filters) == len(filter_width)
+        assert len(num_filters) == len(pooling_size)
+
+        linear_input_size = seq_len
+        for a, b in zip(filter_width, pooling_size):
+            linear_input_size = self.conv2d_size_out(linear_input_size, a, 1)
+            linear_input_size = self.conv2d_size_out(linear_input_size, b, b)
+
+        num_filters = [10] + num_filters  # input is 10 ch
+        filter_width = [None] + filter_width
+        pooling_size = [None] + pooling_size
+        cnn_layers = []
+        for i, (nf, fw, psize) in enumerate(zip(num_filters[1:], filter_width[1:], pooling_size[1:])):
+            cnn_layers.append(nn.Conv2d(num_filters[i], nf, kernel_size=fw, stride=1))
+            cnn_layers.append(nn.ReLU())
+            cnn_layers.append(nn.MaxPool2d(psize))
+        self.cnn = nn.Sequential(*cnn_layers)
+
+        self.fc = nn.Linear(linear_input_size * linear_input_size * num_filters[-1], 1)
 
     def forward(self, x):
-#         x = x.to(device)
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
-        x = F.relu(self.conv3(x))
-        return self.out(x.view(x.size(0), -1))
+        x = self.cnn(x)
+        return self.fc(x.view(x.size(0), -1))
 
 
 def encode_all_actions(seq_arr, inc_bbs_arr, next_bbs_arrs, n_actions):
@@ -316,16 +320,17 @@ def compute_score_neg_fe(data_example, bb_id_inc):
     return score
 
 
-def main(path_data, num_episodes, lr, batch_size, memory_size):
+def main(path_data, num_filters, filter_width, pooling_size,
+         num_episodes, lr, batch_size, memory_size):
     df = pd.read_pickle(path_data)
     # build examples
     all_data_examples = AllDataExamples(df)
 
     # initialize value network
-    policy_net = ValueNetwork(60, 60)  # FIXME hard-coded seq len
+    policy_net = ValueNetwork(num_filters, filter_width, pooling_size, seq_len=60)  # FIXME hard-coded seq len
     # make a copy for computing target value in the Bellman update
     # this network will be updated once in a while
-    target_net = ValueNetwork(60, 60)
+    target_net = ValueNetwork(num_filters, filter_width, pooling_size, seq_len=60)
     target_net.load_state_dict(policy_net.state_dict())
     target_net.eval()
 
@@ -450,6 +455,9 @@ if __name__ == "__main__":
     parser.add_argument('--data', type=str,
                         help='Path to training data file, should be in pkl.gz format')
     parser.add_argument('--result', type=str, help='Path to output result')
+    parser.add_argument('--num_filters', nargs='*', type=int, help='Number of conv filters for each layer.')
+    parser.add_argument('--filter_width', nargs='*', type=int, help='Filter width for each layer.')
+    parser.add_argument('--pooling_size', nargs='*', type=int, help='Pooling size for each layer.')
     parser.add_argument('--episode', type=int, default=10, help='Number of episodes, each episode is one sequence')
     parser.add_argument('--lr', type=float, default=0.0001, help='learning rate')
     parser.add_argument('--batch_size', type=int, default=4, help='Mini batch size')
@@ -459,6 +467,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     set_up_logging(args.result, args.verbose)
 
-    main(args.data, args.episode, args.lr, args.batch_size, args.memory_size)
+    main(args.data, args.num_filters, args.filter_width, args.pooling_size,
+         args.episode, args.lr, args.batch_size, args.memory_size)
 
 
