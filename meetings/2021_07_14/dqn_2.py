@@ -348,7 +348,7 @@ def main(path_data, num_filters, filter_width, pooling_size,
     global_counter = GlobalCounter()
 
     # for debug: keep track of reward for each example (each time being visitied) throughout the training process
-    example_reward_history = defaultdict(lambda: [])
+    example_reward_history = defaultdict(lambda: defaultdict(lambda: None))  # example_id -> episode -> reward
 
     # keep track of loss values
     data_loss = []
@@ -392,9 +392,9 @@ def main(path_data, num_filters, filter_width, pooling_size,
                 # cap it
                 # FIXME hard-coded threshold
                 reward = max(-10, reward)
-                logging.info(f"step {t} (final), reward {reward} (previous reward history: {example_reward_history[example_id]})")
+                logging.info(f"step {t} (final), reward {reward} (previous reward history: {dict.__repr__(example_reward_history[example_id])})")  # use dict.__repr__ for less ugly printing
                 # save this reward for debug
-                example_reward_history[example_id].append(reward)
+                example_reward_history[example_id][i_episode] = reward
             else:
                 reward = 0
 
@@ -446,9 +446,21 @@ def main(path_data, num_filters, filter_width, pooling_size,
 
     logging.info('All episodes completed.')
 
-    # export report
+    # export loss report
     data_loss = pd.DataFrame(data_loss)
     data_loss.to_csv(os.path.join(out_dir, 'losses.csv'), index=False)
+
+    # export reward history
+    data_reward = []
+    for example_id, reward_hist in example_reward_history.items():
+        for i, reward in reward_hist.items():
+            data_reward.append({
+                'example_id': example_id,
+                'episode': i,
+                'reward': reward,
+            })
+    data_reward = pd.DataFrame(data_reward)
+    data_reward.to_csv(os.path.join(out_dir, 'reward_history.csv'), index=False)
 
 
 def set_up_logging(path_result, verbose=False):
