@@ -400,6 +400,11 @@ TODOs:
 
 - larger dataset (bb pred, no need to subset to s1s100)
 
+- validation data, inference pipeline
+
+- state(-action) value function: also conditioned on the 'action space', i.e. set of valid bbs?
+For example, intuitively, if including one bb eliminates a lot of potential bb optionals, it might not be a good choice.
+
 
 - debug neg FE
 
