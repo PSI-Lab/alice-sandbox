@@ -22,7 +22,7 @@ BoundingBox = namedtuple("BoundingBox", ['bb_x', 'bb_y', 'siz_x', 'siz_y'])
 
 
 DataExample = namedtuple('DataExample',
-                        ('seq', 'seq_arr', 'bbs', 'bb_arrs', 'bb_conflict'))
+                        ('seq', 'mfe', 'seq_arr', 'bbs', 'bb_arrs', 'bb_conflict'))
 
 
 Transition = namedtuple('Transition',
@@ -57,6 +57,7 @@ class AllDataExamples(object):
         logging.info("Processing dataset...")
         for data_idx, row in df.iterrows():
             seq = row.seq
+            mfe = row['mfe']
 
             if data_idx % 100 == 0:
                 logging.info(f"{data_idx}/{len(df)}")
@@ -87,6 +88,7 @@ class AllDataExamples(object):
 
             # add to data
             self.data[data_idx] = DataExample(seq=seq,  # str
+                                              mfe=mfe,
                                               seq_arr=seq_arr,  # LxLx8
                                               bbs=bbs,  # list of BoundingBox obj
                                               bb_arrs=bb_arrs,  # list of LxL binary arrays
@@ -392,7 +394,7 @@ def main(path_data, num_filters, filter_width, pooling_size,
                 # cap it
                 # FIXME hard-coded threshold
                 reward = max(-10, reward)
-                logging.info(f"step {t} (final), reward {reward} (previous reward history: {dict.__repr__(example_reward_history[example_id])})")  # use dict.__repr__ for less ugly printing
+                logging.info(f"step {t} (final), target reward {-data_example.mfe} (MFE {data_example.mfe}), reward {reward} (previous reward history: {dict.__repr__(example_reward_history[example_id])})")  # use dict.__repr__ for less ugly printing
                 # save this reward for debug
                 example_reward_history[example_id][i_episode] = reward
             else:
@@ -456,6 +458,7 @@ def main(path_data, num_filters, filter_width, pooling_size,
         for i, reward in reward_hist.items():
             data_reward.append({
                 'example_id': example_id,
+                'target_reward': -all_data_examples.data[example_id].mfe,
                 'episode': i,
                 'reward': reward,
             })
